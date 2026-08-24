@@ -6,7 +6,7 @@ esto literal las primeras veces — después se vuelve automático.
 ## 1. Estructura de ramas
 
 ```
-main     <- solo recibe una entrega ya aprobada (tag entrega1, entrega2, entrega3)
+main     <- solo recibe una entrega lista para entregar (tag entrega1, entrega2, entrega3)
 develop  <- acumula el trabajo de la etapa en curso
 feat/<id> o fix/<id>  <- tu trabajo del día a día, sale de develop y vuelve a develop
 ```
