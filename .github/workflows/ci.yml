@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PR a main solo puede venir de develop
+        if: github.base_ref == 'main' && github.head_ref != 'develop'
+        run: |
+          echo "Los PR contra main solo se aceptan desde develop (este viene de '${{ github.head_ref }}')." >&2
+          exit 1
+
+      - name: make
+        run: make -C src
+
+      - name: Tests por entrega
+        shell: bash
+        run: |
+          shopt -s nullglob
+          fail=0
+
+          for entrega_dir in tests/entrega*/; do
+            entrega="$(basename "$entrega_dir")"
+
+            for f in "${entrega_dir}validos/"*.txt; do
+              out="$(timeout 5 ./src/ucc -c "$f" 2>&1)"
+              status=$?
+              if [ $status -ne 0 ]; then
+                echo "::error::[$entrega/validos] $f: ucc terminó con status $status (crash o timeout)"
+                fail=1
+              elif echo "$out" | grep -Eq "Error [0-9]+:"; then
+                echo "::error::[$entrega/validos] $f: se esperaba sin errores, pero reportó:"
+                echo "$out" | grep -E "Error [0-9]+:"
+                fail=1
+              fi
+            done
+
+            for f in "${entrega_dir}invalidos/"*.txt; do
+              esperado="${f%.txt}.esperado"
+              if [ ! -f "$esperado" ]; then
+                echo "::error::[$entrega/invalidos] $f: falta $esperado (secuencia de errores esperada)"
+                fail=1
+                continue
+              fi
+
+              out="$(timeout 5 ./src/ucc -c "$f" 2>&1)"
+              status=$?
+              if [ $status -ne 0 ]; then
+                echo "::error::[$entrega/invalidos] $f: ucc terminó con status $status (crash o timeout, no se pudo evaluar la recuperación antipánico)"
+                fail=1
+                continue
+              fi
+
+              got="$(echo "$out" | grep -E "Error [0-9]+:" || true)"
+              want="$(cat "$esperado")"
+              if [ "$got" != "$want" ]; then
+                echo "::error::[$entrega/invalidos] $f: la secuencia de errores no coincide con $esperado"
+                diff <(echo "$want") <(echo "$got") || true
+                fail=1
+              fi
+            done
+          done
+
+          exit $fail
