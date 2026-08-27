@@ -79,3 +79,19 @@ set lookahead_in(set conjunto)
 {
 	return lookahead() & conjunto;
 }
+
+void test(set c1, set c2, int ne)
+{
+    if(!lookahead_in(c1))
+	{
+		//Reporta el error sintáctico correspondiente
+        error_handler(ne);          
+		//Une lo esperado con el conjunto de sincronización (folset)
+        c1 = c1 | c2;
+		//Sincronización antipánico: saltea tokens hasta reconfigurarse
+        while(!lookahead_in(c1)){
+			//Avanza el scanner
+            scanner();
+		}
+	}
+}
