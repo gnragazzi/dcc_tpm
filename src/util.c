@@ -82,16 +82,13 @@ set lookahead_in(set conjunto)
 
 void test(set c1, set c2, int ne)
 {
-    if(!lookahead_in(c1))
+	if(!lookahead_in(c1))
 	{
-		//Reporta el error sintáctico correspondiente
-        error_handler(ne);          
-		//Une lo esperado con el conjunto de sincronización (folset)
-        c1 = c1 | c2;
-		//Sincronización antipánico: saltea tokens hasta reconfigurarse
-        while(!lookahead_in(c1)){
-			//Avanza el scanner
-            scanner();
+		error_handler(ne);
+		set conjunto_sincronizacion = c1 | c2;
+		while(!lookahead_in(conjunto_sincronizacion))
+		{
+			scanner();
 		}
 	}
 }
