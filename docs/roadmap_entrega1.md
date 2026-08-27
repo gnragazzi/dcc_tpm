@@ -3,7 +3,7 @@
 PDR con recuperación de errores antipánico. Este archivo se genera desde la planilla de
 seguimiento; si cambia el plan, se actualizan los dos.
 
-**Planilla de seguimiento:** _(pegar acá el link de Google Sheets)_
+**Planilla de seguimiento:** [link](https://docs.google.com/spreadsheets/d/1D3gSmq-Mta0GEKppTTMQu_f49LbhI05hUmEH6taqVDA/edit?gid=1285433906#gid=1285433906)
 
 ---
 
