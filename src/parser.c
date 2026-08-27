@@ -5,7 +5,7 @@ int main(int argc, char *argv[])
 {
 	init_parser(argc, argv);
 
-	unidad_traduccion(PLACEHOLDER);
+	unidad_traduccion(CEOF);
 
 	match(CEOF, 10);
 
