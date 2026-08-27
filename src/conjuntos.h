@@ -1,3 +1,5 @@
+#include "codigos.h"
+
 /* BORRAR CUANDO YA ESTÉN IMPLEMENTADOS LOS FIRST!!!!!!! */
 #include <limits.h>
 #define PLACEHOLDER LLONG_MAX
