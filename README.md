@@ -23,7 +23,13 @@ Compilador para un subconjunto de C++ (`ucc`), desarrollado en equipo a lo largo
   entrega (lo que pide Classroom junto al ejecutable y los fuentes). Se cura desde
   la Bitácora de decisiones, no se escribe de cero.
 - `docs/informe_final.md` — informe a entregar tras la aprobación de la entrega 2.
+- `docs/roadmap_entrega1.md` — plan de la 1ª entrega: cola de tickets, dependencias y
+  reglas de operación. Se regenera junto con la planilla de seguimiento.
+- `docs/roadmap_entrega1.md` — plan de la 1ª entrega: cola de tickets, dependencias y
+  reglas de operación. Se regenera junto con la planilla de seguimiento.
 - `scripts/empaquetar.sh` — arma el .zip de entrega.
+- `scripts/crear_issues.py` — crea los labels y los issues del roadmap en GitHub.
+- `scripts/crear_issues.py` — crea los labels y los issues del roadmap en GitHub.
 
 ## Compilar
 
@@ -45,6 +51,88 @@ Makefile desde cero, no se olviden de este flag.
 ## Empaquetar una entrega
 
     ./scripts/empaquetar.sh 1   # compila, valida que exista docs/decisiones/entrega1.md, arma ucc_entrega1.zip
+
+## Roadmap y cola de tickets
+
+El plan de la etapa en curso vive en `docs/roadmap_entrega1.md`, y el seguimiento diario en
+la planilla de Google Sheets enlazada ahí.
+
+El trabajo **no se reparte por módulo ni por persona**: es una cola de tickets chicos que
+cualquiera toma. Reglas:
+
+- **Un ticket = un issue = una rama `feat/<id>` = un PR.** Nunca dos tickets en un PR.
+- **Nadie asigna: cada uno se auto-asigna** de la cola. Máximo 1 ticket tomado a la vez.
+- **Claim con vencimiento:** 72 h sin PR abierto y el issue vuelve a la cola, sin avisar.
+- **Definition of done = CI verde.** No existe "ya lo hice, falta que revisen".
+- **Las decisiones de contrato se proponen como PR con ventana de 48 h.**
+- **Si estás bloqueado, tomás un ticket de lotes de prueba.** No dependen de ninguna línea
+  de código y siempre hay disponibles.
+- **`git rebase` sobre `develop` antes de pedir review. Nunca merge commit. Nunca
+  reformatear ni reordenar funciones de `parser.c`**: los tickets de instrumentación tocan
+  ese archivo en bloques disjuntos, y el formateo es el único riesgo real de conflicto.
+- **Separación de propiedad por archivo:** los tickets de conjuntos FIRST1 son los únicos
+  que tocan el header de conjuntos; los de instrumentación, los únicos que tocan `parser.c`.
+
+La planilla marca en verde los tickets cuyos bloqueantes ya están en Hecho. **Ese es el
+menú: no elijas fuera de ahí.**
+
+Los issues se crean con:
+
+    python3 scripts/crear_issues.py --dry-run   # muestra qué haría
+    python3 scripts/crear_issues.py             # crea labels e issues (idempotente)
+
+## Gramática de referencia
+
+**La BNFE es la fuente de verdad**, no la BNF. Tiene 30 no terminales y `parser.c` tiene 29
+funciones: la diferencia es exactamente `<relación>` (ítem 6 de la guía práctica). La BNF
+impresa tiene al menos un error —en `<declarador init>` ubica el `[` después del `=`, cuando
+el código lo trata como alternativa hermana— y un `=` de más en `<op relacional>`.
+
+La BNF se usa como **andamio de cálculo**: sus no terminales `<resto X>` son los nombres de
+los conjuntos de continuación que los `{ }` de la BNFE dejan anónimos, y que hacen falta
+para el `test` al final de cada cuerpo de bucle. Verificar cada producción contra la BNFE
+antes de confiar en ella. Ver el ticket `T6`.
+
+## Roadmap y cola de tickets
+
+El plan de la etapa en curso vive en `docs/roadmap_entrega1.md`, y el seguimiento diario en
+la planilla de Google Sheets enlazada ahí.
+
+El trabajo **no se reparte por módulo ni por persona**: es una cola de tickets chicos que
+cualquiera toma. Reglas:
+
+- **Un ticket = un issue = una rama `feat/<id>` = un PR.** Nunca dos tickets en un PR.
+- **Nadie asigna: cada uno se auto-asigna** de la cola. Máximo 1 ticket tomado a la vez.
+- **Claim con vencimiento:** 72 h sin PR abierto y el issue vuelve a la cola, sin avisar.
+- **Definition of done = CI verde.** No existe "ya lo hice, falta que revisen".
+- **Las decisiones de contrato se proponen como PR con ventana de 48 h.**
+- **Si estás bloqueado, tomás un ticket de lotes de prueba.** No dependen de ninguna línea
+  de código y siempre hay disponibles.
+- **`git rebase` sobre `develop` antes de pedir review. Nunca merge commit. Nunca
+  reformatear ni reordenar funciones de `parser.c`**: los tickets de instrumentación tocan
+  ese archivo en bloques disjuntos, y el formateo es el único riesgo real de conflicto.
+- **Separación de propiedad por archivo:** los tickets de conjuntos FIRST1 son los únicos
+  que tocan el header de conjuntos; los de instrumentación, los únicos que tocan `parser.c`.
+
+La planilla marca en verde los tickets cuyos bloqueantes ya están en Hecho. **Ese es el
+menú: no elijas fuera de ahí.**
+
+Los issues se crean con:
+
+    python3 scripts/crear_issues.py --dry-run   # muestra qué haría
+    python3 scripts/crear_issues.py             # crea labels e issues (idempotente)
+
+## Gramática de referencia
+
+**La BNFE es la fuente de verdad**, no la BNF. Tiene 30 no terminales y `parser.c` tiene 29
+funciones: la diferencia es exactamente `<relación>` (ítem 6 de la guía práctica). La BNF
+impresa tiene al menos un error —en `<declarador init>` ubica el `[` después del `=`, cuando
+el código lo trata como alternativa hermana— y un `=` de más en `<op relacional>`.
+
+La BNF se usa como **andamio de cálculo**: sus no terminales `<resto X>` son los nombres de
+los conjuntos de continuación que los `{ }` de la BNFE dejan anónimos, y que hacen falta
+para el `test` al final de cada cuerpo de bucle. Verificar cada producción contra la BNFE
+antes de confiar en ella. Ver el ticket `T6`.
 
 ## Convención de git
 
