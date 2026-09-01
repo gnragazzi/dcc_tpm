@@ -88,6 +88,12 @@ void test(set c1, set c2, int ne)
 		set conjunto_sincronizacion = c1 | c2;
 		while(!lookahead_in(conjunto_sincronizacion))
 		{
+			if(lookahead_in(CEOF))
+			{
+				error_handler(36);
+				error_handler(COD_IMP_ERRORES);
+				exit(1);
+			}
 			scanner();
 		}
 	}
