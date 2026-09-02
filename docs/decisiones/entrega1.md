@@ -109,6 +109,11 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 #### L8
 
+Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/04_falta_llave_cierre.c` y su archivo `04_falta_llave_cierre.esperado`:
+- **Caso de prueba:** Omisión deliberada de la llave de cierre `}` al final de una proposición compuesta (`void main() { ...`).
+- **Comportamiento esperado:** Reporte del `Error 25: Falta }` (definido en `error.c:37`). Es un caso crítico de recuperación antipánico que debe sincronizar contra el folset heredado (`CEOF`) sin entrar en bucle infinito.
+- **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que la instrumentación de `proposicion_compuesta()` (`N4`) y el fix `T4` estén integrados en `develop`.
+
 #### L9
 
 #### L10
