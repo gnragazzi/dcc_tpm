@@ -163,8 +163,8 @@ antes de confiar en ella. Ver el ticket `T6`.
   inexistente, argumentos mal puestos — no por errores de sintaxis del
   programa de entrada). La señal está en stdout, vía `error_print`: `Error N:
   ...` es una falla, `Warning N: ...` no lo es.
-  - `validos/*.txt`: el CI falla si aparece alguna línea `Error N` en stdout.
-  - `invalidos/*.txt`: assertion fuerte contra un `.esperado` por caso, con la
+  - `validos/*.c`: el CI falla si aparece alguna línea `Error N` en stdout.
+  - `invalidos/*.c`: assertion fuerte contra un `.esperado` por caso, con la
     secuencia exacta de errores que debe reportar. Corren con timeout: un bug
     en la sincronización antipánico puede colgar el parser en vez de fallar
     limpio, y sin timeout eso cuelga el job entero.
