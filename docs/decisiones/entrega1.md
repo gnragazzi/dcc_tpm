@@ -111,6 +111,11 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 #### L9
 
+Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/05_tipo_invalido.c` y su archivo `05_tipo_invalido.esperado`:
+- **Caso de prueba:** Uso de un especificador de tipo no soportado por el sublenguaje (`double x;`) en una declaración local dentro de `main()`.
+- **Comportamiento esperado:** Reporte del `Error 18: Tipo no definido` (definido en `error.c:30`), al no pertenecer el lookahead (`CIDENT`) al conjunto permitido `CVOID | CCHAR | CINT | CFLOAT`.
+- **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que la instrumentación de `especificador_tipo()` (`N7`) y el fix `T4` estén integrados en `develop`.
+
 #### L10
 
 #### L11
