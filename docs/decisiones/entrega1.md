@@ -115,6 +115,11 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 #### L11
 
+Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/07_simbolo_inesperado_proposicion.c` y su archivo `07_simbolo_inesperado_proposicion.esperado`:
+- **Caso de prueba:** Presencia de un símbolo inválido (`*`) al comienzo de una proposición dentro del cuerpo de una función (`void main() { int a; * a = 5; }`).
+- **Comportamiento esperado:** Reporte del `Error 52: Simbolo inesperado o falta simb. al comienzo de proposicion` (definido en `error.c:52`), al no pertenecer el token al conjunto `FIRST(proposicion)`. La recuperación antipánico debe descartar el token inválido y resincronizar en el identificador `a` para continuar con la asignación.
+- **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que la instrumentación de `proposicion()` (`N4`) y el fix `T4` estén integrados en `develop`.
+
 #### L12
 
 #### L13
