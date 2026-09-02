@@ -61,6 +61,22 @@ placeholder.
 
 #### F3
 
+Cálculo y definición en `src/conjuntos.h` de los conjuntos FIRST para la región de proposiciones y sus continuaciones (Consigna 3):
+
+- **No terminales de proposiciones:**
+  - `F_PROPOSICION_COMPUESTA`: `{` (`CLLA_ABR`).
+  - `F_PROPOSICION_ITERACION`: `while` (`CWHILE`).
+  - `F_PROPOSICION_SELECCION`: `if` (`CIF`).
+  - `F_PROPOSICION_E_S`: `cin`, `cout` (`CIN | COUT`).
+  - `F_PROPOSICION_RETORNO`: `return` (`CRETURN`).
+  - `F_PROPOSICION_EXPRESION`: `FIRST(expresion) | { ; }` = `(CMAS | CMENOS | CIDENT | CPAR_ABR | CNEG | CCONS_ENT | CCONS_FLO | CCONS_CAR | CCONS_STR | CPYCOMA)`.
+  - `F_PROPOSICION` y `F_LISTA_PROPOSICIONES`: Unión de todas las alternativas anteriores.
+- **Conjuntos de continuación:**
+  - `F_ELSE_OPCIONAL`: `else` (`CELSE`).
+  - `F_RESTO_PROP_IN`: `>>` (`CSHR`).
+  - `F_RESTO_PROP_OUT`: `<<` (`CSHL`).
+- **Cumplimiento de la regla R10:** Se expandieron los conjuntos como uniones literales de terminales `C_*` para garantizar que sean constantes estáticas independientes.
+
 #### F4
 
 ### Capa 2 · Instrumentación
