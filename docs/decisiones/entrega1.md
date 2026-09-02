@@ -113,6 +113,11 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 #### L10
 
+Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/06_falta_identificador.c` y su archivo `06_falta_identificador.esperado`:
+- **Caso de prueba:** Omisión deliberada del nombre de la variable en una declaración local (`int ;`) dentro de `main()`.
+- **Comportamiento esperado:** Reporte del `Error 17: Falta identificador` (definido en `error.c:29`), emitido al fallar el `match(CIDENT, 17)` tras consumir el especificador de tipo.
+- **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que la instrumentación de `lista_declaraciones_init()` (`N10`) y el fix `T4` estén integrados en `develop`.
+
 #### L11
 
 #### L12
