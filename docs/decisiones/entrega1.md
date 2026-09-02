@@ -117,6 +117,11 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 #### L12
 
+Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/08_error_en_expresion.c` y su archivo `08_error_en_expresion.esperado`:
+- **Caso de prueba:** Omisión deliberada del operando derecho tras un operador de adición en una asignación (`a = 5 + ;`).
+- **Comportamiento esperado:** Reporte del `Error 57: Simbolo inesperado o falta simb. al comienzo de factor` (definido en `error.c:67`), al encontrar un punto y coma `;` cuando se esperaba un operando perteneciente a `FIRST(factor)`. La recuperación antipánico debe resincronizar en el punto y coma `;` para completar la proposición sin entrar en cascada.
+- **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que la instrumentación de `factor()` (`N2`) y el fix `T4` estén integrados en `develop`.
+
 #### L13
 
 #### L14
