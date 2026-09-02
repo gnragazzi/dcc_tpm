@@ -97,6 +97,11 @@ placeholder.
 
 #### L4
 
+Creación del lote de prueba válido de programa realista `tests/entrega1/pendientes/validos/04_programa_realista.c`:
+- **Cobertura integral de la gramática:** Atraviesa de punta a punta todas las producciones sintácticas del sublenguaje (declaraciones globales, inicializadores de arreglos, funciones con pasaje por valor y por referencia `&`, arreglos como parámetros `[]`, proposiciones compuestas anidadas `{ ... }`, bucles `while`, selección `if`/`else`, entrada/salida `cin`/`cout`, y expresiones aritmético-lógicas).
+- **Canario de regresión:** Sirve como suite de humo para asegurar que los cambios de instrumentación antipánico en los tickets `N` no rompan la aceptación de programas válidos complejos.
+- **Restricciones del compilador:** Respeta identificadores $\le 8$ caracteres, funciones con prefijo `'f'` para el hack de `factor()`, e indentación exclusiva con espacios.
+
 #### L5
 
 #### L6
