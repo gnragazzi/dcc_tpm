@@ -81,30 +81,31 @@ void error_print(int ne)
 }
 
 
+
 void error_handler(int ne)
 {
-int i;
-hubo_error++;
-if(last_call){
-	if(hubo_error==1) printf("Linea %d - %s\n", nro_linea, linea);
-	else {
-	if(strlen(linea)==2) error_print(errores_x_linea[i]);
-	for(i = 0; i < cant_errores_x_linea; i++)
-		error_print(errores_x_linea[i]);
-	cant_errores_x_linea = 0;}
-}
-else{
-	if(ne == COD_IMP_ERRORES)
+	int i;
+
+	if (ne == COD_IMP_ERRORES || last_call)
 	{
-		printf("Linea %d - %s\n", nro_linea, linea);
-		for(i = 0; i < cant_errores_x_linea; i++)
-			error_print(errores_x_linea[i]);
-		cant_errores_x_linea = 0;
+		if (cant_errores_x_linea > 0)
+		{
+			printf("Linea %d - %s\n", nro_linea, linea);
+			for (i = 0; i < cant_errores_x_linea; i++)
+			{
+				error_print(errores_x_linea[i]);
+			}
+			cant_errores_x_linea = 0;
+		}
 	}
 	else
 	{
-		errores_x_linea [cant_errores_x_linea] = ne;
-		cant_errores_x_linea++;
+		hubo_error++;
+		if (cant_errores_x_linea < E_X_LINEA)
+		{
+			errores_x_linea[cant_errores_x_linea] = ne;
+			cant_errores_x_linea++;
+		}
 	}
-    }
 }
+
