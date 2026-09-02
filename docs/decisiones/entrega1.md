@@ -103,6 +103,11 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 #### L5
 
+Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/01_falta_punto_coma.c` y su archivo `01_falta_punto_coma.esperado`:
+- **Caso de prueba:** Omisión deliberada del punto y coma `;` al final de una proposición de asignación dentro de `main()`.
+- **Comportamiento esperado:** Reporte del `Error 23: Falta ;` sin entrar en bucles infinitos ni generar lecturas indefinidas de memoria.
+- **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que la instrumentación de `proposicion_expresion()` (`N6`) y el fix `T4` estén integrados en `develop`.
+
 #### L6
 
 #### L7
