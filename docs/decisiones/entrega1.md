@@ -119,6 +119,17 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 #### L13
 
+Creación de los 2 lotes de prueba inválidos para evaluación de errores en cascada (Consignas 13 y 14):
+
+- **Misma línea (`09_cascada_misma_linea.c` y `.esperado`):**
+  - **Caso de prueba:** Múltiples errores sintácticos dentro de una misma línea (`a = 5 + ; b = * 3;`).
+  - **Comportamiento esperado:** Acumulación en el buffer `errores_x_linea[]` y reporte de dos instancias del `Error 57` al vaciarse la línea con `COD_IMP_ERRORES`, demostrando que el parser resincroniza en el primer `;` y procesa correctamente la segunda sentencia en la misma línea.
+
+- **Líneas sucesivas (`10_cascada_lineas_sucesivas.c` y `.esperado`):**
+  - **Caso de prueba:** Errores en líneas consecutivas (omisión de `)` en `while(x < 10` seguido de omisión de operando en `x = 5 + ;`).
+  - **Comportamiento esperado:** Reporte del `Error 21: Falta )` en la primera línea y `Error 57: Simbolo inesperado o falta simb. al comienzo de factor` en la segunda. Verifica que la resincronización en el bloque `{` restaura el estado del parser para continuar analizando las siguientes sentencias sin colapso global ni descarte masivo de código válido.
+- **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta que la instrumentación antipánico (`N2`, `N5`) y el fix `T4` estén integrados en `develop`.
+
 #### L14
 
 ### Capa 5 · Cierre
