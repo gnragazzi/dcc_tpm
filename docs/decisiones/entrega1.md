@@ -63,6 +63,24 @@ placeholder.
 
 #### F4
 
+Cálculo y definición en `src/conjuntos.h` de los conjuntos FIRST para la región de declaraciones y sus continuaciones (Consigna 3):
+
+- **No terminales de declaraciones:**
+  - `F_UNIDAD_TRADUCCION`, `F_DECLARACIONES`, `F_DECLARACION`, `F_LISTA_DECLARACIONES`, `F_DECLARACION_PARAMETRO`, `F_LISTA_DECLARACIONES_PARAM`: Comienzan incondicionalmente con `<especificador de tipo>` = `(CVOID | CCHAR | CINT | CFLOAT)`.
+  - `F_DEFINICION_FUNCION`: Inicia con `(` (`CPAR_ABR`).
+  - `F_DECLARADOR_INIT`: `=` para asignación escalar o `[` para dimensión de arreglo = `(CASIGNAC | CCOR_ABR)`.
+  - `F_DECLARACION_VARIABLE`: `FIRST(declarador_init)` o `,` o `;` = `(CASIGNAC | CCOR_ABR | CCOMA | CPYCOMA)`.
+  - `F_ESPECIFICADOR_DECLARACION`: Unión de `F_DEFINICION_FUNCION` y `F_DECLARACION_VARIABLE` = `(CPAR_ABR | CASIGNAC | CCOR_ABR | CCOMA | CPYCOMA)`.
+  - `F_LISTA_DECLARACIONES_INIT`: Identificador de variable = `(CIDENT)`.
+  - `F_LISTA_INICIALIZADORES`: Constante literal = `(CCONS_ENT | CCONS_FLO | CCONS_CAR)`.
+- **Conjuntos de continuación:**
+  - `F_RESTO_LISTA_DECLARACIONES_PARAM`, `F_RESTO_LISTA_DECLARACIONES_INIT`, `F_RESTO_LISTA_INICIALIZADORES`: `,` (`CCOMA`).
+  - `F_OPREF_OPCIONAL`: `&` (`CAMPER`).
+  - `F_ARREGLO_OPCIONAL`: `[` (`CCOR_ABR`).
+  - `F_LIMITE_OPCIONAL`: Constante de dimensión = `(CCONS_ENT | CCONS_FLO | CCONS_CAR)`.
+  - `F_LISTA_OPCIONAL`: Inicializador de lista `= { ... }` = `(CASIGNAC)`.
+- **Cumplimiento de la regla R10:** Todos los macros se expandieron como uniones literales directas de constantes `C_*` para evitar dependencias estáticas cruzadas.
+
 ### Capa 2 · Instrumentación
 
 #### N1
