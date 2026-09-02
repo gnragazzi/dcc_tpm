@@ -105,6 +105,11 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 #### L6
 
+Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/02_falta_coma.c` y su archivo `02_falta_coma.esperado`:
+- **Caso de prueba (Consigna 12):** Omisión deliberada de la coma `,` como separador entre parámetros formales en la declaración de una función (`void f(int a int b)`).
+- **Comportamiento esperado:** Reporte del `Error 64: Falta , ` aplicando el criterio antipánico sobre símbolos separadores fáciles de olvidar.
+- **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que la instrumentación de `lista_declaraciones_param()` (`N9`) y el fix `T4` estén integrados en `develop`.
+
 #### L7
 
 #### L8
