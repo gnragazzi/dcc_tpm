@@ -77,10 +77,10 @@ Se dispara solo, en cada PR. Pasos:
 
 1. `make -C src` — si no compila, el check falla ahí mismo.
 2. Recorre cada `tests/entregaN/`:
-   - **`validos/*.txt`**: corre `./ucc -c archivo`. Falla si aparece cualquier
+   - **`validos/*.c`**: corre `./ucc -c archivo`. Falla si aparece cualquier
      línea `Error N: ...` en la salida (un `Warning N: ...` no cuenta como
      falla).
-   - **`invalidos/*.txt`**: corre `./ucc -c archivo` y compara la salida contra
+   - **`invalidos/*.c`**: corre `./ucc -c archivo` y compara la salida contra
      un archivo `archivo.esperado` (mismo nombre, extensión `.esperado`) con la
      secuencia exacta de errores que tiene que reportar. Corre con timeout, por
      si un bug de recuperación antipánico cuelga el parser en vez de terminar.
@@ -89,15 +89,15 @@ Se dispara solo, en cada PR. Pasos:
 
 ### Cómo agregar un test tuyo
 
-1. Escribí el `.txt` de entrada en `tests/entregaN/pendientes/validos/` o
+1. Escribí el `.c` de entrada en `tests/entregaN/pendientes/validos/` o
    `pendientes/invalidos/`, según corresponda.
 2. Cuando termines la feature que lo resuelve, corré a mano y revisá que la
    salida sea la que esperás:
    ```bash
-   ./src/ucc -c tests/entregaN/pendientes/invalidos/mi_caso.txt
+   ./src/ucc -c tests/entregaN/pendientes/invalidos/mi_caso.c
    ```
 3. Promovelo como parte del **mismo PR** que resuelve la feature:
-   - Si es válido: `git mv` el `.txt` a `validos/`. No necesita `.esperado`.
+   - Si es válido: `git mv` el `.c` a `validos/`. No necesita `.esperado`.
    - Si es inválido: copiá del output real las líneas `Error N: ...` (tal cual
      salen, con espacios y todo — no las tipees de memoria) a
      `mi_caso.esperado`, y movés ambos archivos a `invalidos/`.
