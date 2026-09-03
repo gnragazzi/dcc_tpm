@@ -101,8 +101,8 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 #### L4
 
-Creación del lote de prueba válido de programa realista `tests/entrega1/pendientes/validos/04_programa_realista.txt`:
-- **Extensión `.txt`:** Se mantiene la extensión `.txt` para respetar el contrato del pipeline de CI (`.github/workflows/ci.yml`), que busca exclusivamente `*.txt` al ejecutar la suite de pruebas.
+Creación del lote de prueba válido de programa realista `tests/entrega1/pendientes/validos/04_programa_realista.c`:
+- **Extensión `.c`:** Sigue la convención del pipeline de CI (`.github/workflows/ci.yml`), que busca exclusivamente `*.c` al ejecutar la suite de pruebas.
 - **Cobertura sistemática de la gramática BNFE:**
   - **Alternativas (`|`):**
     - *Operadores relacionales:* Se ejercitan los 6 operadores (`!=`, `==`, `<`, `<=`, `>=`, `>`).
