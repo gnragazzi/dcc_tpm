@@ -1,5 +1,5 @@
 # Expectativa: Error 25: Falta } #
-# Prueba: Omision de llave de cierre en proposicion compuesta #
+# Prueba: Omisión de llave de cierre en proposición compuesta #
 
 void main()
 {
