@@ -1,5 +1,5 @@
 # Expectativa: Error 23: Falta ; #
-# Prueba: Omision de punto y coma al final de una proposicion de asignacion #
+# Prueba: Omision de punto y coma al final de proposicion expresion (asignacion) #
 
 void main()
 {
