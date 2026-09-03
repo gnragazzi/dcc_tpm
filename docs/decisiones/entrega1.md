@@ -119,16 +119,28 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 #### L13
 
-Creación de los 2 lotes de prueba inválidos para evaluación de errores en cascada (Consignas 13 y 14):
+Creación de los 5 lotes de prueba inválidos para evaluación exhaustiva de errores en cascada (Consignas 13 y 14):
 
-- **Misma línea (`09_cascada_misma_linea.c` y `.esperado`):**
-  - **Caso de prueba:** Múltiples errores sintácticos dentro de una misma línea (`a = 5 + ; b = * 3;`).
-  - **Comportamiento esperado:** Acumulación en el buffer `errores_x_linea[]` y reporte de dos instancias del `Error 57` al vaciarse la línea con `COD_IMP_ERRORES`, demostrando que el parser resincroniza en el primer `;` y procesa correctamente la segunda sentencia en la misma línea.
+- **Misma línea — caso canónico (`09_cascada_misma_linea.c` y `.esperado`):**
+  - *Caso de prueba:* Múltiples errores sintácticos dentro de una misma línea (`a = 5 + ; b = * 3;`).
+  - *Comportamiento esperado:* Acumulación en el buffer `errores_x_linea[]` y reporte de dos instancias del `Error 57` al vaciarse la línea con `COD_IMP_ERRORES`, demostrando que el parser resincroniza en el primer `;` y procesa correctamente la segunda sentencia en la misma línea.
 
-- **Líneas sucesivas (`10_cascada_lineas_sucesivas.c` y `.esperado`):**
-  - **Caso de prueba:** Errores en líneas consecutivas (omisión de `)` en `while(x < 10` seguido de omisión de operando en `x = 5 + ;`).
-  - **Comportamiento esperado:** Reporte del `Error 21: Falta )` en la primera línea y `Error 57: Simbolo inesperado o falta simb. al comienzo de factor` en la segunda. Verifica que la resincronización en el bloque `{` restaura el estado del parser para continuar analizando las siguientes sentencias sin colapso global ni descarte masivo de código válido.
-- **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta que la instrumentación antipánico (`N2`, `N5`) y el fix `T4` estén integrados en `develop`.
+- **Líneas sucesivas — caso canónico (`10_cascada_lineas_sucesivas.c` y `.esperado`):**
+  - *Caso de prueba:* Errores en líneas consecutivas (omisión de `)` en `while(x < 10` seguido de omisión de operando en `x = 5 + ;`).
+  - *Comportamiento esperado:* Reporte secuencial de `Error 21: Falta )` en la primera línea y `Error 57: Simbolo inesperado o falta simb. al comienzo de factor` en la segunda. Verifica que la resincronización en el bloque `{` restaura el estado del parser para continuar analizando las siguientes sentencias sin colapso global ni descarte masivo de código válido.
+
+- **Función de cálculo completa con flujo realista (`11_cascada_funcion_completa.c` y `.esperado`):**
+  - *Caso de prueba:* Función algorítmica (`fcalc`) con múltiples errores en diferentes etapas del flujo sintáctico (omisión de `)` en condición de bucle `while`, operador binario sin factor `+ * 2;`, y omisión de `;` en sentencia `return res`).
+  - *Comportamiento esperado:* Reporte ordenado de `Error 21`, `Error 57` y `Error 23`, validando que el parser atraviesa funciones completas recuperándose exitosamente y analizando luego `main()` con 0 errores.
+
+- **Estructuras de control y bloques anidados (`12_cascada_bloques_anidados.c` y `.esperado`):**
+  - *Caso de prueba:* Bucle `while` con proposiciones compuestas e `if/else` anidados que contienen errores en ramas alternativas (símbolo inesperado `* sum` y falta de `;` en rama `if`, y falta de operando en rama `else`).
+  - *Comportamiento esperado:* Reporte de `Error 52`, `Error 23` y `Error 57`, demostrando que la propagación de folset y recuperación antipánico funciona a través de múltiples niveles de anidamiento de llaves.
+
+- **Múltiples errores encadenados en línea densa (`13_cascada_misma_linea_multiple.c` y `.esperado`):**
+  - *Caso de prueba:* Tres errores sintácticos consecutivos en una misma línea densa (`a = 10 + ; ) b = 20; c = * 5;`).
+  - *Comportamiento esperado:* Reporte de `Error 57`, `Error 52` y `Error 57` acumulados en el buffer de línea, verificando la estabilidad ante ráfagas de errores contiguos antes de continuar con sentencias válidas.
+- **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta que la instrumentación antipánico (`N2`, `N4`, `N5`, `N6`) y el fix `T4` estén integrados en `develop`.
 
 #### L14
 
