@@ -1,5 +1,5 @@
-# Expectativa: Errores sintacticos en la misma linea reportados sin bucle infinito #
-# Prueba: Multiples errores en una misma linea (Consignas 13 y 14) #
+# Expectativa: Errores sintácticos en la misma línea reportados sin bucle infinito #
+# Prueba: Múltiples errores en una misma línea (Consignas 13 y 14) #
 
 void main()
 {

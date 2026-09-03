@@ -1,5 +1,5 @@
-# Expectativa: Errores sintacticos en lineas consecutivas recuperados limpiamente #
-# Prueba: Errores en lineas sucesivas con resincronizacion en bloque (Consignas 13 y 14) #
+# Expectativa: Errores sintácticos en líneas consecutivas recuperados limpiamente #
+# Prueba: Errores en líneas sucesivas con resincronización en bloque (Consignas 13 y 14) #
 
 void main()
 {
