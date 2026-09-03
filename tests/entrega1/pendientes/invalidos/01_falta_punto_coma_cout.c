@@ -1,5 +1,5 @@
 # Expectativa: Error 23: Falta ; #
-# Prueba: Omision de punto y coma al final de proposicion de salida cout #
+# Prueba: Omisión de punto y coma al final de proposición de salida cout #
 
 void main()
 {

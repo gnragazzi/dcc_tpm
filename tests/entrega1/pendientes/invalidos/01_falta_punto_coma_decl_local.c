@@ -1,5 +1,5 @@
 # Expectativa: Error 23: Falta ; #
-# Prueba: Omision de punto y coma al final de declaracion local en proposicion compuesta #
+# Prueba: Omisión de punto y coma al final de declaración local en proposición compuesta #
 
 void main()
 {
