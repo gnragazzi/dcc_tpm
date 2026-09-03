@@ -69,13 +69,21 @@ Cálculo y definición en `src/conjuntos.h` de los conjuntos FIRST para la regi�
   - `F_PROPOSICION_SELECCION`: `if` (`CIF`).
   - `F_PROPOSICION_E_S`: `cin`, `cout` (`CIN | COUT`).
   - `F_PROPOSICION_RETORNO`: `return` (`CRETURN`).
-  - `F_PROPOSICION_EXPRESION`: `FIRST(expresion) | { ; }` = `(CMAS | CMENOS | CIDENT | CPAR_ABR | CNEG | CCONS_ENT | CCONS_FLO | CCONS_CAR | CCONS_STR | CPYCOMA)`.
-  - `F_PROPOSICION` y `F_LISTA_PROPOSICIONES`: Unión de todas las alternativas anteriores.
+  - `F_PROPOSICION_EXPRESION`: `(F_EXPRESION | CPYCOMA)`.
+  - `F_PROPOSICION`: Unión de las 6 alternativas de proposición (`F_PROPOSICION_COMPUESTA | F_PROPOSICION_ITERACION | F_PROPOSICION_SELECCION | F_PROPOSICION_E_S | F_PROPOSICION_RETORNO | F_PROPOSICION_EXPRESION`).
+  - `F_LISTA_PROPOSICIONES`: `(F_PROPOSICION)`.
 - **Conjuntos de continuación:**
   - `F_ELSE_OPCIONAL`: `else` (`CELSE`).
   - `F_RESTO_PROP_IN`: `>>` (`CSHR`).
   - `F_RESTO_PROP_OUT`: `<<` (`CSHL`).
-- **Cumplimiento de la regla R10:** Se expandieron los conjuntos como uniones literales de terminales `C_*` para garantizar que sean constantes estáticas independientes.
+- **Decisión de diseño — Descarte de la regla R10 y adopción de composición de macros:**
+  - Por acuerdo de equipo y revisión técnica, se descartó la regla R10 del roadmap (que exigía uniones literales crudas de terminales).
+  - Se adoptó la **composición de macros**, reutilizando `F_EXPRESION` en `F_PROPOSICION_EXPRESION` y componiendo `F_PROPOSICION` a partir de los macros de sus producciones derivadas.
+  - *Ventajas técnicas:*
+    1. **Eliminación de duplicación (DRY):** Evita repetir manualmente la lista de terminales de expresión en múltiples definiciones.
+    2. **Consistencia arquitectónica:** Alinea el diseño con `F2`, donde ya se había utilizado composición (`F_TERMINO (F_FACTOR)`, `F_EXPRESION_SIMPLE (CMAS | CMENOS | F_TERMINO)`).
+    3. **Trazabilidad matemática:** Cada macro refleja directamente las ecuaciones de First de la teoría de compiladores ($\text{FIRST}(\langle\text{proposición expresión}\rangle) = \text{FIRST}(\langle\text{expresión}\rangle) \cup \{ ; \}$).
+    4. **Mantenibilidad:** Cualquier ajuste futuro en las producciones elementales se propaga automáticamente a las capas superiores sin riesgo de desfasajes.
 
 #### F4
 
