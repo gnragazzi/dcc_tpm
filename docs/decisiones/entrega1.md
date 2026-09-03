@@ -108,9 +108,15 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 #### L7
 
 Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/03_falta_parentesis_cierre.c` y su archivo `03_falta_parentesis_cierre.esperado`:
-- **Caso de prueba:** Omisión deliberada del paréntesis de cierre `)` en la condición de una proposición de selección (`if`).
-- **Comportamiento esperado:** Reporte del `Error 21: Falta )` sin entrar en bucles infinitos ni lecturas indefinidas de memoria.
-- **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que la instrumentación de `proposicion_seleccion()` (`N5`) y el fix `T4` estén integrados en `develop`.
+- **Cobertura integral de la BNFE:** El lote cubre exhaustivamente las 5 producciones de la gramática que utilizan paréntesis, omitiendo deliberadamente el paréntesis de cierre `)` en cada una:
+  1. `<definicion_funcion>`: omisión de `)` tras la lista de parámetros (`void fdef(int x {`).
+  2. `<factor>`: omisión de `)` en una expresión parentizada (`a = (b + 1;`).
+  3. `<llamada_funcion>`: omisión de `)` tras la lista de expresiones (`fllam(a;`).
+  4. `<proposicion_seleccion>`: omisión de `)` en la condición de `if` (`if(a > 0 {`).
+  5. `<proposicion_iteracion>`: omisión de `)` en la condición de `while` (`while(a < 10 {`).
+- **Convención de funciones e identificadores:** Se respeta el prefijo `'f'` en los nombres de funciones para satisfacer la bifurcación sintáctica en `factor()` de la 1ª entrega (`sbol->lexema[0] == 'f'`), y la longitud máxima de 8 caracteres en identificadores.
+- **Comportamiento esperado:** Reporte secuencial de 5 instancias de `Error 21: Falta )` (una por cada producción afectada), garantizando una recuperación sintáctica limpia entre sentencias sin entrar en bucles infinitos ni desbordar la pila.
+- **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que los tickets de instrumentación `N2` (factor), `N3` (llamadas), `N5` (control de flujo: if/while), `N8` (definición de función) y la corrección `T4` (`error_handler`) estén completamente integrados en `develop`.
 
 #### L8
 
