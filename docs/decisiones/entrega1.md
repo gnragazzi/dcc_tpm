@@ -115,10 +115,13 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 #### L11
 
-Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/07_simbolo_inesperado_proposicion.c` y su archivo `07_simbolo_inesperado_proposicion.esperado`:
-- **Caso de prueba:** Presencia de un símbolo inválido (`*`) al comienzo de una proposición dentro del cuerpo de una función (`void main() { int a; * a = 5; }`).
-- **Comportamiento esperado:** Reporte del `Error 52: Simbolo inesperado o falta simb. al comienzo de proposicion` (definido en `error.c:52`), al no pertenecer el token al conjunto `FIRST(proposicion)`. La recuperación antipánico debe descartar el token inválido y resincronizar en el identificador `a` para continuar con la asignación.
-- **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que la instrumentación de `proposicion()` (`N4`) y el fix `T4` estén integrados en `develop`.
+Creación de los lotes de prueba inválidos para símbolo inesperado al inicio de proposición (`tests/entrega1/pendientes/invalidos/07_simbolo_inesperado_*.c`) y sus archivos `.esperado`:
+- **Cobertura sistemática de familias de símbolos ajenos a $\text{FIRST}(\langle\text{proposición}\rangle)$ (Consigna 6):**
+  - *Operador binario multiplicativo:* `07_simbolo_inesperado_proposicion.c` (`* a = 5;`). Valida el rechazo de operadores binarios al inicio de una sentencia.
+  - *Delimitador de cierre huérfano:* `07_simbolo_inesperado_delimitador.c` (`) a = 5;`). Valida el rechazo de paréntesis o corchetes de cierre sin apertura previa.
+  - *Separador de puntuación huérfano:* `07_simbolo_inesperado_puntuacion.c` (`, a = 5;`). Valida el rechazo de comas aisladas.
+- **Comportamiento esperado:** Reporte del `Error 52: Simbolo inesperado o falta simb. al comienzo de proposicion` (definido en `error.c:52`) en cada caso, aislando las pruebas en archivos independientes. La recuperación antipánico debe descartar el token inválido y sincronizar en el lookahead válido subsiguiente.
+- **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta que la instrumentación de `proposicion()` (`N4`) y el fix `T4` estén integrados en `develop`.
 
 #### L12
 

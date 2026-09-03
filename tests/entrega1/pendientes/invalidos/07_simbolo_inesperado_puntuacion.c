@@ -1,8 +1,8 @@
 # Expectativa: Error 52: Simbolo inesperado o falta simb. al comienzo de proposicion #
-# Prueba: Operador binario no perteneciente a FIRST(proposicion) al inicio de una proposición #
+# Prueba: Separador coma no perteneciente a FIRST(proposicion) al inicio de una proposición #
 
 void main()
 {
     int a;
-    * a = 5;
+    , a = 5;
 }
