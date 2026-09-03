@@ -101,8 +101,27 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 #### L4
 
-Creación del lote de prueba válido de programa realista `tests/entrega1/pendientes/validos/04_programa_realista.c`:
-- **Cobertura integral de la gramática:** Atraviesa de punta a punta todas las producciones sintácticas del sublenguaje (declaraciones globales, inicializadores de arreglos, funciones con pasaje por valor y por referencia `&`, arreglos como parámetros `[]`, proposiciones compuestas anidadas `{ ... }`, bucles `while`, selección `if`/`else`, entrada/salida `cin`/`cout`, y expresiones aritmético-lógicas).
+Creación del lote de prueba válido de programa realista `tests/entrega1/pendientes/validos/04_programa_realista.txt`:
+- **Extensión `.txt`:** Se mantiene la extensión `.txt` para respetar el contrato del pipeline de CI (`.github/workflows/ci.yml`), que busca exclusivamente `*.txt` al ejecutar la suite de pruebas.
+- **Cobertura sistemática de la gramática BNFE:**
+  - **Alternativas (`|`):**
+    - *Operadores relacionales:* Se ejercitan los 6 operadores (`!=`, `==`, `<`, `<=`, `>=`, `>`).
+    - *Operadores aritméticos y lógicos:* Se ejercitan `+`, `-`, `*`, `/`, `&&`, `||`, negación `!` y unarios `+` y `-`.
+    - *Constantes:* Enteras (`cons_ent`), reales (`cons_float`), de caracter (`cons_car`) y literales de cadena (`cte_str`).
+    - *Especificadores de tipo:* `void`, `char`, `int` y `float` (en variables, parámetros, expresiones y retornos).
+    - *`<declarador init>`:* Asignación directa escalar con constante (`= <constante>`), arreglo con dimensión y con inicializador (`pares[3] = {2, 4, 6}`), arreglo sin dimensión y con inicializador (`primos[] = {3, 5, 7}`), y arreglo con dimensión sin inicializador (`pesos[5]`).
+  - **Opcionales (`[ ]`):**
+    - *Funciones:* Definición y llamada sin argumentos (`finit()`) y con argumentos (`fshow`, `fdiv`, `fcalc`).
+    - *Proposiciones:* Proposición expresión nula (`;`) y proposición expresión con cómputo.
+    - *Selección:* `if` con rama `else` y `if` sin `else`.
+    - *Iteración:* `while` con bloque compuesto anidado y `while` con proposición simple.
+    - *Proposición compuesta:* Bloque vacío (`{}`), bloque con solo declaraciones (`{ int local; }`), bloque con solo proposiciones, y bloque completo con declaraciones y proposiciones.
+  - **Repeticiones (`{ }`):**
+    - *Entrada/Salida:* `cin` con 0 iteraciones (`cin >> dato;`), 1 iteración (`cin >> cant >> base;`) y $\ge 2$ iteraciones (`cin >> a >> b >> c;`). De igual forma para `cout`.
+    - *Inicializadores de arreglo:* Con 1 elemento (`uno[1] = {42}`), 2 elementos (`duo[2] = {10, 20}`) y 3 elementos (`pares[3] = {2, 4, 6}`).
+    - *Declaraciones múltiples:* Líneas con 2, 3 y 4 variables declaradas en la misma instrucción.
+    - *Parámetros:* Funciones con 1, 2 y 3 parámetros.
+    - *Expresiones encadenadas:* Asignaciones múltiples (`a = b = c = 0;`) y expresiones compuestas con múltiples términos y factores.
 - **Canario de regresión:** Sirve como suite de humo para asegurar que los cambios de instrumentación antipánico en los tickets `N` no rompan la aceptación de programas válidos complejos.
 - **Restricciones del compilador:** Respeta identificadores $\le 8$ caracteres, funciones con prefijo `'f'` para el hack de `factor()`, e indentación exclusiva con espacios.
 
