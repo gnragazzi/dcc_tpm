@@ -105,10 +105,14 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 #### L6
 
-Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/02_falta_coma.c` y su archivo `02_falta_coma.esperado`:
-- **Caso de prueba (Consigna 12):** Omisión deliberada de la coma `,` como separador entre parámetros formales en la declaración de una función (`void f(int a int b)`).
-- **Comportamiento esperado:** Reporte del `Error 64: Falta , ` aplicando el criterio antipánico sobre símbolos separadores fáciles de olvidar.
-- **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que la instrumentación de `lista_declaraciones_param()` (`N9`) y el fix `T4` estén integrados en `develop`.
+Creación de los lotes de prueba inválidos para omisión de coma `,` (`tests/entrega1/pendientes/invalidos/02_falta_coma*.c`) y sus archivos `.esperado`:
+- **Cobertura sistemática de producciones BNFE que requieren `,` (Consigna 12):**
+  - *Parámetros formales de función (`lista declaración de parámetros`):* `02_falta_coma.c` (`void f(int a int b)`).
+  - *Declaración múltiple de variables (`lista declaraciones init`):* `02_falta_coma_decl_init.c` (`int a b;`).
+  - *Lista de inicializadores de arreglo (`lista de inicializadores`):* `02_falta_coma_inicializadores.c` (`int arr[2] = {1 2};`).
+  - *Argumentos en llamada a función (`lista de expresiones`):* `02_falta_coma_llamada.c` (`fdup(1 2);`).
+- **Comportamiento esperado:** Reporte de `Error 64: Falta , ` en cada producción separadora, aislando los tests en archivos independientes para no inducir cascadas espurias.
+- **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta que la instrumentación de las funciones correspondientes (`N9` para parámetros, `N10` para declaraciones, `N11` para inicializadores y `N3` para expresiones) y el fix `T4` estén integrados en `develop`.
 
 #### L7
 
