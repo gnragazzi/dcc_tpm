@@ -107,6 +107,11 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 #### L7
 
+Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/03_falta_parentesis_cierre.c` y su archivo `03_falta_parentesis_cierre.esperado`:
+- **Caso de prueba:** Omisión deliberada del paréntesis de cierre `)` en la condición de una proposición de selección (`if`).
+- **Comportamiento esperado:** Reporte del `Error 21: Falta )` sin entrar en bucles infinitos ni lecturas indefinidas de memoria.
+- **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que la instrumentación de `proposicion_seleccion()` (`N5`) y el fix `T4` estén integrados en `develop`.
+
 #### L8
 
 #### L9
