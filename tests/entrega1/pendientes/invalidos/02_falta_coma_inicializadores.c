@@ -1,5 +1,5 @@
 # Expectativa: Error 64: Falta , #
-# Prueba: Omision de coma en lista de inicializadores de arreglo (Consigna 12) #
+# Prueba: Omisión de coma en lista de inicializadores de arreglo (Consigna 12) #
 
 void main()
 {

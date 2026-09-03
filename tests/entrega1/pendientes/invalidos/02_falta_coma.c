@@ -1,5 +1,5 @@
 # Expectativa: Error 64: Falta , #
-# Prueba: Omision de coma entre parametros formales de una funcion (Consigna 12) #
+# Prueba: Omisión de coma entre parámetros formales de una función (Consigna 12) #
 
 void f(int a int b)
 {

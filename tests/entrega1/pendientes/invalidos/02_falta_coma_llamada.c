@@ -1,5 +1,5 @@
 # Expectativa: Error 64: Falta , #
-# Prueba: Omision de coma entre expresiones en llamada a funcion (Consigna 12) #
+# Prueba: Omisión de coma entre expresiones en llamada a función (Consigna 12) #
 
 int fdup(int a, int b)
 {
