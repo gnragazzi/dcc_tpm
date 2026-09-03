@@ -109,10 +109,12 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 #### L8
 
-Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/04_falta_llave_cierre.c` y su archivo `04_falta_llave_cierre.esperado`:
-- **Caso de prueba:** Omisión deliberada de la llave de cierre `}` al final de una proposición compuesta (`void main() { ...`).
-- **Comportamiento esperado:** Reporte del `Error 25: Falta }` (definido en `error.c:37`). Es un caso crítico de recuperación antipánico que debe sincronizar contra el folset heredado (`CEOF`) sin entrar en bucle infinito.
-- **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que la instrumentación de `proposicion_compuesta()` (`N4`) y el fix `T4` estén integrados en `develop`.
+Creación de los lotes de prueba inválidos para omisión de llave de cierre `}` (`tests/entrega1/pendientes/invalidos/04_falta_llave_cierre*.c`) y sus archivos `.esperado`:
+- **Cobertura sistemática de producciones BNFE que utilizan `}`:**
+  - *Proposición compuesta (`<proposición compuesta>`):* `04_falta_llave_cierre.c` (omisión de `}` al final de bloque / función). Es un caso crítico de recuperación antipánico que debe sincronizar contra el folset heredado (`CEOF`) sin entrar en bucle infinito.
+  - *Lista de inicializadores de arreglo (`<declarador init>`):* `04_falta_llave_cierre_init.c` (`int a[] = {1, 2, 3;` omitiendo `}`). Valida la sincronización al cierre de la lista de constantes inicializadoras.
+- **Comportamiento esperado:** Reporte del `Error 25: Falta }` (definido en `error.c:37`) en cada archivo de forma aislada.
+- **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta que la instrumentación de `proposicion_compuesta()` (`N4`), `declarador_init()` (`N10`), `lista_inicializadores()` (`N11`) y el fix `T4` estén integrados en `develop`.
 
 #### L9
 
