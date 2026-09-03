@@ -1,5 +1,5 @@
-# Expectativa: compilacion limpia, 0 errores sintacticos #
-# Prueba: programa realista con cobertura total de la gramatica BNFE #
+# Expectativa: compilación limpia, 0 errores sintácticos #
+# Prueba: programa realista con cobertura total de la gramática BNFE #
 
 int glob = 10;
 float tasa = 2.5;

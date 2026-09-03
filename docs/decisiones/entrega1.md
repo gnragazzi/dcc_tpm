@@ -107,7 +107,7 @@ Creación del lote de prueba válido de programa realista `tests/entrega1/pendie
   - **Alternativas (`|`):**
     - *Operadores relacionales:* Se ejercitan los 6 operadores (`!=`, `==`, `<`, `<=`, `>=`, `>`).
     - *Operadores aritméticos y lógicos:* Se ejercitan `+`, `-`, `*`, `/`, `&&`, `||`, negación `!` y unarios `+` y `-`.
-    - *Constantes:* Enteras (`cons_ent`), reales (`cons_float`), de caracter (`cons_car`) y literales de cadena (`cte_str`).
+    - *Constantes:* Enteras (`cons_ent`), reales (`cons_float`), de carácter (`cons_car`) y literales de cadena (`cte_str`).
     - *Especificadores de tipo:* `void`, `char`, `int` y `float` (en variables, parámetros, expresiones y retornos).
     - *`<declarador init>`:* Asignación directa escalar con constante (`= <constante>`), arreglo con dimensión y con inicializador (`pares[3] = {2, 4, 6}`), arreglo sin dimensión y con inicializador (`primos[] = {3, 5, 7}`), y arreglo con dimensión sin inicializador (`pesos[5]`).
   - **Opcionales (`[ ]`):**
