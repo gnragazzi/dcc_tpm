@@ -66,20 +66,32 @@ placeholder.
 Cálculo y definición en `src/conjuntos.h` de los conjuntos FIRST para la región de declaraciones y sus continuaciones (Consigna 3):
 
 - **No terminales de declaraciones:**
-  - `F_UNIDAD_TRADUCCION`, `F_DECLARACIONES`, `F_DECLARACION`, `F_LISTA_DECLARACIONES`, `F_DECLARACION_PARAMETRO`, `F_LISTA_DECLARACIONES_PARAM`: Comienzan incondicionalmente con `<especificador de tipo>` = `(CVOID | CCHAR | CINT | CFLOAT)`.
+  - `F_ESPECIFICADOR_TIPO`: `(CVOID | CCHAR | CINT | CFLOAT)`.
+  - `F_DECLARACIONES`: `(F_ESPECIFICADOR_TIPO)`.
+  - `F_UNIDAD_TRADUCCION`: `(F_DECLARACIONES)`.
+  - `F_DECLARACION`: `(F_ESPECIFICADOR_TIPO)`.
+  - `F_LISTA_DECLARACIONES`: `(F_DECLARACION)`.
+  - `F_DECLARACION_PARAMETRO`: `(F_ESPECIFICADOR_TIPO)`.
+  - `F_LISTA_DECLARACIONES_PARAM`: `(F_DECLARACION_PARAMETRO)`.
   - `F_DEFINICION_FUNCION`: Inicia con `(` (`CPAR_ABR`).
-  - `F_DECLARADOR_INIT`: `=` para asignación escalar o `[` para dimensión de arreglo = `(CASIGNAC | CCOR_ABR)`.
-  - `F_DECLARACION_VARIABLE`: `FIRST(declarador_init)` o `,` o `;` = `(CASIGNAC | CCOR_ABR | CCOMA | CPYCOMA)`.
-  - `F_ESPECIFICADOR_DECLARACION`: Unión de `F_DEFINICION_FUNCION` y `F_DECLARACION_VARIABLE` = `(CPAR_ABR | CASIGNAC | CCOR_ABR | CCOMA | CPYCOMA)`.
-  - `F_LISTA_DECLARACIONES_INIT`: Identificador de variable = `(CIDENT)`.
-  - `F_LISTA_INICIALIZADORES`: Constante literal = `(CCONS_ENT | CCONS_FLO | CCONS_CAR)`.
+  - `F_DECLARADOR_INIT`: `=` para asignación escalar o `[` para dimensión de arreglo (`CASIGNAC | CCOR_ABR`).
+  - `F_DECLARACION_VARIABLE`: `(F_DECLARADOR_INIT | CCOMA | CPYCOMA)`.
+  - `F_ESPECIFICADOR_DECLARACION`: `(F_DEFINICION_FUNCION | F_DECLARACION_VARIABLE)`.
+  - `F_LISTA_DECLARACIONES_INIT`: Identificador de variable (`CIDENT`).
+  - `F_LISTA_INICIALIZADORES`: `(F_CONSTANTE)`.
 - **Conjuntos de continuación:**
   - `F_RESTO_LISTA_DECLARACIONES_PARAM`, `F_RESTO_LISTA_DECLARACIONES_INIT`, `F_RESTO_LISTA_INICIALIZADORES`: `,` (`CCOMA`).
   - `F_OPREF_OPCIONAL`: `&` (`CAMPER`).
   - `F_ARREGLO_OPCIONAL`: `[` (`CCOR_ABR`).
-  - `F_LIMITE_OPCIONAL`: Constante de dimensión = `(CCONS_ENT | CCONS_FLO | CCONS_CAR)`.
-  - `F_LISTA_OPCIONAL`: Inicializador de lista `= { ... }` = `(CASIGNAC)`.
-- **Cumplimiento de la regla R10:** Todos los macros se expandieron como uniones literales directas de constantes `C_*` para evitar dependencias estáticas cruzadas.
+  - `F_LIMITE_OPCIONAL`: Constante de dimensión (`CCONS_ENT | CCONS_FLO | CCONS_CAR`).
+  - `F_LISTA_OPCIONAL`: Inicializador de lista `= { ... }` (`CASIGNAC`).
+- **Decisión de diseño — Descarte de la regla R10 y adopción de composición de macros:**
+  - Siguiendo el acuerdo de equipo y la observación de revisión técnica de Gerardo (`gnragazzi`), se descartó la regla R10 del roadmap.
+  - Los macros se definen reutilizando los conjuntos ya calculados:
+    - $\text{FIRST}(\langle\text{unidad de traducción}\rangle) = \text{FIRST}(\langle\text{declaraciones}\rangle)$ se expresa directamente como `#define F_UNIDAD_TRADUCCION (F_DECLARACIONES)`.
+    - $\text{FIRST}(\langle\text{especificador de declaración}\rangle)$ se expresa como `(F_DEFINICION_FUNCION | F_DECLARACION_VARIABLE)`.
+    - $\text{FIRST}(\langle\text{lista de inicializadores}\rangle)$ reutiliza `(F_CONSTANTE)`.
+  - *Ventajas técnicas:* Mayor expresividad teórica, eliminación de duplicación de terminales (`DRY`), coherencia estilística global con `F2` y `F3`, y garantía de propagación automática ante eventuales cambios en las producciones base.
 
 ### Capa 2 · Instrumentación
 
