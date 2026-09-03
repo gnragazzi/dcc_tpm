@@ -1,5 +1,5 @@
 # Expectativa: Error 17: Falta identificador #
-# Prueba: Omision de identificador de variable en una declaracion local #
+# Prueba: Omisión de identificador en declaración local de variable #
 
 void main()
 {

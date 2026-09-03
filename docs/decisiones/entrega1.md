@@ -113,10 +113,14 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 #### L10
 
-Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/06_falta_identificador.c` y su archivo `06_falta_identificador.esperado`:
-- **Caso de prueba:** Omisión deliberada del nombre de la variable en una declaración local (`int ;`) dentro de `main()`.
-- **Comportamiento esperado:** Reporte del `Error 17: Falta identificador` (definido en `error.c:29`), emitido al fallar el `match(CIDENT, 17)` tras consumir el especificador de tipo.
-- **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que la instrumentación de `lista_declaraciones_init()` (`N10`) y el fix `T4` estén integrados en `develop`.
+Creación de los lotes de prueba inválidos para omisión de identificador (`tests/entrega1/pendientes/invalidos/06_falta_identificador*.c`) y sus archivos `.esperado`:
+- **Cobertura sistemática de producciones BNFE que requieren `ident`:**
+  - *Declaración local de variable (`<lista declaraciones init>`):* `06_falta_identificador.c` (`int ;` en cuerpo de función). Omisión del primer identificador local tras el especificador de tipo.
+  - *Declaración múltiple tras coma (`<lista declaraciones init>`):* `06_falta_identificador_decl_multiple.c` (`int a, ;`). Omisión del identificador tras el separador coma.
+  - *Declaración de parámetro formal (`<declaración de parámetro>`):* `06_falta_identificador_parametro.c` (`void fshow(int)`). Omisión del nombre del parámetro formal en la firma de función.
+  - *Declaración global (`<declaraciones>`):* `06_falta_identificador_global.c` (`int ;` en raíz). Omisión del identificador a nivel de unidad de traducción.
+- **Comportamiento esperado:** Reporte del `Error 17: Falta identificador` (definido en `error.c:29`), emitido al fallar el consumo del identificador tras el tipo o la coma.
+- **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta que la instrumentación de `declaraciones()` (`N7`, `N8`), `declaracion_parametro()` (`N9`), `lista_declaraciones_init()` (`N10`, `N11`) y el fix `T4` estén integrados en `develop`.
 
 #### L11
 
