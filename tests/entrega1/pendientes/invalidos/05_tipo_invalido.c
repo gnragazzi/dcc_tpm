@@ -1,5 +1,5 @@
 # Expectativa: Error 18: Tipo no definido #
-# Prueba: Uso de un tipo inexistente o no soportado en la declaracion de una variable #
+# Prueba: Tipo no soportado en declaración local de proposición compuesta #
 
 void main()
 {

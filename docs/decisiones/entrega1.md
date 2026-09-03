@@ -111,10 +111,13 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 #### L9
 
-Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/05_tipo_invalido.c` y su archivo `05_tipo_invalido.esperado`:
-- **Caso de prueba:** Uso de un especificador de tipo no soportado por el sublenguaje (`double x;`) en una declaración local dentro de `main()`.
-- **Comportamiento esperado:** Reporte del `Error 18: Tipo no definido` (definido en `error.c:30`), al no pertenecer el lookahead (`CIDENT`) al conjunto permitido `CVOID | CCHAR | CINT | CFLOAT`.
-- **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que la instrumentación de `especificador_tipo()` (`N7`) y el fix `T4` estén integrados en `develop`.
+Creación de los lotes de prueba inválidos para especificador de tipo no soportado (`tests/entrega1/pendientes/invalidos/05_tipo_invalido*.c`) y sus archivos `.esperado`:
+- **Cobertura sistemática de producciones BNFE que utilizan `<especificador de tipo>`:**
+  - *Declaración global (`<declaraciones>`):* `05_tipo_invalido_global.c` (`double glob;`). Valida el rechazo de tipo no permitido en la raíz del programa antes del identificador global.
+  - *Declaración de parámetros (`<declaración de parámetro>`):* `05_tipo_invalido_param.c` (`void fshow(double dato)`). Valida el rechazo de tipo no soportado en la lista de parámetros formales.
+  - *Declaración local en proposición compuesta (`<declaración>`):* `05_tipo_invalido.c` (`double x;` dentro de `main()`). Valida el rechazo en variables locales.
+- **Comportamiento esperado:** Reporte del `Error 18: Tipo no definido` (definido en `error.c:30`) en cada contexto, aislando las pruebas en archivos independientes.
+- **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta que la instrumentación de `especificador_tipo()` (`N7`), `declaracion_parametro()` (`N9`), declaraciones locales (`N11`) y el fix `T4` estén integrados en `develop`.
 
 #### L10
 
