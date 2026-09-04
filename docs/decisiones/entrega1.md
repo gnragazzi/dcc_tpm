@@ -472,6 +472,30 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 ## L4
 
+Creación del lote de prueba válido de programa realista `tests/entrega1/pendientes/validos/04_programa_realista.c`:
+- **Extensión `.c`:** Sigue la convención del pipeline de CI (`.github/workflows/ci.yml`), que busca exclusivamente `*.c` al ejecutar la suite de pruebas.
+- **Cobertura sistemática de la gramática BNFE:**
+  - **Alternativas (`|`):**
+    - *Operadores relacionales:* Se ejercitan los 6 operadores (`!=`, `==`, `<`, `<=`, `>=`, `>`).
+    - *Operadores aritméticos y lógicos:* Se ejercitan `+`, `-`, `*`, `/`, `&&`, `||`, negación `!` y unarios `+` y `-`.
+    - *Constantes:* Enteras (`cons_ent`), reales (`cons_float`), de carácter (`cons_car`) y literales de cadena (`cte_str`).
+    - *Especificadores de tipo:* `void`, `char`, `int` y `float` (en variables, parámetros, expresiones y retornos).
+    - *`<declarador init>`:* Asignación directa escalar con constante (`= <constante>`), arreglo con dimensión y con inicializador (`pares[3] = {2, 4, 6}`), arreglo sin dimensión y con inicializador (`primos[] = {3, 5, 7}`), y arreglo con dimensión sin inicializador (`pesos[5]`).
+  - **Opcionales (`[ ]`):**
+    - *Funciones:* Definición y llamada sin argumentos (`finit()`) y con argumentos (`fshow`, `fdiv`, `fcalc`).
+    - *Proposiciones:* Proposición expresión nula (`;`) y proposición expresión con cómputo.
+    - *Selección:* `if` con rama `else` y `if` sin `else`.
+    - *Iteración:* `while` con bloque compuesto anidado y `while` con proposición simple.
+    - *Proposición compuesta:* Bloque vacío (`{}`), bloque con solo declaraciones (`{ int local; }`), bloque con solo proposiciones, y bloque completo con declaraciones y proposiciones.
+  - **Repeticiones (`{ }`):**
+    - *Entrada/Salida:* `cin` con 0 iteraciones (`cin >> dato;`), 1 iteración (`cin >> cant >> base;`) y $\ge 2$ iteraciones (`cin >> a >> b >> c;`). De igual forma para `cout`.
+    - *Inicializadores de arreglo:* Con 1 elemento (`uno[1] = {42}`), 2 elementos (`duo[2] = {10, 20}`) y 3 elementos (`pares[3] = {2, 4, 6}`).
+    - *Declaraciones múltiples:* Líneas con 2, 3 y 4 variables declaradas en la misma instrucción.
+    - *Parámetros:* Funciones con 1, 2 y 3 parámetros.
+    - *Expresiones encadenadas:* Asignaciones múltiples (`a = b = c = 0;`) y expresiones compuestas con múltiples términos y factores.
+- **Canario de regresión:** Sirve como suite de humo para asegurar que los cambios de instrumentación antipánico en los tickets `N` no rompan la aceptación de programas válidos complejos.
+- **Restricciones del compilador:** Respeta identificadores $\le 8$ caracteres, funciones con prefijo `'f'` para el hack de `factor()`, e indentación exclusiva con espacios.
+
 ## L5
 
 ## L6
@@ -489,7 +513,7 @@ Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/03_f
 - **Comportamiento esperado:** Reporte secuencial de 5 instancias de `Error 21: Falta )` (una por cada producción afectada), garantizando una recuperación sintáctica limpia entre sentencias sin entrar en bucles infinitos ni desbordar la pila.
 - **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que los tickets de instrumentación `N2` (factor), `N3` (llamadas), `N5` (control de flujo: if/while), `N8` (definición de función) y la corrección `T4` (`error_handler`) estén completamente integrados en `develop`.
 
-#### L8
+## L8
 
 Creación de los lotes de prueba inválidos para omisión de llave de cierre `}` (`tests/entrega1/pendientes/invalidos/04_falta_llave_cierre*.c`) y sus archivos `.esperado`:
 - **Cobertura sistemática de producciones BNFE que utilizan `}`:**
@@ -499,6 +523,14 @@ Creación de los lotes de prueba inválidos para omisión de llave de cierre `}`
 - **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta que la instrumentación de `proposicion_compuesta()` (`N4`), `declarador_init()` (`N10`), `lista_inicializadores()` (`N11`) y el fix `T4` estén integrados en `develop`.
 
 ## L9
+
+Creación de los lotes de prueba inválidos para especificador de tipo no soportado (`tests/entrega1/pendientes/invalidos/05_tipo_invalido*.c`) y sus archivos `.esperado`:
+- **Cobertura sistemática de producciones BNFE que utilizan `<especificador de tipo>`:**
+  - *Declaración global (`<declaraciones>`):* `05_tipo_invalido_global.c` (`double glob;`). Valida el rechazo de tipo no permitido en la raíz del programa antes del identificador global.
+  - *Declaración de parámetros (`<declaración de parámetro>`):* `05_tipo_invalido_param.c` (`void fshow(double dato)`). Valida el rechazo de tipo no soportado en la lista de parámetros formales.
+  - *Declaración local en proposición compuesta (`<declaración>`):* `05_tipo_invalido.c` (`double x;` dentro de `main()`). Valida el rechazo en variables locales.
+- **Comportamiento esperado:** Reporte del `Error 18: Tipo no definido` (definido en `error.c:30`) en cada contexto, aislando las pruebas en archivos independientes.
+- **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta que la instrumentación de `especificador_tipo()` (`N7`), `declaracion_parametro()` (`N9`), declaraciones locales (`N11`) y el fix `T4` estén integrados en `develop`.
 
 ## L10
 
