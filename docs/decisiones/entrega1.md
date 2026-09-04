@@ -48,6 +48,21 @@ placeholder.
 #### T3
 
 #### T4
+Corrección del procedimiento `error_handler()` en `src/error.c` para garantizar
+salidas limpias y reproducibles:
+
+- **Eliminación de comportamiento indefinido:** Se eliminó el uso de la variable
+  `i` sin inicializar en la rama `last_call`, que generaba lecturas de basura en la
+  pila y errores espurios no deterministas.
+- **Salida limpia en programas válidos:** Las señales de vaciado
+  (`COD_IMP_ERRORES` y `last_call`) ahora verifican `cant_errores_x_linea > 0` antes
+  de imprimir la cabecera `Linea N - ...`, evitando imprimir código en stdout cuando
+  no hubo errores sintácticos.
+- **Unificación de fin de línea y fin de archivo:** Se unificó el mecanismo de
+  reporte para que la última llamada (`last_call`) use la misma lógica consistente que
+  el salto de línea `\n`.
+- **Protección de buffer:** Se agregó la guarda `cant_errores_x_linea < E_X_LINEA`
+  para prevenir desbordamientos de buffer ante ráfagas de errores en una misma línea.
 
 #### T5
 
