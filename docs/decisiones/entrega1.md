@@ -442,8 +442,6 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 ## L4
 
-## L5
-
 Creación del lote de prueba válido de programa realista `tests/entrega1/pendientes/validos/04_programa_realista.c`:
 - **Extensión `.c`:** Sigue la convención del pipeline de CI (`.github/workflows/ci.yml`), que busca exclusivamente `*.c` al ejecutar la suite de pruebas.
 - **Cobertura sistemática de la gramática BNFE:**
@@ -470,6 +468,8 @@ Creación del lote de prueba válido de programa realista `tests/entrega1/pendie
 
 ## L5
 
+## L6
+
 ## L7
 
 Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/03_falta_parentesis_cierre.c` y su archivo `03_falta_parentesis_cierre.esperado`:
@@ -483,7 +483,7 @@ Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/03_f
 - **Comportamiento esperado:** Reporte secuencial de 5 instancias de `Error 21: Falta )` (una por cada producción afectada), garantizando una recuperación sintáctica limpia entre sentencias sin entrar en bucles infinitos ni desbordar la pila.
 - **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que los tickets de instrumentación `N2` (factor), `N3` (llamadas), `N5` (control de flujo: if/while), `N8` (definición de función) y la corrección `T4` (`error_handler`) estén completamente integrados en `develop`.
 
-#### L8
+## L8
 
 Creación de los lotes de prueba inválidos para omisión de llave de cierre `}` (`tests/entrega1/pendientes/invalidos/04_falta_llave_cierre*.c`) y sus archivos `.esperado`:
 - **Cobertura sistemática de producciones BNFE que utilizan `}`:**
