@@ -1,5 +1,5 @@
 # Expectativa: Error 52: Simbolo inesperado o falta simb. al comienzo de proposicion #
-# Prueba: Operador binario no perteneciente a FIRST(proposicion) al inicio de una proposición #
+# Prueba: Operador binario al inicio de proposicion en bloque compuesto #
 
 void main()
 {
