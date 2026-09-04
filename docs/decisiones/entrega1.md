@@ -404,6 +404,39 @@ Cálculo y definición en `src/conjuntos.h` de los conjuntos FIRST para la regi�
 
 ## F4
 
+Cálculo y definición en `src/conjuntos.h` de los conjuntos FIRST para la región de declaraciones y sus continuaciones (Consigna 3):
+
+- **No terminales de declaraciones:**
+  - `F_ESPECIFICADOR_TIPO`: `(CVOID | CCHAR | CINT | CFLOAT)`.
+  - `F_DECLARACIONES`: `(F_ESPECIFICADOR_TIPO)`.
+  - `F_UNIDAD_TRADUCCION`: `(F_DECLARACIONES)`.
+  - `F_DECLARACION`: `(F_ESPECIFICADOR_TIPO)`.
+  - `F_LISTA_DECLARACIONES`: `(F_DECLARACION)`.
+  - `F_DECLARACION_PARAMETRO`: `(F_ESPECIFICADOR_TIPO)`.
+  - `F_LISTA_DECLARACIONES_PARAM`: `(F_DECLARACION_PARAMETRO)`.
+  - `F_DEFINICION_FUNCION`: Inicia con `(` (`CPAR_ABR`).
+  - `F_DECLARADOR_INIT`: `=` para asignación escalar o `[` para dimensión de arreglo (`CASIGNAC | CCOR_ABR`).
+  - `F_DECLARACION_VARIABLE`: `(F_DECLARADOR_INIT | CCOMA | CPYCOMA)`.
+  - `F_ESPECIFICADOR_DECLARACION`: `(F_DEFINICION_FUNCION | F_DECLARACION_VARIABLE)`.
+  - `F_LISTA_DECLARACIONES_INIT`: Identificador de variable (`CIDENT`).
+  - `F_LISTA_INICIALIZADORES`: `(F_CONSTANTE)`.
+- **Conjuntos de continuación:**
+  - `F_RESTO_LISTA_DECLARACIONES_PARAM`, `F_RESTO_LISTA_INICIALIZADORES`: `,` (`CCOMA`).
+  - `F_RESTO_LISTA_DECLARACIONES_INIT`: Identificador (`F_LISTA_DECLARACIONES_INIT`), ya que según la regla BNF $\langle\text{resto lista decl init}\rangle ::= \mathbf{ident} \ \langle\text{declarador init}\rangle \ \langle\text{lista decl init}\rangle$ arranca con identificador (la coma pertenece a $\langle\text{lista decl init}\rangle$).
+  - `F_OPREF_OPCIONAL`: `&` (`CAMPER`).
+  - `F_ARREGLO_OPCIONAL`: `[` (`CCOR_ABR`).
+  - `F_LIMITE_OPCIONAL`: Reutiliza `(F_CONSTANTE)` en concordancia con $\langle\text{límite opcional}\rangle ::= \lambda \mid \langle\text{constante}\rangle$.
+  - `F_LISTA_OPCIONAL`: Inicializador de lista `= { ... }` (`CASIGNAC`).
+- **Decisión de diseño — Descarte de la regla R10 y adopción de composición de macros:**
+  - Siguiendo el acuerdo de equipo y la observación de revisión técnica de Gerardo (`gnragazzi`), se descartó la regla R10 del roadmap.
+  - Los macros se definen reutilizando los conjuntos ya calculados:
+    - $\text{FIRST}(\langle\text{unidad de traducción}\rangle) = \text{FIRST}(\langle\text{declaraciones}\rangle)$ se expresa directamente como `#define F_UNIDAD_TRADUCCION (F_DECLARACIONES)`.
+    - $\text{FIRST}(\langle\text{especificador de declaración}\rangle)$ se expresa como `(F_DEFINICION_FUNCION | F_DECLARACION_VARIABLE)`.
+    - $\text{FIRST}(\langle\text{lista de inicializadores}\rangle)$ reutiliza `(F_CONSTANTE)`.
+    - $\text{FIRST}(\langle\text{límite opcional}\rangle)$ reutiliza `(F_CONSTANTE)`.
+    - $\text{FIRST}(\langle\text{resto lista decl init}\rangle)$ reutiliza `(F_LISTA_DECLARACIONES_INIT)`.
+  - *Ventajas técnicas:* Mayor expresividad teórica, eliminación de duplicación de terminales (`DRY`), coherencia estilística global con `F2` y `F3`, y garantía de propagación automática ante eventuales cambios en las producciones base.
+
 # Capa 2 · Instrumentación
 
 ## N1
@@ -442,6 +475,30 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 ## L4
 
+Creación del lote de prueba válido de programa realista `tests/entrega1/pendientes/validos/04_programa_realista.c`:
+- **Extensión `.c`:** Sigue la convención del pipeline de CI (`.github/workflows/ci.yml`), que busca exclusivamente `*.c` al ejecutar la suite de pruebas.
+- **Cobertura sistemática de la gramática BNFE:**
+  - **Alternativas (`|`):**
+    - *Operadores relacionales:* Se ejercitan los 6 operadores (`!=`, `==`, `<`, `<=`, `>=`, `>`).
+    - *Operadores aritméticos y lógicos:* Se ejercitan `+`, `-`, `*`, `/`, `&&`, `||`, negación `!` y unarios `+` y `-`.
+    - *Constantes:* Enteras (`cons_ent`), reales (`cons_float`), de carácter (`cons_car`) y literales de cadena (`cte_str`).
+    - *Especificadores de tipo:* `void`, `char`, `int` y `float` (en variables, parámetros, expresiones y retornos).
+    - *`<declarador init>`:* Asignación directa escalar con constante (`= <constante>`), arreglo con dimensión y con inicializador (`pares[3] = {2, 4, 6}`), arreglo sin dimensión y con inicializador (`primos[] = {3, 5, 7}`), y arreglo con dimensión sin inicializador (`pesos[5]`).
+  - **Opcionales (`[ ]`):**
+    - *Funciones:* Definición y llamada sin argumentos (`finit()`) y con argumentos (`fshow`, `fdiv`, `fcalc`).
+    - *Proposiciones:* Proposición expresión nula (`;`) y proposición expresión con cómputo.
+    - *Selección:* `if` con rama `else` y `if` sin `else`.
+    - *Iteración:* `while` con bloque compuesto anidado y `while` con proposición simple.
+    - *Proposición compuesta:* Bloque vacío (`{}`), bloque con solo declaraciones (`{ int local; }`), bloque con solo proposiciones, y bloque completo con declaraciones y proposiciones.
+  - **Repeticiones (`{ }`):**
+    - *Entrada/Salida:* `cin` con 0 iteraciones (`cin >> dato;`), 1 iteración (`cin >> cant >> base;`) y $\ge 2$ iteraciones (`cin >> a >> b >> c;`). De igual forma para `cout`.
+    - *Inicializadores de arreglo:* Con 1 elemento (`uno[1] = {42}`), 2 elementos (`duo[2] = {10, 20}`) y 3 elementos (`pares[3] = {2, 4, 6}`).
+    - *Declaraciones múltiples:* Líneas con 2, 3 y 4 variables declaradas en la misma instrucción.
+    - *Parámetros:* Funciones con 1, 2 y 3 parámetros.
+    - *Expresiones encadenadas:* Asignaciones múltiples (`a = b = c = 0;`) y expresiones compuestas con múltiples términos y factores.
+- **Canario de regresión:** Sirve como suite de humo para asegurar que los cambios de instrumentación antipánico en los tickets `N` no rompan la aceptación de programas válidos complejos.
+- **Restricciones del compilador:** Respeta identificadores $\le 8$ caracteres, funciones con prefijo `'f'` para el hack de `factor()`, e indentación exclusiva con espacios.
+
 ## L5
 
 ## L6
@@ -473,7 +530,7 @@ Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/03_f
 - **Comportamiento esperado:** Reporte secuencial de 5 instancias de `Error 21: Falta )` (una por cada producción afectada), garantizando una recuperación sintáctica limpia entre sentencias sin entrar en bucles infinitos ni desbordar la pila.
 - **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que los tickets de instrumentación `N2` (factor), `N3` (llamadas), `N5` (control de flujo: if/while), `N8` (definición de función) y la corrección `T4` (`error_handler`) estén completamente integrados en `develop`.
 
-#### L8
+## L8
 
 Creación de los lotes de prueba inválidos para omisión de llave de cierre `}` (`tests/entrega1/pendientes/invalidos/04_falta_llave_cierre*.c`) y sus archivos `.esperado`:
 - **Cobertura sistemática de producciones BNFE que utilizan `}`:**
@@ -484,6 +541,14 @@ Creación de los lotes de prueba inválidos para omisión de llave de cierre `}`
 
 ## L9
 
+Creación de los lotes de prueba inválidos para especificador de tipo no soportado (`tests/entrega1/pendientes/invalidos/05_tipo_invalido*.c`) y sus archivos `.esperado`:
+- **Cobertura sistemática de producciones BNFE que utilizan `<especificador de tipo>`:**
+  - *Declaración global (`<declaraciones>`):* `05_tipo_invalido_global.c` (`double glob;`). Valida el rechazo de tipo no permitido en la raíz del programa antes del identificador global.
+  - *Declaración de parámetros (`<declaración de parámetro>`):* `05_tipo_invalido_param.c` (`void fshow(double dato)`). Valida el rechazo de tipo no soportado en la lista de parámetros formales.
+  - *Declaración local en proposición compuesta (`<declaración>`):* `05_tipo_invalido.c` (`double x;` dentro de `main()`). Valida el rechazo en variables locales.
+- **Comportamiento esperado:** Reporte del `Error 18: Tipo no definido` (definido en `error.c:30`) en cada contexto, aislando las pruebas en archivos independientes.
+- **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta que la instrumentación de `especificador_tipo()` (`N7`), `declaracion_parametro()` (`N9`), declaraciones locales (`N11`) y el fix `T4` estén integrados en `develop`.
+
 ## L10
 
 ## L11
@@ -491,6 +556,29 @@ Creación de los lotes de prueba inválidos para omisión de llave de cierre `}`
 ## L12
 
 ## L13
+
+Creación de los 5 lotes de prueba inválidos para evaluación exhaustiva de errores en cascada (Consignas 13 y 14):
+
+- **Misma línea — caso canónico (`09_cascada_misma_linea.c` y `.esperado`):**
+  - *Caso de prueba:* Múltiples errores sintácticos dentro de una misma línea (`a = 5 + ; b = * 3;`).
+  - *Comportamiento esperado:* Acumulación en el buffer `errores_x_linea[]` y reporte de dos instancias del `Error 57` al vaciarse la línea con `COD_IMP_ERRORES`, demostrando que el parser resincroniza en el primer `;` y procesa correctamente la segunda sentencia en la misma línea.
+
+- **Líneas sucesivas — caso canónico (`10_cascada_lineas_sucesivas.c` y `.esperado`):**
+  - *Caso de prueba:* Errores en líneas consecutivas (omisión de `)` en `while(x < 10` seguido de omisión de operando en `x = 5 + ;`).
+  - *Comportamiento esperado:* Reporte secuencial de `Error 21: Falta )` en la primera línea y `Error 57: Simbolo inesperado o falta simb. al comienzo de factor` en la segunda. Verifica que la resincronización en el bloque `{` restaura el estado del parser para continuar analizando las siguientes sentencias sin colapso global ni descarte masivo de código válido.
+
+- **Función de cálculo completa con flujo realista (`11_cascada_funcion_completa.c` y `.esperado`):**
+  - *Caso de prueba:* Función algorítmica (`fcalc`) con múltiples errores en diferentes etapas del flujo sintáctico (omisión de `)` en condición de bucle `while`, operador binario sin factor `+ * 2;`, y omisión de `;` en sentencia `return res`).
+  - *Comportamiento esperado:* Reporte ordenado de `Error 21`, `Error 57` y `Error 23`, validando que el parser atraviesa funciones completas recuperándose exitosamente y analizando luego `main()` con 0 errores.
+
+- **Estructuras de control y bloques anidados (`12_cascada_bloques_anidados.c` y `.esperado`):**
+  - *Caso de prueba:* Bucle `while` con proposiciones compuestas e `if/else` anidados que contienen errores en ramas alternativas (símbolo inesperado `* sum` y falta de `;` en rama `if`, y falta de operando en rama `else`).
+  - *Comportamiento esperado:* Reporte de `Error 52`, `Error 23` y `Error 57`, demostrando que la propagación de folset y recuperación antipánico funciona a través de múltiples niveles de anidamiento de llaves.
+
+- **Múltiples errores encadenados en línea densa (`13_cascada_misma_linea_multiple.c` y `.esperado`):**
+  - *Caso de prueba:* Tres errores sintácticos consecutivos en una misma línea densa (`a = 10 + ; ) b = 20; c = * 5;`).
+  - *Comportamiento esperado:* Reporte de `Error 57`, `Error 52` y `Error 57` acumulados en el buffer de línea, verificando la estabilidad ante ráfagas de errores contiguos antes de continuar con sentencias válidas.
+- **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta que la instrumentación antipánico (`N2`, `N4`, `N5`, `N6`) y el fix `T4` estén integrados en `develop`.
 
 ## L14
 
