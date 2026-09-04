@@ -446,16 +446,18 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 ## L6
 
-Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/02_falta_coma.c` y su archivo `02_falta_coma.esperado`:
-- **Cobertura integral de la BNFE:** El lote cubre exhaustivamente las 5 producciones de la gramática que utilizan coma como separador, omitiéndola deliberadamente en cada una:
-  1. `<declaración de variable>`: omisión en declaración global múltiple (`int a = 1 b = 2;`).
-  2. `<lista declaración de parámetros>`: omisión entre parámetros formales (`void f(int p int q)`).
-  3. `<lista declaraciones init>`: omisión en declaración local múltiple (`int x y;`).
-  4. `<lista de inicializadores>`: omisión en lista de constantes de un arreglo (`int arr[2] = {1 2};`).
-  5. `<lista de expresiones>`: omisión entre argumentos de una llamada (`f(x y);`).
-- **Convención de funciones e identificadores:** Se respeta el prefijo `'f'` en nombres de funciones para la bifurcación sintáctica y la longitud máxima de 8 caracteres.
-- **Comportamiento esperado:** Reporte secuencial de 5 instancias de `Error 64: Falta , `, garantizando la resincronización limpia entre sentencias sin entrar en bucles infinitos.
-- **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que la instrumentación de `N3`, `N9`, `N10`, `N11` y el fix `T4` estén integrados en `develop`.
+Creación de los lotes de prueba inválidos para omisión del separador coma `,` (`tests/entrega1/pendientes/invalidos/02_falta_coma*.c`) y sus respectivos archivos `.esperado`:
+
+- **Cobertura integral y aislada de la BNFE:** Se cubren sistemáticamente las 5 producciones de la gramática donde la coma actúa como separador sintáctico obligatorio, mediante archivos independientes para garantizar el aislamiento de cada fallo y evitar enmascaramientos en la recuperación antipánico:
+  1. `<declaración de variable>`: `02_falta_coma.c` (omisión en declaración global múltiple: `int a = 1 b = 2;`).
+  2. `<lista declaración de parámetros>`: `02_falta_coma_param.c` (omisión entre parámetros formales: `void f(int a int b)`).
+  3. `<lista declaraciones init>`: `02_falta_coma_decl_init.c` (omisión en declaración local múltiple: `int a b;`).
+  4. `<lista de inicializadores>`: `02_falta_coma_inicializadores.c` (omisión en inicializadores de arreglo: `int arr[2] = {1 2};`).
+  5. `<lista de expresiones>`: `02_falta_coma_llamada.c` (omisión entre argumentos de llamada: `fdup(1 2);`).
+- **Aislamiento vs. pruebas en cascada:** Cada caso se valida en un archivo autónomo para comprobar puntualmente la resincronización de su producción sin depender del arrastre de errores previos (alineado con la convención de `L8` y `L9`). Los errores encadenados y múltiples se reservan para `L13`.
+- **Convención de identificadores y funciones:** Se respeta la longitud máxima de 8 caracteres y el prefijo `'f'` en nombres de funciones para la bifurcación de la 1ª entrega.
+- **Comportamiento esperado:** Reporte aislado de `Error 64: Falta , ` en cada lote.
+- **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta la integración de la instrumentación de `N3`, `N9`, `N10`, `N11` y `T4` en `develop`.
 
 
 ## L7
