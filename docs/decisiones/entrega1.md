@@ -404,6 +404,39 @@ Cálculo y definición en `src/conjuntos.h` de los conjuntos FIRST para la regi�
 
 ## F4
 
+Cálculo y definición en `src/conjuntos.h` de los conjuntos FIRST para la región de declaraciones y sus continuaciones (Consigna 3):
+
+- **No terminales de declaraciones:**
+  - `F_ESPECIFICADOR_TIPO`: `(CVOID | CCHAR | CINT | CFLOAT)`.
+  - `F_DECLARACIONES`: `(F_ESPECIFICADOR_TIPO)`.
+  - `F_UNIDAD_TRADUCCION`: `(F_DECLARACIONES)`.
+  - `F_DECLARACION`: `(F_ESPECIFICADOR_TIPO)`.
+  - `F_LISTA_DECLARACIONES`: `(F_DECLARACION)`.
+  - `F_DECLARACION_PARAMETRO`: `(F_ESPECIFICADOR_TIPO)`.
+  - `F_LISTA_DECLARACIONES_PARAM`: `(F_DECLARACION_PARAMETRO)`.
+  - `F_DEFINICION_FUNCION`: Inicia con `(` (`CPAR_ABR`).
+  - `F_DECLARADOR_INIT`: `=` para asignación escalar o `[` para dimensión de arreglo (`CASIGNAC | CCOR_ABR`).
+  - `F_DECLARACION_VARIABLE`: `(F_DECLARADOR_INIT | CCOMA | CPYCOMA)`.
+  - `F_ESPECIFICADOR_DECLARACION`: `(F_DEFINICION_FUNCION | F_DECLARACION_VARIABLE)`.
+  - `F_LISTA_DECLARACIONES_INIT`: Identificador de variable (`CIDENT`).
+  - `F_LISTA_INICIALIZADORES`: `(F_CONSTANTE)`.
+- **Conjuntos de continuación:**
+  - `F_RESTO_LISTA_DECLARACIONES_PARAM`, `F_RESTO_LISTA_INICIALIZADORES`: `,` (`CCOMA`).
+  - `F_RESTO_LISTA_DECLARACIONES_INIT`: Identificador (`F_LISTA_DECLARACIONES_INIT`), ya que según la regla BNF $\langle\text{resto lista decl init}\rangle ::= \mathbf{ident} \ \langle\text{declarador init}\rangle \ \langle\text{lista decl init}\rangle$ arranca con identificador (la coma pertenece a $\langle\text{lista decl init}\rangle$).
+  - `F_OPREF_OPCIONAL`: `&` (`CAMPER`).
+  - `F_ARREGLO_OPCIONAL`: `[` (`CCOR_ABR`).
+  - `F_LIMITE_OPCIONAL`: Reutiliza `(F_CONSTANTE)` en concordancia con $\langle\text{límite opcional}\rangle ::= \lambda \mid \langle\text{constante}\rangle$.
+  - `F_LISTA_OPCIONAL`: Inicializador de lista `= { ... }` (`CASIGNAC`).
+- **Decisión de diseño — Descarte de la regla R10 y adopción de composición de macros:**
+  - Siguiendo el acuerdo de equipo y la observación de revisión técnica de Gerardo (`gnragazzi`), se descartó la regla R10 del roadmap.
+  - Los macros se definen reutilizando los conjuntos ya calculados:
+    - $\text{FIRST}(\langle\text{unidad de traducción}\rangle) = \text{FIRST}(\langle\text{declaraciones}\rangle)$ se expresa directamente como `#define F_UNIDAD_TRADUCCION (F_DECLARACIONES)`.
+    - $\text{FIRST}(\langle\text{especificador de declaración}\rangle)$ se expresa como `(F_DEFINICION_FUNCION | F_DECLARACION_VARIABLE)`.
+    - $\text{FIRST}(\langle\text{lista de inicializadores}\rangle)$ reutiliza `(F_CONSTANTE)`.
+    - $\text{FIRST}(\langle\text{límite opcional}\rangle)$ reutiliza `(F_CONSTANTE)`.
+    - $\text{FIRST}(\langle\text{resto lista decl init}\rangle)$ reutiliza `(F_LISTA_DECLARACIONES_INIT)`.
+  - *Ventajas técnicas:* Mayor expresividad teórica, eliminación de duplicación de terminales (`DRY`), coherencia estilística global con `F2` y `F3`, y garantía de propagación automática ante eventuales cambios en las producciones base.
+
 # Capa 2 · Instrumentación
 
 ## N1
