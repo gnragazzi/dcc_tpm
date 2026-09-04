@@ -446,14 +446,16 @@ Creación del lote de prueba válido `tests/entrega1/validos/l3_llamadas_funcion
 
 ## L6
 
-Creación de los lotes de prueba inválidos para omisión de coma `,` (`tests/entrega1/pendientes/invalidos/02_falta_coma*.c`) y sus archivos `.esperado`:
-- **Cobertura sistemática de producciones BNFE que requieren `,` (Consigna 12):**
-  - *Parámetros formales de función (`lista declaración de parámetros`):* `02_falta_coma.c` (`void f(int a int b)`).
-  - *Declaración múltiple de variables (`lista declaraciones init`):* `02_falta_coma_decl_init.c` (`int a b;`).
-  - *Lista de inicializadores de arreglo (`lista de inicializadores`):* `02_falta_coma_inicializadores.c` (`int arr[2] = {1 2};`).
-  - *Argumentos en llamada a función (`lista de expresiones`):* `02_falta_coma_llamada.c` (`fdup(1 2);`).
-- **Comportamiento esperado:** Reporte de `Error 64: Falta , ` en cada producción separadora, aislando los tests en archivos independientes para no inducir cascadas espurias.
-- **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta que la instrumentación de las funciones correspondientes (`N9` para parámetros, `N10` para declaraciones, `N11` para inicializadores y `N3` para expresiones) y el fix `T4` estén integrados en `develop`.
+Creación del lote de prueba inválido `tests/entrega1/pendientes/invalidos/02_falta_coma.c` y su archivo `02_falta_coma.esperado`:
+- **Cobertura integral de la BNFE:** El lote cubre exhaustivamente las 5 producciones de la gramática que utilizan coma como separador, omitiéndola deliberadamente en cada una:
+  1. `<declaración de variable>`: omisión en declaración global múltiple (`int a = 1 b = 2;`).
+  2. `<lista declaración de parámetros>`: omisión entre parámetros formales (`void f(int p int q)`).
+  3. `<lista declaraciones init>`: omisión en declaración local múltiple (`int x y;`).
+  4. `<lista de inicializadores>`: omisión en lista de constantes de un arreglo (`int arr[2] = {1 2};`).
+  5. `<lista de expresiones>`: omisión entre argumentos de una llamada (`f(x y);`).
+- **Convención de funciones e identificadores:** Se respeta el prefijo `'f'` en nombres de funciones para la bifurcación sintáctica y la longitud máxima de 8 caracteres.
+- **Comportamiento esperado:** Reporte secuencial de 5 instancias de `Error 64: Falta , `, garantizando la resincronización limpia entre sentencias sin entrar en bucles infinitos.
+- **Ubicación en pendientes:** Permanece en `pendientes/invalidos/` hasta que la instrumentación de `N3`, `N9`, `N10`, `N11` y el fix `T4` estén integrados en `develop`.
 
 
 ## L7
