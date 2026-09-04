@@ -562,6 +562,14 @@ Creación de los lotes de prueba inválidos para omisión de identificador (`tes
 
 ## L11
 
+Creación de los lotes de prueba inválidos para símbolo inesperado al inicio de proposición (`tests/entrega1/pendientes/invalidos/07_simbolo_inesperado_*.c`) y sus archivos `.esperado`:
+- **Cobertura sistemática de producciones BNFE y familias de tokens ajenos a FIRST(proposición):**
+  - *Bloque compuesto (`<lista de proposiciones>`):* `07_simbolo_inesperado_proposicion.c` (`* a = 5;`). Valida el rechazo de operadores binarios al inicio de una sentencia.
+  - *Cuerpo de bucle (`<proposición de iteración>`):* `07_simbolo_inesperado_delimitador.c` (`while(a < 10) ) a = a + 1;`). Valida el inicio de proposición tras la condición de iteración con un delimitador huérfano.
+  - *Cuerpo condicional (`<proposición de selección>`):* `07_simbolo_inesperado_puntuacion.c` (`if(a > 0) , a = 5;`). Valida el inicio de proposición tras la condición de selección con un separador coma.
+- **Comportamiento esperado:** Reporte del `Error 52: Simbolo inesperado o falta simb. al comienzo de proposicion` en cada contexto.
+- **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta que la instrumentación de `proposicion()` (`N4`), `proposicion_iteracion()` / `proposicion_seleccion()` (`N5`) y el fix `T4` estén integrados en `develop`.
+
 ## L12
 
 Creación de los lotes de prueba inválidos para error sintáctico dentro de una expresión (`tests/entrega1/pendientes/invalidos/08_error_en_expresion*.c`) y sus archivos `.esperado`:
