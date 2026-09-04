@@ -501,6 +501,17 @@ Creación del lote de prueba válido de programa realista `tests/entrega1/pendie
 
 ## L5
 
+Creación de los lotes de prueba inválidos para omisión de punto y coma `;` (`tests/entrega1/pendientes/invalidos/01_falta_punto_coma*.c`) y sus archivos `.esperado`:
+- **Cobertura sistemática de producciones BNFE que requieren `;`:**
+  - *Proposición de expresión (asignación):* `01_falta_punto_coma.c` (`a = 10` sin `;`).
+  - *Proposición de retorno:* `01_falta_punto_coma_retorno.c` (`return x + 1` sin `;`).
+  - *Proposición de entrada (`cin`):* `01_falta_punto_coma_cin.c` (`cin >> dato` sin `;`).
+  - *Proposición de salida (`cout`):* `01_falta_punto_coma_cout.c` (`cout << val` sin `;`).
+  - *Declaración de variable global:* `01_falta_punto_coma_decl_global.c` (`int glob` sin `;`).
+  - *Declaración local en proposición compuesta:* `01_falta_punto_coma_decl_local.c` (`int local` sin `;`).
+- **Comportamiento esperado:** Reporte de `Error 23: Falta ;` en cada caso, aislando las pruebas en archivos independientes para evitar contaminación o cascadas artificiales entre producciones.
+- **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta que la instrumentación de proposiciones (`N6`), declaraciones globales (`N7`, `N8`, `N10`) y locales (`N11`), junto con el fix `T4`, estén integrados en `develop`.
+
 ## L6
 
 Creación de los lotes de prueba inválidos para omisión del separador coma `,` (`tests/entrega1/pendientes/invalidos/02_falta_coma*.c`) y sus respectivos archivos `.esperado`:
