@@ -564,6 +564,14 @@ Creación de los lotes de prueba inválidos para omisión de identificador (`tes
 
 ## L12
 
+Creación de los lotes de prueba inválidos para error sintáctico dentro de una expresión (`tests/entrega1/pendientes/invalidos/08_error_en_expresion*.c`) y sus archivos `.esperado`:
+- **Cobertura sistemática de los niveles del árbol de expresión BNFE:**
+  - *Nivel aditivo (`<expresión simple>`):* `08_error_en_expresion.c` (`a = 5 + ;`). Omisión de operando derecho tras operador aritmético `+`.
+  - *Nivel multiplicativo (`<término>`):* `08_error_en_expresion_termino.c` (`a = 5 * ;`). Omisión de operando derecho tras operador multiplicativo `*`.
+  - *Nivel relacional (`<expresión>`):* `08_error_en_expresion_relacion.c` (`if (a < )`). Omisión de operando derecho tras operador de relación `<`.
+- **Comportamiento esperado:** Reporte del `Error 57: Simbolo inesperado o falta simb. al comienzo de factor` (definido en `error.c:57`), al encontrar un delimitador cuando el parser espera un operando de `FIRST(factor)`. La recuperación antipánico debe sincronizar en el delimitador de cierre o fin de proposición sin inducir errores espurios en cascada.
+- **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta que la instrumentación de `factor()` (`N2`), `termino()` (`N2`), `expresion()` (`N1`) y el fix `T4` estén integrados en `develop`.
+
 ## L13
 
 Creación de los 5 lotes de prueba inválidos para evaluación exhaustiva de errores en cascada (Consignas 13 y 14):
