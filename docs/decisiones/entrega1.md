@@ -224,9 +224,9 @@ test final y se la invoca con `folset | F_DECLARACION`.
 
 **Por qué el chequeo tiene que existir igual.** Sin él —esté donde esté— un error dentro de
 una iteración no resincroniza a la siguiente: sale del bucle y lo agarra el test final del
-procedimiento de la lista, que ya está afuera. Sobre `int a; ) int b;` dentro de un bloque,
-sin chequeo se descarta `int b;` en silencio; con él se reporta un error y la segunda
-declaración se parsea entera.
+procedimiento de la lista, que ya está afuera. Sobre `int a; xyz int b;` el test final de
+`unidad_traduccion` (`c1 = CEOF`) saltea hasta fin de archivo y se come `int b;`: un error
+reportado, medio archivo descartado en silencio.
 
 **Caso particular: separador olvidable.** Cuando la condición del `{ }` es un separador fácil de
 olvidar, además se ensancha el guardián:
@@ -457,6 +457,43 @@ Cálculo y definición en `src/conjuntos.h` de los conjuntos FIRST para la regi�
 # Capa 2 · Instrumentación
 
 ## N1
+
+Instrumentación de `expresion(set folset)`, `expresion_simple(set folset)` y `termino(set folset)`
+en `src/parser.c`: decisión sobre si el `while` de cada una de las tres necesita test propio, o si
+le alcanza con la condición del propio `while`.
+
+- **Contexto gramatical — las tres producciones abarcadas.** Las tres son de una sola alternativa
+  y su cuerpo siempre termina en una invocación al no terminal inmediatamente inferior, nunca en
+  un match directo a un terminal:
+  - `<expresión> ::= <expresión_simple> { (:= | relop) <expresión_simple> }`
+  - `<expresión_simple> ::= [ + | - ] <término> { (+ | - | ||) <término> }`
+  - `<término> ::= <factor> { (* | / | &&) <factor> }`
+- **Aplicación de la regla 7 (T5).** El test explícito en el bucle es redundante cuando el cuerpo
+  termina en una invocación a un procedimiento que ya lleva test final, invocado con
+  `folset | FIRST(A)` — exactamente el caso de las tres. Una vez que `factor` tenga su test final
+  con ese folset, la garantía se propaga hacia arriba: el retorno de `factor` deja a `termino` en
+  `folset | F_RESTO_TERMINO`, el de `termino` deja a `expresion_simple` en
+  `folset | F_RESTO_EXPRESION_SIMPLE`, y el de `expresion_simple` deja a `expresion` en
+  `folset | F_RESTO_EXPRESION` — siempre antes de evaluar la condición del `while` correspondiente,
+  tanto al entrar como al cerrar cada vuelta. Un `test()` puesto en cualquiera de los tres nunca
+  encontraría el lookahead fuera de `c1`: sería una llamada que jamás reporta ni resincroniza.
+- **Por qué no es automático — contraejemplo de la cátedra.** Las diapositivas de Recuperación de
+  Errores (Observación 2) muestran `<idlist> ::= ID { , ID }*`, donde el `ID` del cuerpo se
+  resuelve con `match(ID)` directo, no con una llamada a un no terminal. Ahí sí hace falta el
+  test en las dos posiciones del bucle: no hay ningún test final subordinado que garantice el
+  folset al volver. La distinción no es "es iteración BNFE", es "el cuerpo termina en llamada a
+  procedimiento con test final coincidente, o en un match crudo".
+- **Dependencia con `N2`.** La garantía completa de la cadena `expresion → expresion_simple →
+  termino → factor` descansa en que `factor()` tenga su test final implementado (pendiente,
+  ticket `N2`): es el único punto de la cadena que matchea terminales directamente (`CCONS_STR`
+  con `scanner()`, el `)` de `(expresión)` con `match()`). Hasta que `N2` cierre, la ausencia de
+  test en los `while` de `expresion`/`expresion_simple`/`termino` es correcta en el diseño pero
+  no está garantizada en el binario actual.
+- **Verificación.** `tests/entrega1/pendientes/validos/05_stress_iteracion_expr.c` (cadena larga
+  en las tres producciones; no debe fallar bajo ninguna versión del `while`) y
+  `tests/entrega1/pendientes/invalidos/08_error_en_expresion_termino_profundo.c` (operando
+  faltante después de 7 iteraciones exitosas de `termino`, para diffear la salida entre la
+  versión con test-en-el-while y sin él una vez integrado `N2`).
 
 ## N2
 
