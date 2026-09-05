@@ -151,12 +151,14 @@ los posibles puntos de reconfiguración de cada alternativa deben ser disjuntos*
   procedimiento **delega** (regla 3), así que esos símbolos no llegan como `c2` propio sino
   dentro del **folset** que recibe `especificador_tipo` — que por la regla 6 es el mismo
   conjunto. La categoría "punto interno" queda para los procedimientos que sí cargan el test.
-- **No**: los símbolos de cierre (`)`, `]`, `}`). Pueden pertenecer a una construcción
-  envolvente, y cuando efectivamente pertenecen ya llegan por el folset heredado. Agregarlos
-  fabrica estructura: con `cout << * ) ;`, meter `CPAR_CIE` en el `c2` de `factor` hace que el
-  parser consuma un paréntesis que nunca se abrió.
-- **No**: en alternancias puras (`factor`), donde el test corre antes de elegir rama y por lo
-  tanto no se puede atribuir el punto interno a ninguna. Ahí `c2 = folset`.
+- **No**: los símbolos de cierre (`)`, `]`, `}`). Un token es punto de reconfiguración de `X`
+  solo si `X` es quien lo **consume**. El `)` lo consumen `llamada_funcion`,
+  `proposicion_iteracion`, `proposicion_seleccion`, `definicion_funcion` y la rama
+  `( <expresión> )` de `factor` — nunca `factor` como alternancia.
+
+  No alcanza con decir que el test corre antes de elegir rama: agregando el token a la
+  etiqueta del `case` la atribución se resuelve, y el `match` de esa rama pasa a forma
+  condicional. Lo que decide es que no hay nada que ganar.
 
 #### 6. Test final y construcción del folset
 
