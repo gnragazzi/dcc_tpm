@@ -100,30 +100,36 @@ void definicion_funcion(set folset)
 
 void lista_declaraciones_param(set folset)
 {
-	declaracion_parametro(PLACEHOLDER);
+	declaracion_parametro(folset | CCOMA | F_DECLARACION_PARAMETRO);
 
-	while(lookahead_in(CCOMA))
+	while(lookahead_in(CCOMA | F_DECLARACION_PARAMETRO))
 	{
-		scanner();
-		declaracion_parametro(PLACEHOLDER);
+		if(lookahead_in(CCOMA))
+			scanner();
+		else
+			error_handler(64);
+
+		declaracion_parametro(folset | CCOMA | F_DECLARACION_PARAMETRO);
 	}
 }
 
 
 void declaracion_parametro(set folset)
 {
-	especificador_tipo(PLACEHOLDER);
+	especificador_tipo(folset | CAMPER | CIDENT);
 
 	if(lookahead_in(CAMPER))
 		scanner();
 
-	match(CIDENT, 10);
+	match(CIDENT, 17);
 
 	if(lookahead_in(CCOR_ABR))
 	{
 		scanner();
-		match(CCOR_CIE, 10);
+		match(CCOR_CIE, 22);
 	}
+
+	test(folset, NADA, 45);
 }
 
 
