@@ -230,7 +230,7 @@ void lista_declaraciones(set folset)
 
 void declaracion(set folset)
 {
-	especificador_tipo(folset | F_LISTA_DECLARACIONES_INIT);
+	especificador_tipo(folset | F_LISTA_DECLARACIONES_INIT | CPYCOMA);
 
 	lista_declaraciones_init(folset | CPYCOMA);
 
