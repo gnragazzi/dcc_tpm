@@ -151,12 +151,14 @@ los posibles puntos de reconfiguración de cada alternativa deben ser disjuntos*
   procedimiento **delega** (regla 3), así que esos símbolos no llegan como `c2` propio sino
   dentro del **folset** que recibe `especificador_tipo` — que por la regla 6 es el mismo
   conjunto. La categoría "punto interno" queda para los procedimientos que sí cargan el test.
-- **No**: los símbolos de cierre (`)`, `]`, `}`). Pueden pertenecer a una construcción
-  envolvente, y cuando efectivamente pertenecen ya llegan por el folset heredado. Agregarlos
-  fabrica estructura: con `cout << * ) ;`, meter `CPAR_CIE` en el `c2` de `factor` hace que el
-  parser consuma un paréntesis que nunca se abrió.
-- **No**: en alternancias puras (`factor`), donde el test corre antes de elegir rama y por lo
-  tanto no se puede atribuir el punto interno a ninguna. Ahí `c2 = folset`.
+- **No**: los símbolos de cierre (`)`, `]`, `}`). Un token es punto de reconfiguración de `X`
+  solo si `X` es quien lo **consume**. El `)` lo consumen `llamada_funcion`,
+  `proposicion_iteracion`, `proposicion_seleccion`, `definicion_funcion` y la rama
+  `( <expresión> )` de `factor` — nunca `factor` como alternancia.
+
+  No alcanza con decir que el test corre antes de elegir rama: agregando el token a la
+  etiqueta del `case` la atribución se resuelve, y el `match` de esa rama pasa a forma
+  condicional. Lo que decide es que no hay nada que ganar.
 
 #### 6. Test final y construcción del folset
 
@@ -196,20 +198,35 @@ folset = CSHL | CPYCOMA | F_EXPRESION | folset(proposicion_e_s)
 
 `F_EXPRESION` está ahí por la regla 7.
 
-#### 7. Iteraciones: test antes del bucle y al final del cuerpo (consigna 12)
+#### 7. Iteraciones: el chequeo en dos posiciones (consigna 12)
 
-La BNFE viene colapsada: donde la BNF tiene `X ::= A <Xtail>` / `<Xtail> ::= λ | A <Xtail>`, el
-parser tiene `A { A }`. La teoría dice qué hace falta para que las dos formas se comporten igual:
+La BNFE viene colapsada: donde la BNF tiene `X ::= A <Xtail>` / `<Xtail> ::= λ | A <Xtail>`,
+el parser tiene `A { A }`. Para que las dos formas se comporten igual hace falta el chequeo
 
-> Se debe colocar un test antes de la repetición y como última sentencia del cuerpo de la
-> iteración.
+    test(FIRST(A) | folset, ∅, ne)
 
-Vale para **todo** `{ }`, tenga separador o no. Sin el test al final del cuerpo, un error dentro
-de una iteración no resincroniza a la iteración siguiente: sale del bucle y lo agarra el test
-final, que ya está afuera. Sobre `int a; xyz int b;` el test final de `unidad_traduccion`
-(`c1 = CEOF`) saltea hasta fin de archivo y se come `int b;`: un error reportado, medio archivo
-descartado en silencio. Aplica igual a `lista_proposiciones` y a `lista_declaraciones`, que
-tampoco tienen separador.
+en dos posiciones: **antes de entrar al bucle** y **al cerrar cada iteración**.
+
+Lo que la teoría no dice es *quién* lo ejecuta. Si el cuerpo termina invocando un
+procedimiento que ya lleva test final, y por la regla 6 se lo invoca con `folset | FIRST(A)`,
+ese test **es** el chequeo pedido: mismo `c1`, mismo `c2 = ∅`, y es la última instrucción que
+corre antes de evaluar la condición del `while` —tanto al entrar como al cerrar cada vuelta.
+Escribirlo otra vez en el bucle es redundante.
+
+**Criterio operativo.** El test explícito en el bucle hace falta cuando se cumple alguna de:
+
+- el cuerpo no termina en invocación a procedimiento (`idlist ::= ID { , ID }*`: puro `match`);
+- el procedimiento del cuerpo no lleva test final (regla 2);
+- se lo invoca con un folset que no incluye `FIRST(A)`.
+
+Si no se cumple ninguna, no se escribe. `lista_declaraciones` cae acá: `declaracion` lleva
+test final y se la invoca con `folset | F_DECLARACION`.
+
+**Por qué el chequeo tiene que existir igual.** Sin él —esté donde esté— un error dentro de
+una iteración no resincroniza a la siguiente: sale del bucle y lo agarra el test final del
+procedimiento de la lista, que ya está afuera. Sobre `int a; ) int b;` dentro de un bloque,
+sin chequeo se descarta `int b;` en silencio; con él se reporta un error y la segunda
+declaración se parsea entera.
 
 **Caso particular: separador olvidable.** Cuando la condición del `{ }` es un separador fácil de
 olvidar, además se ensancha el guardián:
@@ -493,6 +510,38 @@ Instrumentación de los procedimientos `proposicion_iteracion(set folset)` y `pr
 ## N7
 
 ## N8
+
+Instrumentación de los procedimientos `especificador_declaracion(set folset)` y `definicion_funcion(set folset)` en `src/parser.c` para la recuperación antipánica (Consigna 7):
+
+- **Procedimiento `especificador_declaracion(set folset)`:**
+  - **Contexto gramatical y bifurcación:** Corresponde a la regla $\langle\text{especificador de declaración}\rangle ::= \langle\text{definición de función}\rangle \mid \langle\text{declaración de variable}\rangle$, invocada incondicionalmente desde `declaraciones()` tras consumir el tipo y el identificador.
+  - **Justificación de `CPYCOMA` (Guía práctica 8):** $\text{FIRST}(\langle\text{declaración de variable}\rangle)$ incluye a `;` (`CPYCOMA`) debido a que $\langle\text{declaración de variable}\rangle ::= \langle\text{declarador init}\rangle \ \langle\text{lista declaraciones init}\rangle \ \mathbf{;}$, donde tanto $\langle\text{declarador init}\rangle$ como $\langle\text{lista declaraciones init}\rangle$ son anulables ($\to \lambda$). Por ello, en una declaración simple como `int a;`, el token que sigue inmediatamente al identificador es el punto y coma `;`.
+  - **Test inicial:** Al invocarse incondicionalmente y abrir con un `switch` de selección sobre `lookahead()` (sin llamada directa previa):
+    ```c
+    test(F_ESPECIFICADOR_DECLARACION, folset, 43);
+    ```
+    Emite `Error 43: Simbolo inesperado o falta simb. al comienzo de especificador de declaracion` si el lookahead no pertenece a $\text{FIRST}(\langle\text{especificador de declaración}\rangle) = \{ \mathbf{(}, \mathbf{=}, \mathbf{[}, \mathbf{,}, \mathbf{;} \}$.
+  - **Forzar entrada (Regla 8 / Consigna 10):** El `default:` del `switch` se implementa silencioso (`default: break;`) puesto que `test()` ya validó el inicio y resincronizó en $c_1 \cup c_2$. Si el símbolo resincronizado pertenece a $c_2 \setminus c_1$, cae en `default` y finaliza sin emitir mensajes redundantes.
+  - **Propagación del `folset`:** Pasa directamente `folset` a `definicion_funcion(folset)` y a `declaracion_variable(folset)`.
+  - **Test final:** No lleva test final propio, ya que ambas ramas delegan su cierre en los procedimientos subordinados (`proposicion_compuesta` y `;` respectivamente).
+
+- **Procedimiento `definicion_funcion(set folset)`:**
+  - **Contexto gramatical:** $\langle\text{definición de función}\rangle ::= \mathbf{(} \ [ \ \langle\text{lista declaraciones de parámetros}\rangle \ ] \ \mathbf{)} \ \langle\text{proposición compuesta}\rangle$.
+  - **Test inicial:** No lleva test inicial propio (Regla 2), ya que su único call site es `case CPAR_ABR:` dentro de `especificador_declaracion`, quedando su símbolo inicial plenamente garantizado por el llamador.
+  - **Consumo de terminales con códigos canónicos:** Se reemplazan los códigos provisorios `10` por los canónicos de `src/error.c`:
+    - Apertura de parámetros: `match(CPAR_ABR, 20);` (`Error 20: Falta (`).
+    - Cierre de parámetros: `match(CPAR_CIE, 21);` (`Error 21: Falta )`).
+  - **Guardián de parámetros opcionales:** Se evalúa la presencia de parámetros formales mediante el macro unificado:
+    ```c
+    if(lookahead_in(F_LISTA_DECLARACIONES_PARAM))
+    ```
+    reemplazando el chequeo explícito `CVOID | CCHAR | CINT | CFLOAT`.
+  - **Cálculo amplio del folset (Regla 6):** Al invocar a `lista_declaraciones_param`, se construye el conjunto de seguimiento considerando toda la cola restante de la producción:
+    ```c
+    lista_declaraciones_param(folset | CPAR_CIE | F_PROPOSICION_COMPUESTA);
+    ```
+    Al incluir `F_PROPOSICION_COMPUESTA` (`{`), ante la omisión del paréntesis de cierre `)` el análisis de los parámetros no consume inadvertidamente el cuerpo de la función; resincroniza en `{` y permite que `match(CPAR_CIE, 21)` reporte exactamente la falta del paréntesis.
+  - **Delegación del cuerpo y test final:** Se invoca `proposicion_compuesta(folset);`. No lleva test final propio por delegar en el cierre del bloque compuesto (`}`).
 
 ## N9
 

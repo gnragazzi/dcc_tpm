@@ -64,35 +64,37 @@ void especificador_tipo(set folset)
 
 void especificador_declaracion(set folset)
 {
+	test(F_ESPECIFICADOR_DECLARACION, folset, 43);
+
 	switch(lookahead())
 	{
 		case CPAR_ABR:
-			definicion_funcion(PLACEHOLDER);
+			definicion_funcion(folset);
 			break;
 
 		case CASIGNAC:
 		case CCOR_ABR:
 		case CCOMA:
 		case CPYCOMA:
-			declaracion_variable(PLACEHOLDER);
+			declaracion_variable(folset);
 			break;
 
 		default:
-			error_handler(10);
+			break;
 	}
 }
 
 
 void definicion_funcion(set folset)
 {
-	match(CPAR_ABR, 10);
+	match(CPAR_ABR, 20);
 
-	if(lookahead_in(CVOID | CCHAR | CINT | CFLOAT))
-		lista_declaraciones_param(PLACEHOLDER);
+	if(lookahead_in(F_LISTA_DECLARACIONES_PARAM))
+		lista_declaraciones_param(folset | CPAR_CIE | F_PROPOSICION_COMPUESTA);
 
-	match(CPAR_CIE, 10);
+	match(CPAR_CIE, 21);
 
-	proposicion_compuesta(PLACEHOLDER);
+	proposicion_compuesta(folset);
 }
 
 
