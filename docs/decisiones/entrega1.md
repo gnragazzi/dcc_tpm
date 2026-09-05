@@ -457,6 +457,38 @@ Cálculo y definición en `src/conjuntos.h` de los conjuntos FIRST para la regi�
 
 ## N8
 
+Instrumentación de los procedimientos `especificador_declaracion(set folset)` y `definicion_funcion(set folset)` en `src/parser.c` para la recuperación antipánica (Consigna 7):
+
+- **Procedimiento `especificador_declaracion(set folset)`:**
+  - **Contexto gramatical y bifurcación:** Corresponde a la regla $\langle\text{especificador de declaración}\rangle ::= \langle\text{definición de función}\rangle \mid \langle\text{declaración de variable}\rangle$, invocada incondicionalmente desde `declaraciones()` tras consumir el tipo y el identificador.
+  - **Justificación de `CPYCOMA` (Guía práctica 8):** $\text{FIRST}(\langle\text{declaración de variable}\rangle)$ incluye a `;` (`CPYCOMA`) debido a que $\langle\text{declaración de variable}\rangle ::= \langle\text{declarador init}\rangle \ \langle\text{lista declaraciones init}\rangle \ \mathbf{;}$, donde tanto $\langle\text{declarador init}\rangle$ como $\langle\text{lista declaraciones init}\rangle$ son anulables ($\to \lambda$). Por ello, en una declaración simple como `int a;`, el token que sigue inmediatamente al identificador es el punto y coma `;`.
+  - **Test inicial:** Al invocarse incondicionalmente y abrir con un `switch` de selección sobre `lookahead()` (sin llamada directa previa):
+    ```c
+    test(F_ESPECIFICADOR_DECLARACION, folset, 43);
+    ```
+    Emite `Error 43: Simbolo inesperado o falta simb. al comienzo de especificador de declaracion` si el lookahead no pertenece a $\text{FIRST}(\langle\text{especificador de declaración}\rangle) = \{ \mathbf{(}, \mathbf{=}, \mathbf{[}, \mathbf{,}, \mathbf{;} \}$.
+  - **Forzar entrada (Regla 8 / Consigna 10):** El `default:` del `switch` se implementa silencioso (`default: break;`) puesto que `test()` ya validó el inicio y resincronizó en $c_1 \cup c_2$. Si el símbolo resincronizado pertenece a $c_2 \setminus c_1$, cae en `default` y finaliza sin emitir mensajes redundantes.
+  - **Propagación del `folset`:** Pasa directamente `folset` a `definicion_funcion(folset)` y a `declaracion_variable(folset)`.
+  - **Test final:** No lleva test final propio, ya que ambas ramas delegan su cierre en los procedimientos subordinados (`proposicion_compuesta` y `;` respectivamente).
+
+- **Procedimiento `definicion_funcion(set folset)`:**
+  - **Contexto gramatical:** $\langle\text{definición de función}\rangle ::= \mathbf{(} \ [ \ \langle\text{lista declaraciones de parámetros}\rangle \ ] \ \mathbf{)} \ \langle\text{proposición compuesta}\rangle$.
+  - **Test inicial:** No lleva test inicial propio (Regla 2), ya que su único call site es `case CPAR_ABR:` dentro de `especificador_declaracion`, quedando su símbolo inicial plenamente garantizado por el llamador.
+  - **Consumo de terminales con códigos canónicos:** Se reemplazan los códigos provisorios `10` por los canónicos de `src/error.c`:
+    - Apertura de parámetros: `match(CPAR_ABR, 20);` (`Error 20: Falta (`).
+    - Cierre de parámetros: `match(CPAR_CIE, 21);` (`Error 21: Falta )`).
+  - **Guardián de parámetros opcionales:** Se evalúa la presencia de parámetros formales mediante el macro unificado:
+    ```c
+    if(lookahead_in(F_LISTA_DECLARACIONES_PARAM))
+    ```
+    reemplazando el chequeo explícito `CVOID | CCHAR | CINT | CFLOAT`.
+  - **Cálculo amplio del folset (Regla 6):** Al invocar a `lista_declaraciones_param`, se construye el conjunto de seguimiento considerando toda la cola restante de la producción:
+    ```c
+    lista_declaraciones_param(folset | CPAR_CIE | F_PROPOSICION_COMPUESTA);
+    ```
+    Al incluir `F_PROPOSICION_COMPUESTA` (`{`), ante la omisión del paréntesis de cierre `)` el análisis de los parámetros no consume inadvertidamente el cuerpo de la función; resincroniza en `{` y permite que `match(CPAR_CIE, 21)` reporte exactamente la falta del paréntesis.
+  - **Delegación del cuerpo y test final:** Se invoca `proposicion_compuesta(folset);`. No lleva test final propio por delegar en el cierre del bloque compuesto (`}`).
+
 ## N9
 
 ## N10
