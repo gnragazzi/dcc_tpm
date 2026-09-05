@@ -386,15 +386,15 @@ void proposicion_expresion(set folset)
 
 void expresion(set folset)
 {
-	expresion_simple(PLACEHOLDER);
+	expresion_simple(folset | F_RESTO_EXPRESION);
 
-	while(lookahead_in(CASIGNAC | CDISTINTO | CIGUAL | CMENOR | CMEIG | CMAYOR | CMAIG))
+	while(lookahead_in(F_RESTO_EXPRESION))
 	{
 		switch(lookahead())
 		{
 			case CASIGNAC:
 				scanner();
-				expresion_simple(PLACEHOLDER);
+				expresion_simple(folset | F_RESTO_EXPRESION);
 				break;
 
 			case CDISTINTO:
@@ -404,7 +404,7 @@ void expresion(set folset)
 			case CMAYOR:
 			case CMAIG:
 				scanner();
-				expresion_simple(PLACEHOLDER);
+				expresion_simple(folset | F_RESTO_EXPRESION);
 				break;
 		}
 	}
@@ -413,27 +413,29 @@ void expresion(set folset)
 
 void expresion_simple(set folset)
 {
-	if(lookahead_in(CMAS | CMENOS))
+	test(F_EXPRESION_SIMPLE, (folset | F_RESTO_EXPRESION_SIMPLE), 56);
+
+	if(lookahead_in(F_OPERADOR_OPCIONAL))
 		scanner();
 
-	termino(PLACEHOLDER);
+	termino(folset | F_RESTO_EXPRESION_SIMPLE);
 
-	while(lookahead_in(CMAS | CMENOS | COR))
+	while(lookahead_in(F_RESTO_EXPRESION_SIMPLE))
 	{
 		scanner();
-		termino(PLACEHOLDER);
+		termino(folset | F_RESTO_EXPRESION_SIMPLE);
 	}
 }
 
 
 void termino(set folset)
 {
-	factor(PLACEHOLDER);
+	factor(folset | F_RESTO_TERMINO);
 
-	while(lookahead_in(CMULT | CDIV | CAND))
+	while(lookahead_in(F_RESTO_TERMINO))
 	{
 		scanner();
-		factor(PLACEHOLDER);
+		factor(folset | F_RESTO_TERMINO);
 	}
 }
 
