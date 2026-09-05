@@ -198,20 +198,35 @@ folset = CSHL | CPYCOMA | F_EXPRESION | folset(proposicion_e_s)
 
 `F_EXPRESION` está ahí por la regla 7.
 
-#### 7. Iteraciones: test antes del bucle y al final del cuerpo (consigna 12)
+#### 7. Iteraciones: el chequeo en dos posiciones (consigna 12)
 
-La BNFE viene colapsada: donde la BNF tiene `X ::= A <Xtail>` / `<Xtail> ::= λ | A <Xtail>`, el
-parser tiene `A { A }`. La teoría dice qué hace falta para que las dos formas se comporten igual:
+La BNFE viene colapsada: donde la BNF tiene `X ::= A <Xtail>` / `<Xtail> ::= λ | A <Xtail>`,
+el parser tiene `A { A }`. Para que las dos formas se comporten igual hace falta el chequeo
 
-> Se debe colocar un test antes de la repetición y como última sentencia del cuerpo de la
-> iteración.
+    test(FIRST(A) | folset, ∅, ne)
 
-Vale para **todo** `{ }`, tenga separador o no. Sin el test al final del cuerpo, un error dentro
-de una iteración no resincroniza a la iteración siguiente: sale del bucle y lo agarra el test
-final, que ya está afuera. Sobre `int a; xyz int b;` el test final de `unidad_traduccion`
-(`c1 = CEOF`) saltea hasta fin de archivo y se come `int b;`: un error reportado, medio archivo
-descartado en silencio. Aplica igual a `lista_proposiciones` y a `lista_declaraciones`, que
-tampoco tienen separador.
+en dos posiciones: **antes de entrar al bucle** y **al cerrar cada iteración**.
+
+Lo que la teoría no dice es *quién* lo ejecuta. Si el cuerpo termina invocando un
+procedimiento que ya lleva test final, y por la regla 6 se lo invoca con `folset | FIRST(A)`,
+ese test **es** el chequeo pedido: mismo `c1`, mismo `c2 = ∅`, y es la última instrucción que
+corre antes de evaluar la condición del `while` —tanto al entrar como al cerrar cada vuelta.
+Escribirlo otra vez en el bucle es redundante.
+
+**Criterio operativo.** El test explícito en el bucle hace falta cuando se cumple alguna de:
+
+- el cuerpo no termina en invocación a procedimiento (`idlist ::= ID { , ID }*`: puro `match`);
+- el procedimiento del cuerpo no lleva test final (regla 2);
+- se lo invoca con un folset que no incluye `FIRST(A)`.
+
+Si no se cumple ninguna, no se escribe. `lista_declaraciones` cae acá: `declaracion` lleva
+test final y se la invoca con `folset | F_DECLARACION`.
+
+**Por qué el chequeo tiene que existir igual.** Sin él —esté donde esté— un error dentro de
+una iteración no resincroniza a la siguiente: sale del bucle y lo agarra el test final del
+procedimiento de la lista, que ya está afuera. Sobre `int a; ) int b;` dentro de un bloque,
+sin chequeo se descarta `int b;` en silencio; con él se reporta un error y la segunda
+declaración se parsea entera.
 
 **Caso particular: separador olvidable.** Cuando la condición del `{ }` es un separador fácil de
 olvidar, además se ensancha el guardián:
