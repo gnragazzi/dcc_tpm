@@ -461,6 +461,27 @@ Cálculo y definición en `src/conjuntos.h` de los conjuntos FIRST para la regi�
 
 ## N11
 
+Instrumentación de recuperación antipánico para las producciones de inicializadores y declaraciones locales (`lista_inicializadores`, `lista_declaraciones`, `declaracion`) (Consignas 5, 8, 10 y 12):
+
+- **`<declaracion>`:**
+  - *Test inicial:* No lleva. Inicia con una llamada a procedimiento incondicional (`especificador_tipo()`).
+  - *Test final:* SÍ lleva (`test(folset, NADA, 51)`), ya que la regla gramatical culmina en un símbolo terminal (`;`).
+  - *Folsets:*
+    - `especificador_tipo` recibe `(folset | F_LISTA_DECLARACIONES_INIT)`.
+    - `lista_declaraciones_init` recibe `(folset | CPYCOMA)`.
+    - `match(CPYCOMA, 23)` valida y consume el punto y coma final (`Error 23: Falta ;`).
+
+- **`<lista_declaraciones>`:**
+  - *Test inicial y final:* No lleva. Tanto el inicio como el final de la producción delegan en llamadas a `declaracion()`.
+  - *Iteración sin separador:* Se ejecuta en un bucle `while(lookahead_in(F_DECLARACION))` mientras el símbolo entrante corresponda a un especificador de tipo.
+  - *Ausencia de tests en el bucle:* No se incluyen llamadas a `test()` dentro del bucle ni antes de él para evitar falsos positivos al transicionar hacia el bloque de proposiciones o el cierre de llave (`}`). La sincronización ante errores queda garantizada por el propio test final de `declaracion()`, la cual recibe `(folset | F_DECLARACION)`.
+  - *Tratamiento de $\lambda$ (migración BNF $\to$ BNFE):* En la BNF clásica, la lista era anulable ($\to \lambda$). En la BNFE, la posibilidad de cero declaraciones se extrajo como opcional `[ <lista_declaraciones> ]` en `<proposicion_compuesta>`, gobernada por un guardián `if` condicional que saltea la invocación si no hay declaraciones. El corte de la iteración en el `while` absorbe naturalmente la derivación vacía recursiva.
+
+- **`<lista_inicializadores>`:**
+  - *Test inicial y final:* No lleva. Delega en `constante()`.
+  - *Iteración con separador olvidable (Consigna 12):* Se ensancha la condición del bucle a `while(lookahead_in(CCOMA | F_CONSTANTE))`. Si se omite la coma separadora entre constantes (ej. `{1 2}`), se detecta mediante el `lookahead_in(F_CONSTANTE)`, emitiendo `Error 64: Falta , ` mediante `error_handler(64)` sin perder la sincronización ni interrumpir el parseo del arreglo.
+  - *Consumo del delimitador:* La salida del bucle es limpia hacia la llave de cierre `}` (`CLLA_CIE`), cuya verificación y consumo se delegan al `match(CLLA_CIE, 25)` del llamador (`declarador_init`), evitando falsas alarmas (Error 67) dentro de la lista.
+
 # Capa 3 · Lotes
 
 ## L1

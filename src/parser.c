@@ -183,14 +183,29 @@ void declarador_init(set folset)
 }
 
 
+/*
+ * <lista_inicializadores> ::= <constante> { , <constante> }
+ *
+ * 1. Test inicial: NO lleva (inicia con llamada a constante).
+ * 2. Test final: NO lleva (finaliza con llamada a constante).
+ * 3. Iteración con separador olvidable (Consigna 12):
+ *    - Guardián ensanchado (CCOMA | F_CONSTANTE) para detectar la falta de coma.
+ *    - Si falta la coma emite Error 64, pero continúa sin perder la constante siguiente.
+ *    - No lleva test() dentro del bucle para no rechazar la llave de cierre '}' (CLLA_CIE),
+ *      cuya verificación corresponde al match() del llamador (declarador_init).
+ */
 void lista_inicializadores(set folset)
 {
-	constante(PLACEHOLDER);
+	constante(folset | CCOMA | F_CONSTANTE);
 
-	while(lookahead_in(CCOMA))
+	while(lookahead_in(CCOMA | F_CONSTANTE))
 	{
-		scanner();
-		constante(PLACEHOLDER);
+		if(lookahead_in(CCOMA))
+			scanner();
+		else
+			error_handler(64);
+
+		constante(folset | CCOMA | F_CONSTANTE);
 	}
 }
 
@@ -211,22 +226,46 @@ void proposicion_compuesta(set folset)
 }
 
 
+/*
+ * <lista_declaraciones> ::= <declaracion> { <declaracion> }
+ *
+ * 1. Test inicial: NO lleva (inicia con llamada a declaracion).
+ * 2. Test final: NO lleva (finaliza con llamada a declaracion).
+ * 3. Iteración sin separador:
+ *    - El while itera mientras haya tipos de datos (F_DECLARACION).
+ *    - Cada llamada a declaracion recibe (folset | F_DECLARACION) para que su propio
+ *      test final sepa resincronizar a la siguiente declaración o al conjunto de salida.
+ *    - No lleva tests dentro del bucle para no colisionar con el inicio de las proposiciones.
+ */
 void lista_declaraciones(set folset)
 {
-	declaracion(PLACEHOLDER);
+	declaracion(folset | F_DECLARACION);
 
-	while(lookahead_in(CVOID | CCHAR | CINT | CFLOAT))
-		declaracion(PLACEHOLDER);
+	while(lookahead_in(F_DECLARACION))
+	{
+		declaracion(folset | F_DECLARACION);
+	}
 }
 
 
+/*
+ * <declaracion> ::= <especificador_tipo> <lista_declaraciones_init> ;
+ *
+ * 1. Test inicial: NO lleva (inicia con llamada a especificador_tipo).
+ * 2. Test final: SÍ lleva (termina en el terminal ';').
+ * 3. Folsets:
+ *    - especificador_tipo recibe: folset | F_LISTA_DECLARACIONES_INIT
+ *    - lista_declaraciones_init recibe: folset | CPYCOMA
+ */
 void declaracion(set folset)
 {
-	especificador_tipo(PLACEHOLDER);
+	especificador_tipo(folset | F_LISTA_DECLARACIONES_INIT);
 
-	lista_declaraciones_init(PLACEHOLDER);
+	lista_declaraciones_init(folset | CPYCOMA);
 
-	match(CPYCOMA, 10);
+	match(CPYCOMA, 23);
+
+	test(folset, NADA, 51);
 }
 
 
