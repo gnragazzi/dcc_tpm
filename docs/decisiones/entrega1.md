@@ -510,26 +510,44 @@ Instrumentación de los procedimientos `especificador_declaracion(set folset)` y
 
 ## N11
 
-Instrumentación de recuperación antipánico para las producciones de inicializadores y declaraciones locales (`lista_inicializadores`, `lista_declaraciones`, `declaracion`) (Consignas 5, 8, 10 y 12):
+Instrumentación de recuperación antipánico para las producciones de inicializadores y declaraciones locales (`lista_inicializadores`, `lista_declaraciones`, `declaracion`) en `src/parser.c` (Consignas 5, 8, 10 y 12):
 
-- **`<declaracion>`:**
-  - *Test inicial:* No lleva. Inicia con una llamada a procedimiento incondicional (`especificador_tipo()`).
-  - *Test final:* SÍ lleva (`test(folset, NADA, 51)`), ya que la regla gramatical culmina en un símbolo terminal (`;`).
-  - *Folsets:*
-    - `especificador_tipo` recibe `(folset | F_LISTA_DECLARACIONES_INIT)`.
+- **Procedimiento `<declaracion>`:**
+  - **Contexto gramatical:** $\langle\text{declaración}\rangle ::= \langle\text{especificador de tipo}\rangle \ \langle\text{lista declaraciones init}\rangle \ \mathbf{;}$.
+  - **Test inicial:** No lleva test inicial propio (Reglas 2 y 3), ya que inicia con una llamada incondicional a procedimiento (`especificador_tipo()`), delegando en él.
+  - **Propagación del `folset` (Regla 6):**
+    - `especificador_tipo` recibe `(folset | F_LISTA_DECLARACIONES_INIT)`, permitiendo que ante un error en el tipo la recuperación frene en el primer identificador.
     - `lista_declaraciones_init` recibe `(folset | CPYCOMA)`.
-    - `match(CPYCOMA, 23)` valida y consume el punto y coma final (`Error 23: Falta ;`).
+  - **Consumo de terminal y Test final (Reglas 2 y 6):**
+    - Valida y consume el punto y coma final mediante `match(CPYCOMA, 23);` (`Error 23: Falta ;`).
+    - Al culminar en un terminal obligatorio (`;`), ejecuta su test final:
+      ```c
+      test(folset, NADA, 51);
+      ```
+      emitiendo `Error 51: Simbolo inesperado despues de declaracion` si el lookahead posterior al `;` no pertenece a los seguidores legítimos heredados.
 
-- **`<lista_declaraciones>`:**
-  - *Test inicial y final:* No lleva. Tanto el inicio como el final de la producción delegan en llamadas a `declaracion()`.
-  - *Iteración sin separador:* Se ejecuta en un bucle `while(lookahead_in(F_DECLARACION))` mientras el símbolo entrante corresponda a un especificador de tipo.
-  - *Ausencia de tests en el bucle:* No se incluyen llamadas a `test()` dentro del bucle ni antes de él para evitar falsos positivos al transicionar hacia el bloque de proposiciones o el cierre de llave (`}`). La sincronización ante errores queda garantizada por el propio test final de `declaracion()`, la cual recibe `(folset | F_DECLARACION)`.
-  - *Tratamiento de $\lambda$ (migración BNF $\to$ BNFE):* En la BNF clásica, la lista era anulable ($\to \lambda$). En la BNFE, la posibilidad de cero declaraciones se extrajo como opcional `[ <lista_declaraciones> ]` en `<proposicion_compuesta>`, gobernada por un guardián `if` condicional que saltea la invocación si no hay declaraciones. El corte de la iteración en el `while` absorbe naturalmente la derivación vacía recursiva.
+- **Procedimiento `<lista_declaraciones>`:**
+  - **Contexto gramatical:** $\langle\text{lista de declaraciones}\rangle ::= \langle\text{declaración}\rangle \ \{ \langle\text{declaración}\rangle \}$.
+  - **Test inicial y final:** No lleva test inicial ni test final propios (Regla 2), delegando en `declaracion()`.
+  - **Chequeo estructural en dos posiciones por delegación del test final (Regla 7):**
+    - Para que la forma compacta $\mathbf{A} \{ \mathbf{A} \}$ replique exactamente el comportamiento antipánico de la BNF recursiva $\mathbf{A} \to \lambda \mid \mathbf{A} \ \mathbf{A}$, la teoría exige el chequeo $\text{test}(\text{FIRST}(\mathbf{A}) \cup \text{folset}, \emptyset, ne)$ en dos posiciones: antes de entrar a la repetición y como última sentencia del cuerpo de la iteración.
+    - Dado que `declaracion` culmina con `test(folset, NADA, 51)` y en `lista_declaraciones` se la invoca con `folset | F_DECLARACION`, dicho test final evalúa con exactitud:
+      ```c
+      test(folset | F_DECLARACION, NADA, 51);
+      ```
+    - Este test es la última instrucción que corre inmediatamente antes de evaluar la condición del `while(lookahead_in(F_DECLARACION))` (tanto en la primera invocación obligatoria como al cierre de cada vuelta). Por ende, el test final del cuerpo **es** el chequeo pedido por la teoría. Escribir un `test()` explícito dentro del bucle resulta estrictamente redundante según el criterio operativo de la Regla 7.
+  - **Tratamiento de $\lambda$ (migración BNF $\to$ BNFE):** En la BNF clásica, la lista era anulable ($\to \lambda$). En la BNFE, la ausencia de declaraciones locales fue extraída como opcional `[ <lista de declaraciones> ]` en `<proposicion_compuesta>`, gobernada por un guardián `if(lookahead_in(F_DECLARACION))` condicional que saltea la invocación si no hay declaraciones. El corte natural del `while` absorbe la derivación vacía sin necesidad de conjuntos anulables.
 
-- **`<lista_inicializadores>`:**
-  - *Test inicial y final:* No lleva. Delega en `constante()`.
-  - *Iteración con separador olvidable (Consigna 12):* Se ensancha la condición del bucle a `while(lookahead_in(CCOMA | F_CONSTANTE))`. Si se omite la coma separadora entre constantes (ej. `{1 2}`), se detecta mediante el `lookahead_in(F_CONSTANTE)`, emitiendo `Error 64: Falta , ` mediante `error_handler(64)` sin perder la sincronización ni interrumpir el parseo del arreglo.
-  - *Consumo del delimitador:* La salida del bucle es limpia hacia la llave de cierre `}` (`CLLA_CIE`), cuya verificación y consumo se delegan al `match(CLLA_CIE, 25)` del llamador (`declarador_init`), evitando falsas alarmas (Error 67) dentro de la lista.
+- **Procedimiento `<lista_inicializadores>`:**
+  - **Contexto gramatical:** $\langle\text{lista de inicializadores}\rangle ::= \langle\text{constante}\rangle \ \{ \mathbf{,} \ \langle\text{constante}\rangle \}$.
+  - **Test inicial y final:** No lleva test inicial ni test final propios (Regla 2), delegando en `constante()`.
+  - **Iteración con separador olvidable (Consigna 12):**
+    - Se aplica el guardián ensanchado `while(lookahead_in(CCOMA | F_CONSTANTE))` para detectar la omisión de la coma separadora entre constantes (ej. `{1 2}`).
+    - Si el lookahead es una constante sin coma previa, se emite `error_handler(64);` (`Error 64: Falta , `) y se procesa la constante sin desincronizar la lectura del arreglo.
+  - **Corte autocontenido y propagación del `folset`:**
+    - Cada llamada a `constante` recibe `(folset | CCOMA | F_CONSTANTE)`. De este modo, `constante()` sincroniza contra las constantes sucesivas o contra los seguidores legales heredados en `folset`.
+    - Al finalizar los elementos de la lista, el lookahead pertenece al `folset` heredado. Dado que $\text{folset} \cap (\texttt{CCOMA} \mid \texttt{F\_CONSTANTE}) = \emptyset$, la condición del `while` evalúa falsa y el bucle termina limpiamente sin consumir.
+    - No se incluye ningún `test()` antipánico explícito dentro del bucle: un test con $c_1 = \texttt{CCOMA} \mid \texttt{F\_CONSTANTE}$ rechazaría erróneamente el símbolo legítimo de salida perteneciente a `folset`.
 
 # Capa 3 · Lotes
 

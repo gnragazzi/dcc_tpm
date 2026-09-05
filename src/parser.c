@@ -188,13 +188,15 @@ void declarador_init(set folset)
 /*
  * <lista_inicializadores> ::= <constante> { , <constante> }
  *
- * 1. Test inicial: NO lleva (inicia con llamada a constante).
- * 2. Test final: NO lleva (finaliza con llamada a constante).
- * 3. Iteración con separador olvidable (Consigna 12):
+ * 1. Test inicial y final: NO lleva (delega en constante).
+ * 2. Iteración con separador olvidable (Consigna 12):
  *    - Guardián ensanchado (CCOMA | F_CONSTANTE) para detectar la falta de coma.
  *    - Si falta la coma emite Error 64, pero continúa sin perder la constante siguiente.
- *    - No lleva test() dentro del bucle para no rechazar la llave de cierre '}' (CLLA_CIE),
- *      cuya verificación corresponde al match() del llamador (declarador_init).
+ * 3. Sincronización y corte autocontenido:
+ *    - constante() recibe (folset | CCOMA | F_CONSTANTE).
+ *    - Al terminar los elementos de la lista, el lookahead pertenece al folset heredado;
+ *      la condición del while se hace falsa y el bucle termina limpiamente sin requerir
+ *      test() interno (el cual rechazaría erróneamente el folset de salida).
  */
 void lista_inicializadores(set folset)
 {
@@ -231,13 +233,16 @@ void proposicion_compuesta(set folset)
 /*
  * <lista_declaraciones> ::= <declaracion> { <declaracion> }
  *
- * 1. Test inicial: NO lleva (inicia con llamada a declaracion).
- * 2. Test final: NO lleva (finaliza con llamada a declaracion).
- * 3. Iteración sin separador:
+ * 1. Test inicial y final: NO lleva (delega en declaracion).
+ * 2. Iteración sin separador:
  *    - El while itera mientras haya tipos de datos (F_DECLARACION).
- *    - Cada llamada a declaracion recibe (folset | F_DECLARACION) para que su propio
- *      test final sepa resincronizar a la siguiente declaración o al conjunto de salida.
- *    - No lleva tests dentro del bucle para no colisionar con el inicio de las proposiciones.
+ *    - Cada llamada a declaracion recibe (folset | F_DECLARACION).
+ * 3. Chequeo estructural en dos posiciones (Regla 7):
+ *    - declaracion() termina con test(folset, NADA, 51). Al recibir (folset | F_DECLARACION),
+ *      ese test final ejecuta exactamente test(folset | F_DECLARACION, NADA, 51).
+ *    - Al ser la última sentencia previa a evaluar el while (tanto al entrar como al
+ *      cerrar cada vuelta), satisface el chequeo antipánico exigido por la teoría
+ *      haciendo redundante cualquier test explícito en el bucle.
  */
 void lista_declaraciones(set folset)
 {
