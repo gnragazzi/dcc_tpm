@@ -185,19 +185,6 @@ void declarador_init(set folset)
 }
 
 
-/*
- * <lista_inicializadores> ::= <constante> { , <constante> }
- *
- * 1. Test inicial y final: NO lleva (delega en constante).
- * 2. Iteración con separador olvidable (Consigna 12):
- *    - Guardián ensanchado (CCOMA | F_CONSTANTE) para detectar la falta de coma.
- *    - Si falta la coma emite Error 64, pero continúa sin perder la constante siguiente.
- * 3. Sincronización y corte autocontenido:
- *    - constante() recibe (folset | CCOMA | F_CONSTANTE).
- *    - Al terminar los elementos de la lista, el lookahead pertenece al folset heredado;
- *      la condición del while se hace falsa y el bucle termina limpiamente sin requerir
- *      test() interno (el cual rechazaría erróneamente el folset de salida).
- */
 void lista_inicializadores(set folset)
 {
 	constante(folset | CCOMA | F_CONSTANTE);
@@ -230,20 +217,6 @@ void proposicion_compuesta(set folset)
 }
 
 
-/*
- * <lista_declaraciones> ::= <declaracion> { <declaracion> }
- *
- * 1. Test inicial y final: NO lleva (delega en declaracion).
- * 2. Iteración sin separador:
- *    - El while itera mientras haya tipos de datos (F_DECLARACION).
- *    - Cada llamada a declaracion recibe (folset | F_DECLARACION).
- * 3. Chequeo estructural en dos posiciones (Regla 7):
- *    - declaracion() termina con test(folset, NADA, 51). Al recibir (folset | F_DECLARACION),
- *      ese test final ejecuta exactamente test(folset | F_DECLARACION, NADA, 51).
- *    - Al ser la última sentencia previa a evaluar el while (tanto al entrar como al
- *      cerrar cada vuelta), satisface el chequeo antipánico exigido por la teoría
- *      haciendo redundante cualquier test explícito en el bucle.
- */
 void lista_declaraciones(set folset)
 {
 	declaracion(folset | F_DECLARACION);
@@ -255,15 +228,6 @@ void lista_declaraciones(set folset)
 }
 
 
-/*
- * <declaracion> ::= <especificador_tipo> <lista_declaraciones_init> ;
- *
- * 1. Test inicial: NO lleva (inicia con llamada a especificador_tipo).
- * 2. Test final: SÍ lleva (termina en el terminal ';').
- * 3. Folsets:
- *    - especificador_tipo recibe: folset | F_LISTA_DECLARACIONES_INIT
- *    - lista_declaraciones_init recibe: folset | CPYCOMA
- */
 void declaracion(set folset)
 {
 	especificador_tipo(folset | F_LISTA_DECLARACIONES_INIT);
