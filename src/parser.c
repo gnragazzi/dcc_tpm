@@ -187,12 +187,16 @@ void declarador_init(set folset)
 
 void lista_inicializadores(set folset)
 {
-	constante(PLACEHOLDER);
+	constante(folset | CCOMA | F_CONSTANTE);
 
-	while(lookahead_in(CCOMA))
+	while(lookahead_in(CCOMA | F_CONSTANTE))
 	{
-		scanner();
-		constante(PLACEHOLDER);
+		if(lookahead_in(CCOMA))
+			scanner();
+		else
+			error_handler(64);
+
+		constante(folset | CCOMA | F_CONSTANTE);
 	}
 }
 
@@ -215,20 +219,24 @@ void proposicion_compuesta(set folset)
 
 void lista_declaraciones(set folset)
 {
-	declaracion(PLACEHOLDER);
+	declaracion(folset | F_DECLARACION);
 
-	while(lookahead_in(CVOID | CCHAR | CINT | CFLOAT))
-		declaracion(PLACEHOLDER);
+	while(lookahead_in(F_DECLARACION))
+	{
+		declaracion(folset | F_DECLARACION);
+	}
 }
 
 
 void declaracion(set folset)
 {
-	especificador_tipo(PLACEHOLDER);
+	especificador_tipo(folset | F_LISTA_DECLARACIONES_INIT | CPYCOMA);
 
-	lista_declaraciones_init(PLACEHOLDER);
+	lista_declaraciones_init(folset | CPYCOMA);
 
-	match(CPYCOMA, 10);
+	match(CPYCOMA, 23);
+
+	test(folset, NADA, 51);
 }
 
 
