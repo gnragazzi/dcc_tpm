@@ -449,6 +449,45 @@ Cálculo y definición en `src/conjuntos.h` de los conjuntos FIRST para la regi�
 
 ## N5
 
+Instrumentación de los procedimientos `proposicion_iteracion(set folset)` y `proposicion_seleccion(set folset)` en `src/parser.c` para la recuperación antipánica (Consigna 7):
+
+- **Procedimiento `proposicion_iteracion(set folset)`:**
+  - **Contexto gramatical:** $\langle\text{proposición iteración}\rangle ::= \mathbf{while} \ \mathbf{(} \ \langle\text{expresión}\rangle \ \mathbf{)} \ \langle\text{proposición}\rangle$.
+  - **Test inicial:** No lleva test inicial propio (Regla 2), puesto que su único punto de invocación es la rama `case CWHILE:` dentro de `proposicion()`, quedando su símbolo inicial plenamente garantizado por el llamador.
+  - **Estructura lineal en C (sin bucle `while` interno):** Aunque reconoce la sentencia de iteración del lenguaje fuente, el procedimiento reconocedor se ejecuta de manera estrictamente secuencial y lineal. No aplica la Consigna 12 al no constituir una repetición interna ni poseer listas separadas por puntuación.
+  - **Consumo de terminales canónicos:** Se reemplazan los códigos provisorios `10` por los correspondientes en `src/error.c`:
+    - `match(CWHILE, 27);` (`Error 27: Falta while`).
+    - `match(CPAR_ABR, 20);` (`Error 20: Falta (`).
+    - `match(CPAR_CIE, 21);` (`Error 21: Falta )`).
+  - **Cálculo amplio del follower set (Regla 6):** Al invocar `expresion()`, el follower set acumula toda la cola restante de la producción:
+    ```c
+    expresion(folset | CPAR_CIE | F_PROPOSICION);
+    ```
+    Al incluir `F_PROPOSICION` (`CLLA_ABR`, etc.), si el programador omite el paréntesis de cierre `)` antes del cuerpo del bucle (ej: `while(a < 10 {`), el análisis de la condición frena ordenadamente en `{`, permitiendo que `match(CPAR_CIE, 21)` reporte exactamente la falta del delimitador sin consumir ni descartar el bloque de la proposición.
+  - **Delegación del cuerpo y test final:** Se invoca `proposicion(folset);`, delegando el test final en ella por ser una llamada a procedimiento subordinado al cierre de la producción.
+
+- **Procedimiento `proposicion_seleccion(set folset)`:**
+  - **Contexto gramatical:** $\langle\text{proposición selección}\rangle ::= \mathbf{if} \ \mathbf{(} \ \langle\text{expresión}\rangle \ \mathbf{)} \ \langle\text{proposición}\rangle \ [ \ \mathbf{else} \ \langle\text{proposición}\rangle \ ]$.
+  - **Test inicial:** No lleva test inicial propio (Regla 2), ya que solo es invocado desde `case CIF:` en `proposicion()`.
+  - **Consumo de terminales canónicos:**
+    - `match(CIF, 28);` (`Error 28: Falta if`).
+    - `match(CPAR_ABR, 20);` (`Error 20: Falta (`).
+    - `match(CPAR_CIE, 21);` (`Error 21: Falta )`).
+  - **Cálculo amplio del follower set y tratamiento de la continuación `else` (Regla 6 y nota N5):**
+    - En la condición:
+      ```c
+      expresion(folset | CPAR_CIE | F_PROPOSICION | F_ELSE_OPCIONAL);
+      ```
+    - En la primera proposición (rama `then`): Según la BNF $\langle\text{resto selección}\rangle ::= \mathbf{else} \ \langle\text{proposición}\rangle \mid \lambda$, el conjunto de continuación legítimo tras el cuerpo `then` es `{ else }` (`F_ELSE_OPCIONAL` o `CELSE`), además del `folset` heredado:
+      ```c
+      proposicion(folset | F_ELSE_OPCIONAL);
+      ```
+      Si ocurre un error sintáctico dentro del bloque `then`, la recuperación puede resincronizar en la palabra clave `else` y continuar analizando la rama alternativa sin perderla ni abortar el flujo.
+  - **Rama `else` opcional:**
+    - Se evalúa con el macro de continuación: `if(lookahead_in(F_ELSE_OPCIONAL))`.
+    - Al confirmarse la presencia de `else`, se consume mediante `scanner();` y se procesa la proposición subordinada con el seguimiento original: `proposicion(folset);`.
+  - **Delegación y test final:** Ambas ramas (con o sin `else`) concluyen en una llamada al procedimiento `proposicion()`, por lo que el procedimiento no lleva test final propio.
+
 ## N6
 
 ## N7
