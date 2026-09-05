@@ -549,6 +549,37 @@ Instrumentación de los procedimientos `especificador_declaracion(set folset)` y
 
 ## N9
 
+Instrumentación de los procedimientos `lista_declaraciones_param(set folset)` y `declaracion_parametro(set folset)` en `src/parser.c` para la recuperación antipánica (Consignas 5, 8, 10 y 12):
+
+- **Procedimiento `<declaracion_parametro>`:**
+  - **Contexto gramatical:** $\langle\text{declaración de parámetro}\rangle ::= \langle\text{especificador de tipo}\rangle \ [ \ \mathbf{\&} \ ] \ \mathbf{ident} \ [ \ \mathbf{[} \ \mathbf{]} \ ]$.
+  - **Test inicial (Reglas 2 y 3):** No lleva test inicial propio. Inicia con una llamada incondicional a `especificador_tipo()`, y dado que $\text{FIRST}(\langle\text{declaración de parámetro}\rangle) = \text{FIRST}(\langle\text{especificador de tipo}\rangle) = \text{F\_ESPECIFICADOR\_TIPO}$, delega en él.
+  - **Propagación amplia del `folset` (Regla 6):**
+    - `especificador_tipo` recibe `(folset | CAMPER | CIDENT)`, considerando la cola restante de la producción ($[ \ \& \ ] \ \mathbf{ident}$). Si se omite el especificador de tipo (ej. `void f(& a)` o `void f(a)`), la recuperación frena inmediatamente en `&` o en el identificador, permitiendo recuperar el parámetro completo sin desincronización.
+  - **Doble semántica de los corchetes (Guía práctica 9):**
+    - En la BNFE, los corchetes exteriores $[ \dots ]$ denotan opcionalidad sintáctica, implementada condicionalmente mediante `if(lookahead_in(CCOR_ABR))`. No se ejecuta un `match` incondicional sobre `[` para no invalidar parámetros escalares comunes (`int a`).
+    - Los corchetes interiores `[` y `]` representan los símbolos terminales literales del scanner (`CCOR_ABR` y `CCOR_CIE`). Al detectarse `[`, se consume con `scanner()` y se exige el corchete de cierre mediante el código canónico `match(CCOR_CIE, 22);` (`Error 22: Falta ]`).
+  - **Consumo de identificador con código canónico:** Se utiliza `match(CIDENT, 17);` (`Error 17: Falta identificador`).
+  - **Test final (Reglas 2 y 6):** Culmina en símbolo terminal (ya sea el delimitador `]` en arreglos o el identificador `ident` en escalares). Por ende, ejecuta su test final:
+    ```c
+    test(folset, NADA, 45);
+    ```
+    emitiendo `Error 45: Simbolo inesperado despues de declarar un parametro` ante cualquier lookahead espurio posterior a la definición del parámetro.
+
+- **Procedimiento `<lista_declaraciones_param>`:**
+  - **Contexto gramatical:** $\langle\text{lista declaración de parámetros}\rangle ::= \langle\text{declaración de parámetro}\rangle \ \{ \mathbf{,} \ \langle\text{declaración de parámetro}\rangle \}$.
+  - **Test inicial y final:** No lleva test inicial ni test final propios (Regla 2), delegando en `declaracion_parametro()`.
+  - **Iteración con separador olvidable (Consigna 12):**
+    - La coma `,` es un separador de puntuación susceptible a omisión. Se ensancha el guardián de repetición:
+      ```c
+      while(lookahead_in(CCOMA | F_DECLARACION_PARAMETRO))
+      ```
+    - Si se omite la coma entre parámetros formales (ej. `void f(int a int b)`), el guardián detecta `F_DECLARACION_PARAMETRO` (`int b`), emite `Error 64: Falta , ` con `error_handler(64)` y continúa procesando el siguiente parámetro sin abortar.
+  - **Chequeo estructural en dos posiciones (Regla 7):**
+    - Cada parámetro formal termina con su propio `test(folset, NADA, 45)`.
+    - Al recibir `(folset | CCOMA | F_DECLARACION_PARAMETRO)`, ese test final evalúa la condición de sincronización antipánica justo antes de la evaluación del `while` (al inicio y al cierre de cada vuelta), satisfaciendo la exigencia teórica de la Regla 7 sin necesidad de un `test()` redundante en el cuerpo del bucle.
+  - **Resolución de $\lambda$ (migración BNF $\to$ BNFE):** En la BNF clásica, la lista era anulable ($\to \lambda$). En la BNFE, la posibilidad de funciones sin parámetros (`void f()`) se absorbe en el llamador (`definicion_funcion`) con el guardián `if(lookahead_in(F_LISTA_DECLARACIONES_PARAM))`, y el corte de la iteración en el `while` absorbe la derivación vacía final sin requerir conjuntos anulables.
+
 ## N10
 
 ## N11
