@@ -440,9 +440,6 @@ void factor(set folset)
 {
 	test(F_FACTOR, folset, 57);
 
-	if(!lookahead_in(F_FACTOR))
-		return;
-
 	switch(lookahead())
 	{
 		case CIDENT:
@@ -478,7 +475,7 @@ void factor(set folset)
 			break;
 
 		default:
-			error_handler(57);
+			break;
 	}
 
 	test(folset, 0, 58);

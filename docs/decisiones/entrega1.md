@@ -451,8 +451,7 @@ Instrumentación de los procedimientos `factor(set folset)` y `constante(set fol
     test(F_FACTOR, folset, 57);
     ```
     Emite `Error 57: Simbolo inesperado o falta simb. al comienzo de factor` ante cualquier token que no pertenezca a $\text{FIRST}(\langle\text{factor}\rangle)$.
-  - **Sincronización $c_2$:** Siguiendo la Regla 5 de la bitácora, al tratarse de una alternancia pura sin puntos de recuperación internos determinables antes de elegir rama, $c_2 = \text{folset}$ heredado.
-  - **Guarda de corte temprano (Early Return):** Si tras `test()` el lookahead no pertenece a `F_FACTOR` (es decir, el parser resincronizó en un símbolo perteneciente a `folset`), retorna inmediatamente (`if(!lookahead_in(F_FACTOR)) return;`) para evitar reportar errores espurios adicionales o ejecutar ramas inválidas.
+  - **Sincronización $c_2$ y forzar entrada (Regla 8 / Consigna 10):** Siguiendo la Regla 5 de la bitácora, al tratarse de una alternancia pura sin puntos de recuperación internos determinables antes de elegir rama, $c_2 = \text{folset}$ heredado. Asimismo, en concordancia con la Regla 8, el `default:` del `switch` no vuelve a reportar (`default: break;`) ya que `test()` ya validó y resincronizó en $c_1 \cup c_2$, permitiendo una salida fluida al test final sin requerir guardas redundantes.
   - **Propagación del `folset`:** Se reemplaza el macro `PLACEHOLDER` propagando los follower sets correspondientes a cada call site:
     - En expresión parentizada `( <expresión> )`: `expresion(folset | CPAR_CIE);` y `match(CPAR_CIE, 21);` (reemplazando el código provisorio `10` por `Error 21: Falta )` requerido por `L7`).
     - En negación unaria `! <expresión>`: `expresion(folset);`.
