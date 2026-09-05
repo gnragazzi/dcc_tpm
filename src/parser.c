@@ -531,19 +531,22 @@ void constante(set folset)
 {
 	test(F_CONSTANTE, folset, 62);
 
-	if(!lookahead_in(F_CONSTANTE))
-		return;
-
 	switch(lookahead())
 	{
 		case CCONS_ENT:
+			scanner();
+			break;
+
 		case CCONS_FLO:
+			scanner();
+			break;
+
 		case CCONS_CAR:
 			scanner();
 			break;
 
 		default:
-			error_handler(62);
+			break;
 	}
 
 	test(folset, 0, 63);

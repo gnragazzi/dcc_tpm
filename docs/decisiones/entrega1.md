@@ -471,7 +471,7 @@ Instrumentación de los procedimientos `factor(set folset)` y `constante(set fol
     test(F_CONSTANTE, folset, 62);
     ```
     Emite `Error 62: Simbolo inesperado o falta simb. al comienzo de constante`.
-  - **Guarda y consumo:** Si tras el test el lookahead no es constante, retorna limpiamente. En caso positivo, consume el token literal con `scanner()`.
+  - **Estructura canónica y forzar entrada (Regla 8 / Consigna 10):** Se preservan los tres `case` independientes (`CCONS_ENT`, `CCONS_FLO`, `CCONS_CAR`) con su respectivo `scanner(); break;` para permitir la futura incorporación de acciones semánticas y gramáticas de atributos en las siguientes entregas. En concordancia con la Regla 8 (*Forzar entrada*), el `default:` no vuelve a reportar error (`default: break;`) puesto que `test()` ya validó el inicio y resincronizó en `c1 | c2`.
   - **Test final:** Al ser un procedimiento hoja que concluye consumiendo un terminal literal mediante `scanner()`, se instrumenta el test final según la Regla 6:
     ```c
     test(folset, 0, 63);
