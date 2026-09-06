@@ -621,6 +621,68 @@ Instrumentación de los procedimientos `lista_declaraciones_param(set folset)` y
 
 ## N10
 
+Instrumentación de recuperación antipánico para las producciones de inicialización y declaración de variables (`declarador_init`, `lista_declaraciones_init`, `declaracion_variable`) en `src/parser.c` (Consignas 5, 8, 10 y 12):
+
+- **Procedimiento `<declarador_init>`:**
+  - **Contexto gramatical y contradicción BNF vs BNFE (T6):**
+    - BNFE operativa: $\langle\text{declarador init}\rangle ::= [ \ \mathbf{=} \ \langle\text{constante}\rangle \mid [ \ [ \ \mathbf{cons\_ent} \ ] \ ] \ [ \ \mathbf{=} \ \{ \ \langle\text{lista de inicializadores}\rangle \ \} \ ] \ ]$.
+    - En la BNF impresa, el corchete `[` figuraba erróneamente posterior al `=`. Conforme a `T6`, se respeta la BNFE operativa donde la inicialización escalar (`= <constante>`) y la dimensión/inicialización de arreglos (`[ ... ]`) son alternativas disjuntas.
+  - **Tratamiento de $\lambda$ y Test inicial (Reglas 1 y 2):**
+    - Es un no terminal anulable ($\to \lambda$), ya que una variable o parámetro puede declararse sin dimensión ni inicializador (ej. `int a;` o `int a, b;`).
+    - Al ser invocado incondicionalmente desde `declaracion_variable` y `lista_declaraciones_init`, y no iniciar con llamada a procedimiento, lleva test inicial bajo la cláusula para anulables:
+      $$c_1 = \text{FIRST}(\langle\text{declarador init}\rangle) \cup \text{folset} = \text{F\_DECLARADOR\_INIT} \mid \text{folset}$$
+      $$c_2 = \text{NADA} = 0$$
+      ```c
+      test(F_DECLARADOR_INIT | folset, NADA, 47);
+      ```
+      emitiendo `Error 47: Simbolo inesperado al comienzo de declarador init`.
+    - **`switch` sin `default` (Regla 1 y 8):** Al ser una alternancia con $\lambda$, caer fuera de los `case` (`CASIGNAC` y `CCOR_ABR`) cuando el lookahead pertenece a `folset` representa la derivación vacía legítima. Por lo tanto, no lleva cláusula `default:` que emita error.
+  - **Propagación del `folset` y códigos canónicos (Reglas 6 y 8 / Consigna 10):**
+    - En la rama de asignación escalar `CASIGNAC` (`=`): se consume con `scanner()` y se invoca `constante(folset)`.
+    - En la rama de arreglos `CCOR_ABR` (`[`): se consume con `scanner()`. Si se especifica dimensión opcional entera (`lookahead_in(CCONS_ENT)`), se invoca `constante(CCOR_CIE | CASIGNAC | folset)`. El cierre del corchete valida con `match(CCOR_CIE, 22);` (`Error 22: Falta ]`).
+    - Si a continuación se presenta una inicialización de arreglo (`lookahead_in(CASIGNAC)`): se consume `=`, se valida la apertura con `match(CLLA_ABR, 24);` (`Error 24: Falta {`), se delega la secuencia a `lista_inicializadores(CLLA_CIE | folset);` y se exige la llave de cierre con `match(CLLA_CIE, 25);` (`Error 25: Falta }`).
+  - **Test final:** No lleva test final propio, pues sus ramas concluyen en llamada a procedimiento subordinado (`constante`) o derivan en $\lambda$, delegando la verificación posterior en el llamador.
+
+- **Procedimiento `<lista_declaraciones_init>`:**
+  - **Contexto gramatical:** $\langle\text{lista declaraciones init}\rangle ::= \mathbf{ident} \ \langle\text{declarador init}\rangle \ \{ \ \mathbf{,} \ \mathbf{ident} \ \langle\text{declarador init}\rangle \}$.
+  - **Test inicial y final:** No lleva test inicial ni test final propios (Regla 2), comenzando directamente con la verificación del identificador obligatorio.
+  - **Consumo de terminales:** Valida y consume el identificador inicial y subsiguientes mediante el código canónico `match(CIDENT, 17);` (`Error 17: Falta identificador`).
+  - **Iteración con separador olvidable (Consigna 12):**
+    - La coma `,` es un separador de puntuación susceptible a omisión en declaraciones múltiples (ej. `int a b;`).
+    - Se ensancha el guardián del bucle de repetición:
+      ```c
+      while(lookahead_in(CCOMA | F_LISTA_DECLARACIONES_INIT))
+      ```
+    - Si el lookahead es un identificador (`F_LISTA_DECLARACIONES_INIT`), se emite `Error 64: Falta , ` mediante `error_handler(64);` y se continúa procesando la declaración sin abortar ni descartar tokens espuriamente.
+  - **Propagación del `folset` (Regla 6):** En cada invocación a `declarador_init`, se propaga `(folset | CCOMA | F_LISTA_DECLARACIONES_INIT)`. Esto asegura que si una variable intermedia no posee inicializador o dimensión, el test inicial de `declarador_init` reconozca inmediatamente a la coma `,` o al siguiente identificador como seguidores legítimos, derivando $\lambda$ en silencio.
+
+- **Procedimiento `<declaracion_variable>`:**
+  - **Contexto gramatical:** $\langle\text{declaración de variable}\rangle ::= \langle\text{declarador init}\rangle \ [ \ \mathbf{,} \ \langle\text{lista declaraciones init}\rangle \ ] \ \mathbf{;}$.
+  - **Test inicial:** Inicia con una llamada a `declarador_init()`. Al estar además protegida su invocación en el llamador (`especificador_declaracion`) mediante un `switch(lookahead())` con casos explícitos, no requiere test inicial propio (Regla 2).
+  - **Propagación del `folset` (Regla 6):** Invoca inicialmente a `declarador_init` con `(folset | CCOMA | F_LISTA_DECLARACIONES_INIT | CPYCOMA)`. Esto permite que variables escalares sin inicializar (ej. `int a;` o `int a = 1 b = 2;`) resuelvan la ausencia de inicializador de forma transparente ante `;`, `,` o un identificador siguiente.
+  - **Separador olvidable en bloque opcional (Consigna 12):**
+    - Al igual que en la lista repetitiva, la coma que precede a `<lista declaraciones init>` puede ser omitida (ej. `int a = 1 b = 2;`).
+    - Se ensancha la condición del bloque condicional opcional:
+      ```c
+      if(lookahead_in(CCOMA | F_LISTA_DECLARACIONES_INIT))
+      {
+          if(lookahead_in(CCOMA))
+              scanner();
+          else
+              error_handler(64);
+
+          lista_declaraciones_init(folset | CPYCOMA);
+      }
+      ```
+      reportando `Error 64: Falta , ` en caso de omisión y continuando con el análisis de los identificadores restantes.
+  - **Consumo de terminal y Test final (Reglas 2 y 6):**
+    - Valida y consume el punto y coma de cierre con `match(CPYCOMA, 23);` (`Error 23: Falta ;`).
+    - Al culminar en un terminal obligatorio (`;`), ejecuta su test final:
+      ```c
+      test(folset, NADA, 51);
+      ```
+      emitiendo `Error 51: Simbolo inesperado despues de declaracion` si el lookahead posterior al delimitador no pertenece al conjunto seguidor heredado.
+
 ## N11
 
 Instrumentación de recuperación antipánico para las producciones de inicializadores y declaraciones locales (`lista_inicializadores`, `lista_declaraciones`, `declaracion`) en `src/parser.c` (Consignas 5, 8, 10 y 12):

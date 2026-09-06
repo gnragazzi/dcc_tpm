@@ -135,56 +135,68 @@ void declaracion_parametro(set folset)
 
 void lista_declaraciones_init(set folset)
 {
-	match(CIDENT, 10);
+	match(CIDENT, 17);
 
-	declarador_init(PLACEHOLDER);
+	declarador_init(folset | CCOMA | F_LISTA_DECLARACIONES_INIT);
 
-	while(lookahead_in(CCOMA))
+	while(lookahead_in(CCOMA | F_LISTA_DECLARACIONES_INIT))
 	{
-		scanner();
-		match(CIDENT, 10);
-		declarador_init(PLACEHOLDER);
+		if(lookahead_in(CCOMA))
+			scanner();
+		else
+			error_handler(64);
+
+		match(CIDENT, 17);
+		declarador_init(folset | CCOMA | F_LISTA_DECLARACIONES_INIT);
 	}
 }
 
 
 void declaracion_variable(set folset)
 {
-	declarador_init(PLACEHOLDER);
+	declarador_init(folset | CCOMA | F_LISTA_DECLARACIONES_INIT | CPYCOMA);
 
-	if(lookahead_in(CCOMA))
+	if(lookahead_in(CCOMA | F_LISTA_DECLARACIONES_INIT))
 	{
-		scanner();
-		lista_declaraciones_init(PLACEHOLDER);
+		if(lookahead_in(CCOMA))
+			scanner();
+		else
+			error_handler(64);
+
+		lista_declaraciones_init(folset | CPYCOMA);
 	}
 
-	match(CPYCOMA, 10);
+	match(CPYCOMA, 23);
+
+	test(folset, NADA, 51);
 }
 
 
 void declarador_init(set folset)
 {
+	test(F_DECLARADOR_INIT | folset, NADA, 47);
+
 	switch(lookahead())
 	{
 		case CASIGNAC:
 			scanner();
-			constante(PLACEHOLDER);
+			constante(folset);
 			break;
 
 		case CCOR_ABR:
 			scanner();
 
 			if(lookahead_in(CCONS_ENT))
-				constante(PLACEHOLDER);
+				constante(CCOR_CIE | CASIGNAC | folset);
 
-			match(CCOR_CIE, 10);
+			match(CCOR_CIE, 22);
 
 			if(lookahead_in(CASIGNAC))
 			{
 				scanner();
-				match(CLLA_ABR, 10);
-				lista_inicializadores(PLACEHOLDER);
-				match(CLLA_CIE, 10);
+				match(CLLA_ABR, 24);
+				lista_inicializadores(CLLA_CIE | folset);
+				match(CLLA_CIE, 25);
 			}
 			break;
 	}
