@@ -303,34 +303,34 @@ void proposicion(set folset)
 
 void proposicion_iteracion(set folset)
 {
-	match(CWHILE, 10);
+	match(CWHILE, 27);
 
-	match(CPAR_ABR, 10);
+	match(CPAR_ABR, 20);
 
-	expresion(PLACEHOLDER);
+	expresion(folset | CPAR_CIE | F_PROPOSICION);
 
-	match(CPAR_CIE, 10);
+	match(CPAR_CIE, 21);
 
-	proposicion(PLACEHOLDER);
+	proposicion(folset);
 }
 
 
 void proposicion_seleccion(set folset)
 {
-	match(CIF, 10);
+	match(CIF, 28);
 
-	match(CPAR_ABR, 10);
+	match(CPAR_ABR, 20);
 
-	expresion(PLACEHOLDER);
+	expresion(folset | CPAR_CIE | F_PROPOSICION | F_ELSE_OPCIONAL);
 
-	match(CPAR_CIE, 10);
+	match(CPAR_CIE, 21);
 
-	proposicion(PLACEHOLDER);
+	proposicion(folset | F_ELSE_OPCIONAL);
 
-	if(lookahead_in(CELSE))
+	if(lookahead_in(F_ELSE_OPCIONAL))
 	{
 		scanner();
-		proposicion(PLACEHOLDER);
+		proposicion(folset);
 	}
 }
 
