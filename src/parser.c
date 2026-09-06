@@ -496,7 +496,10 @@ void factor(set folset)
 
 void variable(set folset)
 {
-	match(CIDENT, 10);
+	test(F_VARIABLE, folset | CCOR_ABR, 59);
+
+	if(lookahead_in(CIDENT))
+		scanner();
 
 	/* El alumno debera verificar con una consulta a TS
 	si, siendo la variable un arreglo, corresponde o no
@@ -504,34 +507,38 @@ void variable(set folset)
 
 	if(lookahead_in(CCOR_ABR))
 	{
-		scanner();
-		expresion(PLACEHOLDER);
-		match(CCOR_CIE, 10);
+		match(CCOR_ABR, 35);
+		expresion(folset | CCOR_CIE);
+		match(CCOR_CIE, 22);
 	}
+
+	test(folset, NADA, 60);
 }
 
 
 void llamada_funcion(set folset)
 {
-	match(CIDENT, 10);
+	match(CIDENT, 17);
 
-	match(CPAR_ABR, 10);
+	match(CPAR_ABR, 20);
 
-	if(lookahead_in(CMAS | CMENOS | CIDENT | CPAR_ABR | CNEG | CCONS_ENT | CCONS_FLO | CCONS_CAR | CCONS_STR))
-		lista_expresiones(PLACEHOLDER);
+	if(lookahead_in(F_LISTA_EXPRESIONES))
+		lista_expresiones(folset | CPAR_CIE);
 
-	match(CPAR_CIE, 10);
+	match(CPAR_CIE, 21);
+
+	test(folset, NADA, 61);
 }
 
 
 void lista_expresiones(set folset)
 {
-	expresion(PLACEHOLDER);
+	expresion(folset | CCOMA | F_EXPRESION);
 
-	while(lookahead_in(CCOMA))
+	while(lookahead_in(CCOMA | F_EXPRESION))
 	{
-		scanner();
-		expresion(PLACEHOLDER);
+		match(CCOMA, 64);
+		expresion(folset | CCOMA | F_EXPRESION);
 	}
 }
 

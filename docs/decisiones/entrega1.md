@@ -462,6 +462,85 @@ Cálculo y definición en `src/conjuntos.h` de los conjuntos FIRST para la regi�
 
 ## N3
 
+Instrumentación de `variable(set folset)`, `llamada_funcion(set folset)` y `lista_expresiones(set
+folset)` en `src/parser.c` (Consigna 7). Revisado con Claude; se documentan acá los tres puntos
+donde el primer intento no cumplía las reglas de `T5` y por qué la versión final sí.
+
+- **Por qué `variable` lleva test inicial y `llamada_funcion` no.** Las dos cuelgan del mismo
+  `switch(lookahead())` de `factor()`, `case CIDENT`, donde el símbolo ya está garantizado — ese
+  call site no le exige test inicial a ninguna de las dos (mismo criterio que `N8` para
+  `definicion_funcion`). Pero `variable` tiene un **segundo** call site: `proposicion_e_s` la
+  invoca sin guardián (`cin >> <variable> ...`), justo después de un `match(CSHR, 10)` que no
+  garantiza nada sobre el símbolo siguiente. Regla 2: "basta un solo call site sin garantía".
+  `llamada_funcion` no tiene ese segundo call site, así que no lo lleva.
+
+- **Regla 8 — por qué `match(CIDENT, 17)` después del test duplicaba el error.** La primera
+  versión hacía `test(...); match(CIDENT, 17);`. Sobre `cin >> 5;` (falta el identificador):
+  1. `test` ve `CCONS_ENT`, no está en `c1` → **Error 59**. Como en ese momento `c2` todavía
+     incluía `F_EXPRESION`, el lookahead ya caía en `c1 ∪ c2` y el resync no saltaba nada.
+  2. `match(CIDENT, 17)` vuelve a mirar el mismo `5`, no es `CIDENT` → **Error 17**, mismo token.
+  3. Con el `if` viejo (ver punto siguiente) `5` también entraba a la rama del corchete →
+     **Error 35** de yapa.
+
+  Un solo error real reportado tres veces. Se reemplazó por el consumo forzado y silencioso de la
+  regla 8 (`test` ya se hizo cargo de reportar):
+
+  ```c
+  test(F_VARIABLE, folset | CCOR_ABR, 59);
+
+  if(lookahead_in(CIDENT))
+      scanner();
+  ```
+
+- **Regla 5 — por qué `F_EXPRESION` y `CCOR_CIE` no son puntos de reconfiguración válidos.** La
+  intención original era antipánico razonable: *"si después del identificador aparece algo de
+  `F_EXPRESION` o un `]`, probablemente se perdió el `[`"*. El problema es que esa intención se
+  aplicó igual en dos lugares — el `c2` del test inicial y la condición del `if` que decide si
+  hay índice — y en los dos falla la disjunción que la regla 5 exige explícitamente ("los
+  posibles puntos de reconfiguración... deben ser disjuntos" respecto de lo que ya es
+  continuación legítima). No es un error de *dónde* se usa el conjunto, es que el conjunto mismo
+  no es disjunto del folset real de `variable`:
+  - `x = b + c;` — `variable` se usa como factor de un término. Tras consumir `b`, el lookahead
+    legítimo es `CMAS`/`CMENOS` (continuación normal de `<expresión_simple>`). Pero `CMAS` y
+    `CMENOS` también están en `F_EXPRESION` (son el signo opcional inicial de la propia
+    `<expresión_simple>`): el mismo símbolo es a la vez "todo bien, seguí" y "che, se perdió el
+    `[`". Con el conjunto viejo, `b + c` disparaba la rama del corchete sobre código válido.
+  - `arr[b];` con `b` una variable simple (no arreglo) — al parsear `b` como índice, su folset
+    real incluye `CCOR_CIE` (el `]` que cierra el índice de `arr`, folset amplio por regla 6).
+    Tras consumir `b`, el lookahead es `]`: legítimo (cierra el índice de afuera), pero `CCOR_CIE`
+    también estaba en el conjunto de "puede que falte el `[`". Resultado: el caso más común de
+    acceso a arreglo con índice escalar rompía.
+  - `CCOR_ABR` sí es disjunto: en esta gramática los corchetes no encadenan
+    (`<variable> ::= ident [ '[' <expresión> ']' ]`, un solo par), así que `[` nunca es follow
+    genuino de `variable` en ningún call site. Es el único candidato real a punto interno (mismo
+    tipo de caso que el `&` de `declaracion_parametro` en la regla 5).
+
+  Conjunto final: `c2 = folset | CCOR_ABR`, y el `if` del índice pasa a mirar solo `CCOR_ABR`. Si
+  falta el identificador y lo que sigue no es `[`, no hay punto interno seguro: se resincroniza al
+  folset heredado y `variable` retorna (regla 9) — recuperación más basta, pero no rompe ningún
+  caso válido.
+
+- **`llamada_funcion`.** Sin test inicial (call site garantizado, ver arriba). Test final
+  (`test(folset, NADA, 61)`) porque su única alternativa termina en `match(CPAR_CIE, 21)`, un
+  match crudo, no una llamada. `lista_expresiones` se invoca con folset amplio
+  (`folset | CPAR_CIE`), regla 6.
+
+- **`lista_expresiones` — separador olvidable (regla 7, caso particular).** La coma de esta
+  producción está en la lista de separadores olvidables de la regla 7, así que no alcanza con el
+  patrón simple de `N1` (test redundante que se omite): hace falta el `while` ensanchado. La
+  implementación reutiliza `match()` en vez del `if/else` explícito de la regla 7 porque
+  `match()` ya tiene exactamente esa semántica (si falla, reporta y no consume nada):
+  ```c
+  while(lookahead_in(CCOMA | F_EXPRESION))
+  {
+      match(CCOMA, 64);
+      expresion(folset | CCOMA | F_EXPRESION);
+  }
+  ```
+  Primera versión pasaba `PLACEHOLDER` a la segunda llamada a `expresion` dentro del `while` —
+  mismo bug de folset amplio perdido en la iteración que se corrigió en `N1` para `expresion()`.
+  Corregido: `folset | CCOMA | F_EXPRESION`, igual que la llamada previa al bucle.
+
 ## N4
 
 ## N5
