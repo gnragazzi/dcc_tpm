@@ -248,34 +248,34 @@ void declaracion(set folset)
 
 void lista_proposiciones(set folset)
 {
-	proposicion(PLACEHOLDER);
+	proposicion(folset | F_PROPOSICION);
 
-	while(lookahead_in(CLLA_ABR | CMAS | CMENOS | CIDENT | CPAR_ABR | CNEG |
-						 CCONS_ENT | CCONS_FLO | CCONS_CAR | CCONS_STR |
-						 CIF | CWHILE | CIN | COUT | CPYCOMA | CRETURN))
-		proposicion(PLACEHOLDER);
+	while(lookahead_in(F_PROPOSICION))
+		proposicion(folset | F_PROPOSICION);
 }
 
 
 void proposicion(set folset)
 {
+	test(F_PROPOSICION, folset, 52);
+
 	switch(lookahead())
 	{
 		case CLLA_ABR:
-			proposicion_compuesta(PLACEHOLDER);
+			proposicion_compuesta(folset);
 			break;
 
 		case CWHILE:
-			proposicion_iteracion(PLACEHOLDER);
+			proposicion_iteracion(folset);
 			break;
 
 		case CIF:
-			proposicion_seleccion(PLACEHOLDER);
+			proposicion_seleccion(folset);
 			break;
 
 		case CIN:
 		case COUT:
-			proposicion_e_s(PLACEHOLDER);
+			proposicion_e_s(folset);
 			break;
 
 		case CMAS:
@@ -288,15 +288,15 @@ void proposicion(set folset)
 		case CCONS_CAR:
 		case CCONS_STR:
 		case CPYCOMA:
-			proposicion_expresion(PLACEHOLDER);
+			proposicion_expresion(folset);
 			break;
 
 		case CRETURN:
-			proposicion_retorno(PLACEHOLDER);
+			proposicion_retorno(folset);
 			break;
 
 		default:
-			error_handler(10);
+			break;
 	}
 }
 
