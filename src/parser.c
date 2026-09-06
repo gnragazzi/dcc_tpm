@@ -454,14 +454,16 @@ void termino(set folset)
 
 void factor(set folset)
 {
+	test(F_FACTOR, folset, 57);
+
 	switch(lookahead())
 	{
 		case CIDENT:
 			/***************** Re-hacer *****************/
 			if(sbol->lexema[0] == 'f')
-				llamada_funcion(PLACEHOLDER);
+				llamada_funcion(folset);
 			else
-				variable(PLACEHOLDER);
+				variable(folset);
 			/********************************************/
 			/* El alumno debera evaluar con consulta a TS
 			si bifurca a variable o llamada a funcion */
@@ -470,7 +472,7 @@ void factor(set folset)
 		case CCONS_ENT:
 		case CCONS_FLO:
 		case CCONS_CAR:
-			constante(PLACEHOLDER);
+			constante(folset);
 			break;
 
 		case CCONS_STR:
@@ -479,18 +481,20 @@ void factor(set folset)
 
 		case CPAR_ABR:
 			scanner();
-			expresion(PLACEHOLDER);
-			match(CPAR_CIE, 10);
+			expresion(folset | CPAR_CIE);
+			match(CPAR_CIE, 21);
 			break;
 
 		case CNEG:
 			scanner();
-			expresion(PLACEHOLDER);
+			expresion(folset);
 			break;
 
 		default:
-			error_handler(10);
+			break;
 	}
+
+	test(folset, 0, 58);
 }
 
 
@@ -538,6 +542,8 @@ void lista_expresiones(set folset)
 
 void constante(set folset)
 {
+	test(F_CONSTANTE, folset, 62);
+
 	switch(lookahead())
 	{
 		case CCONS_ENT:
@@ -553,6 +559,8 @@ void constante(set folset)
 			break;
 
 		default:
-			error_handler(10);
+			break;
 	}
+
+	test(folset, 0, 63);
 }

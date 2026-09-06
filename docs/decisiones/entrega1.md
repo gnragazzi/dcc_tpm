@@ -460,6 +460,49 @@ Cálculo y definición en `src/conjuntos.h` de los conjuntos FIRST para la regi�
 
 ## N2
 
+Instrumentación de los procedimientos `factor(set folset)` y `constante(set folset)` en `src/parser.c` para la recuperación antipánico (Consigna 7):
+
+- **Procedimiento `factor(set folset)`:**
+  - **Test inicial:** Al invocarse incondicionalmente desde `termino()` y no iniciar con llamada a procedimiento (su primera sentencia es un `switch` de selección sobre `lookahead()`), requiere test inicial:
+    ```c
+    test(F_FACTOR, folset, 57);
+    ```
+    Emite `Error 57: Simbolo inesperado o falta simb. al comienzo de factor` ante cualquier token que no pertenezca a $\text{FIRST}(\langle\text{factor}\rangle)$.
+  - **Sincronización $c_2$ y forzar entrada (Regla 8 / Consigna 10):** Siguiendo la Regla 5 de la bitácora, al tratarse de una alternancia pura sin puntos de recuperación internos determinables antes de elegir rama, $c_2 = \text{folset}$ heredado. Asimismo, en concordancia con la Regla 8, el `default:` del `switch` no vuelve a reportar (`default: break;`) ya que `test()` ya validó y resincronizó en $c_1 \cup c_2$, permitiendo una salida fluida al test final sin requerir guardas redundantes.
+  - **Decisión sobre `)` en $c_2$ y ausencia de `case CPAR_CIE`:** Se evaluó exhaustivamente si convenía incluir `CPAR_CIE` en $c_2$ o añadir un `case CPAR_CIE:` en el `switch` de `factor`:
+    - *Cuando `)` cierra algo real* (por ejemplo, en `<llamada a función>`): el paréntesis que cierra ya llega dentro del `folset` heredado, por lo que el test frena ahí de forma natural. Ante `fsum(x, )` (falta operando):
+      - Sin `)` en $c_2$ propio ni rama forzada: el resultado es 1 solo error limpio (`Error 57: comienzo de factor`) y `llamada_funcion()` consume legítimamente su propio `)`.
+      - Si se forzara `)` en $c_2$ con un `case CPAR_CIE:` añadido a `factor`: la rama espuria de `factor` consumiría ese `)` y la llamada a función se quedaría sin su delimitador de cierre, disparando hasta 3 errores artificiales en cascada.
+    - *Cuando `)` es espurio* (por ejemplo `a = b + ) ;`, sin paréntesis de apertura previo): ambos caminos terminan en el mismo lookahead (`;`) habiendo descartado el mismo símbolo `)`. Forzar el paréntesis en el folset y agregar el `case` solo sumaría un mensaje redundante (error en factor $\to$ error en expresión: 2 errores contra 1).
+    - *Conclusión:* En ambos casos los dos caminos terminan en el mismo lugar, con el mismo lookahead (`;`) y perdiendo el mismo símbolo (el `)`). Uno lo saltea limpiamente en el `test()`; el otro lo consumiría dentro de una rama sintáctica inventada. El antipánico existe para perder la menor cantidad de símbolos posibles; forzarlo acá no ahorra ningún símbolo y agrega mensajes espurios.
+  - **Propagación del `folset`:** Se reemplaza el macro `PLACEHOLDER` propagando los follower sets correspondientes a cada call site:
+    - En expresión parentizada `( <expresión> )`: `expresion(folset | CPAR_CIE);` y `match(CPAR_CIE, 21);` (reemplazando el código provisorio `10` por `Error 21: Falta )` requerido por `L7`).
+    - En negación unaria `! <expresión>`: `expresion(folset);`.
+    - En identificador: `llamada_funcion(folset);` y `variable(folset);`.
+    - En literales numéricos y carácter: `constante(folset);`.
+  - **Test final:** Al contar con alternativas que concluyen consumiendo terminales (como `( <expresión> )` con `match(CPAR_CIE, 21)` o cadenas literales con `scanner()`), se instrumenta el test final conforme a la Regla 6:
+    ```c
+    test(folset, 0, 58);
+    ```
+    Emite `Error 58: Simbolo inesperado despues de factor`.
+  - **Preservación del hack sintáctico:** Siguiendo la directiva explícita del roadmap para la 1ª etapa (sin Tabla de Símbolos), se mantiene intacta la bifurcación provisoria `if(sbol->lexema[0] == 'f')`.
+
+- **Procedimiento `constante(set folset)`:**
+  - **Test inicial:** Al invocarse incondicionalmente en `declarador_init` tras `=` y al inicio de `lista_inicializadores`:
+    ```c
+    test(F_CONSTANTE, folset, 62);
+    ```
+    Emite `Error 62: Simbolo inesperado o falta simb. al comienzo de constante`.
+  - **Estructura canónica y forzar entrada (Regla 8 / Consigna 10):** Se preservan los tres `case` independientes (`CCONS_ENT`, `CCONS_FLO`, `CCONS_CAR`) con su respectivo `scanner(); break;` para permitir la futura incorporación de acciones semánticas y gramáticas de atributos en las siguientes entregas. En concordancia con la Regla 8 (*Forzar entrada*), el `default:` no vuelve a reportar error (`default: break;`) puesto que `test()` ya validó el inicio y resincronizó en `c1 | c2`.
+  - **Test final:** Al ser un procedimiento hoja que concluye consumiendo un terminal literal mediante `scanner()`, se instrumenta el test final según la Regla 6:
+    ```c
+    test(folset, 0, 63);
+    ```
+    Emite `Error 63: Simbolo inesperado despues de constante,`.
+
+- **Promoción de pruebas (DoD):**
+  - Se promueven los 3 lotes inválidos de `L12` (`08_error_en_expresion*.c` y `.esperado`) desde `tests/entrega1/pendientes/invalidos/` a `tests/entrega1/invalidos/`, pasando a ser evaluados activamente por la suite de CI (7 casos totales ejecutados, 0 fallas).
+
 ## N3
 
 ## N4
@@ -741,13 +784,13 @@ Creación de los lotes de prueba inválidos para símbolo inesperado al inicio d
 
 ## L12
 
-Creación de los lotes de prueba inválidos para error sintáctico dentro de una expresión (`tests/entrega1/pendientes/invalidos/08_error_en_expresion*.c`) y sus archivos `.esperado`:
+Creación de los lotes de prueba inválidos para error sintáctico dentro de una expresión (`tests/entrega1/invalidos/08_error_en_expresion*.c`) y sus archivos `.esperado`:
 - **Cobertura sistemática de los niveles del árbol de expresión BNFE:**
   - *Nivel aditivo (`<expresión simple>`):* `08_error_en_expresion.c` (`a = 5 + ;`). Omisión de operando derecho tras operador aritmético `+`.
   - *Nivel multiplicativo (`<término>`):* `08_error_en_expresion_termino.c` (`a = 5 * ;`). Omisión de operando derecho tras operador multiplicativo `*`.
   - *Nivel relacional (`<expresión>`):* `08_error_en_expresion_relacion.c` (`if (a < )`). Omisión de operando derecho tras operador de relación `<`.
 - **Comportamiento esperado:** Reporte del `Error 57: Simbolo inesperado o falta simb. al comienzo de factor` (definido en `error.c:57`), al encontrar un delimitador cuando el parser espera un operando de `FIRST(factor)`. La recuperación antipánico debe sincronizar en el delimitador de cierre o fin de proposición sin inducir errores espurios en cascada.
-- **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta que la instrumentación de `factor()` (`N2`), `termino()` (`N2`), `expresion()` (`N1`) y el fix `T4` estén integrados en `develop`.
+- **Promoción:** Promovidos desde `pendientes/invalidos/` a `invalidos/` tras la instrumentación de `factor()` en `N2`, integrándose a la suite ejecutada por CI.
 
 ## L13
 
