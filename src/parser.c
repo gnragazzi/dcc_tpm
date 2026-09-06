@@ -209,17 +209,17 @@ void lista_inicializadores(set folset)
 
 void proposicion_compuesta(set folset)
 {
-	match(CLLA_ABR, 10);
+	test(F_PROPOSICION_COMPUESTA, folset | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES, 49);
+	match(CLLA_ABR, 24);
 
-	if(lookahead_in(CVOID | CCHAR | CINT | CFLOAT))
-		lista_declaraciones(PLACEHOLDER);
+	if(lookahead_in(F_LISTA_DECLARACIONES))
+		lista_declaraciones(folset | F_LISTA_PROPOSICIONES | CLLA_CIE);
 
-	if(lookahead_in(CLLA_ABR | CMAS | CMENOS | CIDENT | CPAR_ABR | CNEG |
-					 CCONS_ENT | CCONS_FLO | CCONS_CAR | CCONS_STR |
-					 CIF | CWHILE | CIN | COUT | CPYCOMA | CRETURN))
-		lista_proposiciones(PLACEHOLDER);
+	if(lookahead_in(F_LISTA_PROPOSICIONES))
+		lista_proposiciones(folset | CLLA_CIE);
 
-	match(CLLA_CIE, 10);
+	match(CLLA_CIE, 25);
+	test(folset, NADA, 50);
 }
 
 
