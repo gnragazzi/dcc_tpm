@@ -507,6 +507,52 @@ Instrumentación de los procedimientos `factor(set folset)` y `constante(set fol
 
 ## N4
 
+Instrumentación de `proposicion_compuesta(set folset)`, `lista_proposiciones(set folset)` y
+`proposicion(set folset)` en `src/parser.c` (Consigna 7). Revisado con Claude.
+
+- **`proposicion` lleva test inicial.** Tiene tres call sites sin guardián — `lista_proposiciones`
+  (llamada previa al `while` y dentro de él), `proposicion_iteracion` y `proposicion_seleccion`
+  (cuerpo del `while`/`if` del lenguaje objeto) — y su primera sentencia no es una invocación
+  (arranca con el `switch` de despacho). Regla 2.
+  ```c
+  test(F_PROPOSICION, folset, 52);
+  ```
+- **`proposicion` no lleva test final propio.** Los seis `case` de su `switch` terminan llamando a
+  un subordinado (`proposicion_compuesta`, `_iteracion`, `_seleccion`, `_e_s`, `_expresion`,
+  `_retorno`); ninguno cierra con un match crudo dentro de `proposicion` misma. Mismo criterio que
+  `especificador_declaracion` en `N8`: delega el cierre en los subordinados.
+
+- **Por qué el `while` de `lista_proposiciones` no lleva test — y en qué se diferencia de `N1`.**
+  Es una aplicación de la regla 7 (cuerpo que termina en invocación a un procedimiento con test
+  final, invocado con `folset | F_PROPOSICION`), pero con una diferencia estructural importante:
+  en `N1` la garantía de la cadena reposaba en **un solo** procedimiento (`factor`). Acá
+  `proposicion` no tiene test final propio — delega en sus **seis** subordinados —, así que la
+  garantía que necesita `lista_proposiciones` está repartida entre todos ellos, no concentrada en
+  uno solo:
+  - `proposicion_compuesta` ya cierra bien (`test(folset, NADA, 50)`, folset correcto).
+  - `proposicion_iteracion` y `proposicion_seleccion` (`N5`) delegan correctamente: terminan
+    llamando a `proposicion(folset)` recursivamente sin alterar el conjunto, así que heredan la
+    garantía de la propia recursión (inducción sobre el anidamiento de proposiciones).
+  - `proposicion_e_s`, `proposicion_retorno` y `proposicion_expresion` **todavía no** tienen test
+    final — siguen terminando en `match(..., 10)` crudo sin instrumentar. Mientras no lo tengan,
+    un error dentro de una asignación, un `return` o un `cin`/`cout` no resincroniza ahí: se
+    escapa en silencio del `while` de `lista_proposiciones`, el mismo riesgo de cascada silenciosa
+    que la regla 7 describe para `int a; xyz int b;`, pero a nivel proposición.
+
+  Dependencia pendiente: `proposicion_e_s`, `proposicion_retorno` y `proposicion_expresion` (no
+  identificado el ticket que los cierra todavía). Hasta que los tres tengan su test final con
+  `folset` correcto, el diseño de `lista_proposiciones` es el correcto para cuando todo esté
+  instrumentado, pero no está garantizado en el binario actual.
+
+- **Disjunción en el `c2` de `proposicion_compuesta` — chequeado, no hay problema.** El test
+  inicial usa `c2 = F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES`, conjuntos tan anchos como el
+  `F_EXPRESION` que falló en `N3`. La diferencia es que acá sí son disjuntos del folset real: el
+  único call site donde el test de `proposicion_compuesta` puede fallar de verdad es
+  `definicion_funcion` (`{` faltante tras la firma de una función) — no existe ninguna derivación
+  válida de la gramática donde `CVOID`/`CINT`/etc. sigan a `)` sin que falte la llave. A diferencia
+  de `variable` (donde `CMAS` podía aparecer con cero errores), acá no hay ningún caso sin error
+  que compita con la interpretación de "se perdió la `{`".
+
 ## N5
 
 Instrumentación de los procedimientos `proposicion_iteracion(set folset)` y `proposicion_seleccion(set folset)` en `src/parser.c` para la recuperación antipánica (Consigna 7):
