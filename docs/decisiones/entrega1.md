@@ -566,11 +566,93 @@ le alcanza con la condición del propio `while`.
 
 ## N2
 
+Instrumentación de los procedimientos `factor(set folset)` y `constante(set folset)` en `src/parser.c` para la recuperación antipánico (Consigna 7):
+
+- **Procedimiento `factor(set folset)`:**
+  - **Test inicial:** Al invocarse incondicionalmente desde `termino()` y no iniciar con llamada a procedimiento (su primera sentencia es un `switch` de selección sobre `lookahead()`), requiere test inicial:
+    ```c
+    test(F_FACTOR, folset, 57);
+    ```
+    Emite `Error 57: Simbolo inesperado o falta simb. al comienzo de factor` ante cualquier token que no pertenezca a $\text{FIRST}(\langle\text{factor}\rangle)$.
+  - **Sincronización $c_2$ y forzar entrada (Regla 8 / Consigna 10):** Siguiendo la Regla 5 de la bitácora, al tratarse de una alternancia pura sin puntos de recuperación internos determinables antes de elegir rama, $c_2 = \text{folset}$ heredado. Asimismo, en concordancia con la Regla 8, el `default:` del `switch` no vuelve a reportar (`default: break;`) ya que `test()` ya validó y resincronizó en $c_1 \cup c_2$, permitiendo una salida fluida al test final sin requerir guardas redundantes.
+  - **Decisión sobre `)` en $c_2$ y ausencia de `case CPAR_CIE`:** Se evaluó exhaustivamente si convenía incluir `CPAR_CIE` en $c_2$ o añadir un `case CPAR_CIE:` en el `switch` de `factor`:
+    - *Cuando `)` cierra algo real* (por ejemplo, en `<llamada a función>`): el paréntesis que cierra ya llega dentro del `folset` heredado, por lo que el test frena ahí de forma natural. Ante `fsum(x, )` (falta operando):
+      - Sin `)` en $c_2$ propio ni rama forzada: el resultado es 1 solo error limpio (`Error 57: comienzo de factor`) y `llamada_funcion()` consume legítimamente su propio `)`.
+      - Si se forzara `)` en $c_2$ con un `case CPAR_CIE:` añadido a `factor`: la rama espuria de `factor` consumiría ese `)` y la llamada a función se quedaría sin su delimitador de cierre, disparando hasta 3 errores artificiales en cascada.
+    - *Cuando `)` es espurio* (por ejemplo `a = b + ) ;`, sin paréntesis de apertura previo): ambos caminos terminan en el mismo lookahead (`;`) habiendo descartado el mismo símbolo `)`. Forzar el paréntesis en el folset y agregar el `case` solo sumaría un mensaje redundante (error en factor $\to$ error en expresión: 2 errores contra 1).
+    - *Conclusión:* En ambos casos los dos caminos terminan en el mismo lugar, con el mismo lookahead (`;`) y perdiendo el mismo símbolo (el `)`). Uno lo saltea limpiamente en el `test()`; el otro lo consumiría dentro de una rama sintáctica inventada. El antipánico existe para perder la menor cantidad de símbolos posibles; forzarlo acá no ahorra ningún símbolo y agrega mensajes espurios.
+  - **Propagación del `folset`:** Se reemplaza el macro `PLACEHOLDER` propagando los follower sets correspondientes a cada call site:
+    - En expresión parentizada `( <expresión> )`: `expresion(folset | CPAR_CIE);` y `match(CPAR_CIE, 21);` (reemplazando el código provisorio `10` por `Error 21: Falta )` requerido por `L7`).
+    - En negación unaria `! <expresión>`: `expresion(folset);`.
+    - En identificador: `llamada_funcion(folset);` y `variable(folset);`.
+    - En literales numéricos y carácter: `constante(folset);`.
+  - **Test final:** Al contar con alternativas que concluyen consumiendo terminales (como `( <expresión> )` con `match(CPAR_CIE, 21)` o cadenas literales con `scanner()`), se instrumenta el test final conforme a la Regla 6:
+    ```c
+    test(folset, 0, 58);
+    ```
+    Emite `Error 58: Simbolo inesperado despues de factor`.
+  - **Preservación del hack sintáctico:** Siguiendo la directiva explícita del roadmap para la 1ª etapa (sin Tabla de Símbolos), se mantiene intacta la bifurcación provisoria `if(sbol->lexema[0] == 'f')`.
+
+- **Procedimiento `constante(set folset)`:**
+  - **Test inicial:** Al invocarse incondicionalmente en `declarador_init` tras `=` y al inicio de `lista_inicializadores`:
+    ```c
+    test(F_CONSTANTE, folset, 62);
+    ```
+    Emite `Error 62: Simbolo inesperado o falta simb. al comienzo de constante`.
+  - **Estructura canónica y forzar entrada (Regla 8 / Consigna 10):** Se preservan los tres `case` independientes (`CCONS_ENT`, `CCONS_FLO`, `CCONS_CAR`) con su respectivo `scanner(); break;` para permitir la futura incorporación de acciones semánticas y gramáticas de atributos en las siguientes entregas. En concordancia con la Regla 8 (*Forzar entrada*), el `default:` no vuelve a reportar error (`default: break;`) puesto que `test()` ya validó el inicio y resincronizó en `c1 | c2`.
+  - **Test final:** Al ser un procedimiento hoja que concluye consumiendo un terminal literal mediante `scanner()`, se instrumenta el test final según la Regla 6:
+    ```c
+    test(folset, 0, 63);
+    ```
+    Emite `Error 63: Simbolo inesperado despues de constante,`.
+
+- **Promoción de pruebas (DoD):**
+  - Se promueven los 3 lotes inválidos de `L12` (`08_error_en_expresion*.c` y `.esperado`) desde `tests/entrega1/pendientes/invalidos/` a `tests/entrega1/invalidos/`, pasando a ser evaluados activamente por la suite de CI (7 casos totales ejecutados, 0 fallas).
+
 ## N3
 
 ## N4
 
 ## N5
+
+Instrumentación de los procedimientos `proposicion_iteracion(set folset)` y `proposicion_seleccion(set folset)` en `src/parser.c` para la recuperación antipánica (Consigna 7):
+
+- **Procedimiento `proposicion_iteracion(set folset)`:**
+  - **Contexto gramatical:** $\langle\text{proposición iteración}\rangle ::= \mathbf{while} \ \mathbf{(} \ \langle\text{expresión}\rangle \ \mathbf{)} \ \langle\text{proposición}\rangle$.
+  - **Test inicial:** No lleva test inicial propio (Regla 2), puesto que su único punto de invocación es la rama `case CWHILE:` dentro de `proposicion()`, quedando su símbolo inicial plenamente garantizado por el llamador.
+  - **Estructura lineal en C (sin bucle `while` interno):** Aunque reconoce la sentencia de iteración del lenguaje fuente, el procedimiento reconocedor se ejecuta de manera estrictamente secuencial y lineal. No aplica la Consigna 12 al no constituir una repetición interna ni poseer listas separadas por puntuación.
+  - **Consumo de terminales canónicos:** Se reemplazan los códigos provisorios `10` por los correspondientes en `src/error.c`:
+    - `match(CWHILE, 27);` (`Error 27: Falta while`).
+    - `match(CPAR_ABR, 20);` (`Error 20: Falta (`).
+    - `match(CPAR_CIE, 21);` (`Error 21: Falta )`).
+  - **Cálculo amplio del follower set (Regla 6):** Al invocar `expresion()`, el follower set acumula toda la cola restante de la producción:
+    ```c
+    expresion(folset | CPAR_CIE | F_PROPOSICION);
+    ```
+    Al incluir `F_PROPOSICION` (`CLLA_ABR`, etc.), si el programador omite el paréntesis de cierre `)` antes del cuerpo del bucle (ej: `while(a < 10 {`), el análisis de la condición frena ordenadamente en `{`, permitiendo que `match(CPAR_CIE, 21)` reporte exactamente la falta del delimitador sin consumir ni descartar el bloque de la proposición.
+  - **Delegación del cuerpo y test final:** Se invoca `proposicion(folset);`, delegando el test final en ella por ser una llamada a procedimiento subordinado al cierre de la producción.
+
+- **Procedimiento `proposicion_seleccion(set folset)`:**
+  - **Contexto gramatical:** $\langle\text{proposición selección}\rangle ::= \mathbf{if} \ \mathbf{(} \ \langle\text{expresión}\rangle \ \mathbf{)} \ \langle\text{proposición}\rangle \ [ \ \mathbf{else} \ \langle\text{proposición}\rangle \ ]$.
+  - **Test inicial:** No lleva test inicial propio (Regla 2), ya que solo es invocado desde `case CIF:` en `proposicion()`.
+  - **Consumo de terminales canónicos:**
+    - `match(CIF, 28);` (`Error 28: Falta if`).
+    - `match(CPAR_ABR, 20);` (`Error 20: Falta (`).
+    - `match(CPAR_CIE, 21);` (`Error 21: Falta )`).
+  - **Cálculo amplio del follower set y tratamiento de la continuación `else` (Regla 6 y nota N5):**
+    - En la condición:
+      ```c
+      expresion(folset | CPAR_CIE | F_PROPOSICION | F_ELSE_OPCIONAL);
+      ```
+    - En la primera proposición (rama `then`): Según la BNF $\langle\text{resto selección}\rangle ::= \mathbf{else} \ \langle\text{proposición}\rangle \mid \lambda$, el conjunto de continuación legítimo tras el cuerpo `then` es `{ else }` (`F_ELSE_OPCIONAL` o `CELSE`), además del `folset` heredado:
+      ```c
+      proposicion(folset | F_ELSE_OPCIONAL);
+      ```
+      Si ocurre un error sintáctico dentro del bloque `then`, la recuperación puede resincronizar en la palabra clave `else` y continuar analizando la rama alternativa sin perderla ni abortar el flujo.
+  - **Rama `else` opcional:**
+    - Se evalúa con el macro de continuación: `if(lookahead_in(F_ELSE_OPCIONAL))`.
+    - Al confirmarse la presencia de `else`, se consume mediante `scanner();` y se procesa la proposición subordinada con el seguimiento original: `proposicion(folset);`.
+  - **Delegación y test final:** Ambas ramas (con o sin `else`) concluyen en una llamada al procedimiento `proposicion()`, por lo que el procedimiento no lleva test final propio.
 
 ## N6
 
@@ -612,9 +694,79 @@ Instrumentación de los procedimientos `especificador_declaracion(set folset)` y
 
 ## N9
 
+Instrumentación de los procedimientos `lista_declaraciones_param(set folset)` y `declaracion_parametro(set folset)` en `src/parser.c` para la recuperación antipánica (Consignas 5, 8, 10 y 12):
+
+- **Procedimiento `<declaracion_parametro>`:**
+  - **Contexto gramatical:** $\langle\text{declaración de parámetro}\rangle ::= \langle\text{especificador de tipo}\rangle \ [ \ \mathbf{\&} \ ] \ \mathbf{ident} \ [ \ \mathbf{[} \ \mathbf{]} \ ]$.
+  - **Test inicial (Reglas 2 y 3):** No lleva test inicial propio. Inicia con una llamada incondicional a `especificador_tipo()`, y dado que $\text{FIRST}(\langle\text{declaración de parámetro}\rangle) = \text{FIRST}(\langle\text{especificador de tipo}\rangle) = \text{F\_ESPECIFICADOR\_TIPO}$, delega en él.
+  - **Propagación amplia del `folset` (Regla 6):**
+    - `especificador_tipo` recibe `(folset | CAMPER | CIDENT)`, considerando la cola restante de la producción ($[ \ \& \ ] \ \mathbf{ident}$). Si se omite el especificador de tipo (ej. `void f(& a)` o `void f(a)`), la recuperación frena inmediatamente en `&` o en el identificador, permitiendo recuperar el parámetro completo sin desincronización.
+  - **Doble semántica de los corchetes (Guía práctica 9):**
+    - En la BNFE, los corchetes exteriores $[ \dots ]$ denotan opcionalidad sintáctica, implementada condicionalmente mediante `if(lookahead_in(CCOR_ABR))`. No se ejecuta un `match` incondicional sobre `[` para no invalidar parámetros escalares comunes (`int a`).
+    - Los corchetes interiores `[` y `]` representan los símbolos terminales literales del scanner (`CCOR_ABR` y `CCOR_CIE`). Al detectarse `[`, se consume con `scanner()` y se exige el corchete de cierre mediante el código canónico `match(CCOR_CIE, 22);` (`Error 22: Falta ]`).
+  - **Consumo de identificador con código canónico:** Se utiliza `match(CIDENT, 17);` (`Error 17: Falta identificador`).
+  - **Test final (Reglas 2 y 6):** Culmina en símbolo terminal (ya sea el delimitador `]` en arreglos o el identificador `ident` en escalares). Por ende, ejecuta su test final:
+    ```c
+    test(folset, NADA, 45);
+    ```
+    emitiendo `Error 45: Simbolo inesperado despues de declarar un parametro` ante cualquier lookahead espurio posterior a la definición del parámetro.
+
+- **Procedimiento `<lista_declaraciones_param>`:**
+  - **Contexto gramatical:** $\langle\text{lista declaración de parámetros}\rangle ::= \langle\text{declaración de parámetro}\rangle \ \{ \mathbf{,} \ \langle\text{declaración de parámetro}\rangle \}$.
+  - **Test inicial y final:** No lleva test inicial ni test final propios (Regla 2), delegando en `declaracion_parametro()`.
+  - **Iteración con separador olvidable (Consigna 12):**
+    - La coma `,` es un separador de puntuación susceptible a omisión. Se ensancha el guardián de repetición:
+      ```c
+      while(lookahead_in(CCOMA | F_DECLARACION_PARAMETRO))
+      ```
+    - Si se omite la coma entre parámetros formales (ej. `void f(int a int b)`), el guardián detecta `F_DECLARACION_PARAMETRO` (`int b`), emite `Error 64: Falta , ` con `error_handler(64)` y continúa procesando el siguiente parámetro sin abortar.
+  - **Chequeo estructural en dos posiciones (Regla 7):**
+    - Cada parámetro formal termina con su propio `test(folset, NADA, 45)`.
+    - Al recibir `(folset | CCOMA | F_DECLARACION_PARAMETRO)`, ese test final evalúa la condición de sincronización antipánica justo antes de la evaluación del `while` (al inicio y al cierre de cada vuelta), satisfaciendo la exigencia teórica de la Regla 7 sin necesidad de un `test()` redundante en el cuerpo del bucle.
+  - **Resolución de $\lambda$ (migración BNF $\to$ BNFE):** En la BNF clásica, la lista era anulable ($\to \lambda$). En la BNFE, la posibilidad de funciones sin parámetros (`void f()`) se absorbe en el llamador (`definicion_funcion`) con el guardián `if(lookahead_in(F_LISTA_DECLARACIONES_PARAM))`, y el corte de la iteración en el `while` absorbe la derivación vacía final sin requerir conjuntos anulables.
+
 ## N10
 
 ## N11
+
+Instrumentación de recuperación antipánico para las producciones de inicializadores y declaraciones locales (`lista_inicializadores`, `lista_declaraciones`, `declaracion`) en `src/parser.c` (Consignas 5, 8, 10 y 12):
+
+- **Procedimiento `<declaracion>`:**
+  - **Contexto gramatical:** $\langle\text{declaración}\rangle ::= \langle\text{especificador de tipo}\rangle \ \langle\text{lista declaraciones init}\rangle \ \mathbf{;}$.
+  - **Test inicial:** No lleva test inicial propio (Reglas 2 y 3), ya que inicia con una llamada incondicional a procedimiento (`especificador_tipo()`), delegando en él.
+  - **Propagación del `folset` (Regla 6):**
+    - `especificador_tipo` recibe `(folset | F_LISTA_DECLARACIONES_INIT)`, permitiendo que ante un error en el tipo la recuperación frene en el primer identificador.
+    - `lista_declaraciones_init` recibe `(folset | CPYCOMA)`.
+  - **Consumo de terminal y Test final (Reglas 2 y 6):**
+    - Valida y consume el punto y coma final mediante `match(CPYCOMA, 23);` (`Error 23: Falta ;`).
+    - Al culminar en un terminal obligatorio (`;`), ejecuta su test final:
+      ```c
+      test(folset, NADA, 51);
+      ```
+      emitiendo `Error 51: Simbolo inesperado despues de declaracion` si el lookahead posterior al `;` no pertenece a los seguidores legítimos heredados.
+
+- **Procedimiento `<lista_declaraciones>`:**
+  - **Contexto gramatical:** $\langle\text{lista de declaraciones}\rangle ::= \langle\text{declaración}\rangle \ \{ \langle\text{declaración}\rangle \}$.
+  - **Test inicial y final:** No lleva test inicial ni test final propios (Regla 2), delegando en `declaracion()`.
+  - **Chequeo estructural en dos posiciones por delegación del test final (Regla 7):**
+    - Para que la forma compacta $\mathbf{A} \{ \mathbf{A} \}$ replique exactamente el comportamiento antipánico de la BNF recursiva $\mathbf{A} \to \lambda \mid \mathbf{A} \ \mathbf{A}$, la teoría exige el chequeo $\text{test}(\text{FIRST}(\mathbf{A}) \cup \text{folset}, \emptyset, ne)$ en dos posiciones: antes de entrar a la repetición y como última sentencia del cuerpo de la iteración.
+    - Dado que `declaracion` culmina con `test(folset, NADA, 51)` y en `lista_declaraciones` se la invoca con `folset | F_DECLARACION`, dicho test final evalúa con exactitud:
+      ```c
+      test(folset | F_DECLARACION, NADA, 51);
+      ```
+    - Este test es la última instrucción que corre inmediatamente antes de evaluar la condición del `while(lookahead_in(F_DECLARACION))` (tanto en la primera invocación obligatoria como al cierre de cada vuelta). Por ende, el test final del cuerpo **es** el chequeo pedido por la teoría. Escribir un `test()` explícito dentro del bucle resulta estrictamente redundante según el criterio operativo de la Regla 7.
+  - **Tratamiento de $\lambda$ (migración BNF $\to$ BNFE):** En la BNF clásica, la lista era anulable ($\to \lambda$). En la BNFE, la ausencia de declaraciones locales fue extraída como opcional `[ <lista de declaraciones> ]` en `<proposicion_compuesta>`, gobernada por un guardián `if(lookahead_in(F_DECLARACION))` condicional que saltea la invocación si no hay declaraciones. El corte natural del `while` absorbe la derivación vacía sin necesidad de conjuntos anulables.
+
+- **Procedimiento `<lista_inicializadores>`:**
+  - **Contexto gramatical:** $\langle\text{lista de inicializadores}\rangle ::= \langle\text{constante}\rangle \ \{ \mathbf{,} \ \langle\text{constante}\rangle \}$.
+  - **Test inicial y final:** No lleva test inicial ni test final propios (Regla 2), delegando en `constante()`.
+  - **Iteración con separador olvidable (Consigna 12):**
+    - Se aplica el guardián ensanchado `while(lookahead_in(CCOMA | F_CONSTANTE))` para detectar la omisión de la coma separadora entre constantes (ej. `{1 2}`).
+    - Si el lookahead es una constante sin coma previa, se emite `error_handler(64);` (`Error 64: Falta , `) y se procesa la constante sin desincronizar la lectura del arreglo.
+  - **Corte autocontenido y propagación del `folset`:**
+    - Cada llamada a `constante` recibe `(folset | CCOMA | F_CONSTANTE)`. De este modo, `constante()` sincroniza contra las constantes sucesivas o contra los seguidores legales heredados en `folset`.
+    - Al finalizar los elementos de la lista, el lookahead pertenece al `folset` heredado. Dado que $\text{folset} \cap (\texttt{CCOMA} \mid \texttt{F\_CONSTANTE}) = \emptyset$, la condición del `while` evalúa falsa y el bucle termina limpiamente sin consumir.
+    - No se incluye ningún `test()` antipánico explícito dentro del bucle: un test con $c_1 = \texttt{CCOMA} \mid \texttt{F\_CONSTANTE}$ rechazaría erróneamente el símbolo legítimo de salida perteneciente a `folset`.
 
 # Capa 3 · Lotes
 
@@ -738,13 +890,13 @@ Creación de los lotes de prueba inválidos para símbolo inesperado al inicio d
 
 ## L12
 
-Creación de los lotes de prueba inválidos para error sintáctico dentro de una expresión (`tests/entrega1/pendientes/invalidos/08_error_en_expresion*.c`) y sus archivos `.esperado`:
+Creación de los lotes de prueba inválidos para error sintáctico dentro de una expresión (`tests/entrega1/invalidos/08_error_en_expresion*.c`) y sus archivos `.esperado`:
 - **Cobertura sistemática de los niveles del árbol de expresión BNFE:**
   - *Nivel aditivo (`<expresión simple>`):* `08_error_en_expresion.c` (`a = 5 + ;`). Omisión de operando derecho tras operador aritmético `+`.
   - *Nivel multiplicativo (`<término>`):* `08_error_en_expresion_termino.c` (`a = 5 * ;`). Omisión de operando derecho tras operador multiplicativo `*`.
   - *Nivel relacional (`<expresión>`):* `08_error_en_expresion_relacion.c` (`if (a < )`). Omisión de operando derecho tras operador de relación `<`.
 - **Comportamiento esperado:** Reporte del `Error 57: Simbolo inesperado o falta simb. al comienzo de factor` (definido en `error.c:57`), al encontrar un delimitador cuando el parser espera un operando de `FIRST(factor)`. La recuperación antipánico debe sincronizar en el delimitador de cierre o fin de proposición sin inducir errores espurios en cascada.
-- **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta que la instrumentación de `factor()` (`N2`), `termino()` (`N2`), `expresion()` (`N1`) y el fix `T4` estén integrados en `develop`.
+- **Promoción:** Promovidos desde `pendientes/invalidos/` a `invalidos/` tras la instrumentación de `factor()` en `N2`, integrándose a la suite ejecutada por CI.
 
 ## L13
 

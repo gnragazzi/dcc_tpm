@@ -100,30 +100,36 @@ void definicion_funcion(set folset)
 
 void lista_declaraciones_param(set folset)
 {
-	declaracion_parametro(PLACEHOLDER);
+	declaracion_parametro(folset | CCOMA | F_DECLARACION_PARAMETRO);
 
-	while(lookahead_in(CCOMA))
+	while(lookahead_in(CCOMA | F_DECLARACION_PARAMETRO))
 	{
-		scanner();
-		declaracion_parametro(PLACEHOLDER);
+		if(lookahead_in(CCOMA))
+			scanner();
+		else
+			error_handler(64);
+
+		declaracion_parametro(folset | CCOMA | F_DECLARACION_PARAMETRO);
 	}
 }
 
 
 void declaracion_parametro(set folset)
 {
-	especificador_tipo(PLACEHOLDER);
+	especificador_tipo(folset | CAMPER | CIDENT);
 
 	if(lookahead_in(CAMPER))
 		scanner();
 
-	match(CIDENT, 10);
+	match(CIDENT, 17);
 
 	if(lookahead_in(CCOR_ABR))
 	{
 		scanner();
-		match(CCOR_CIE, 10);
+		match(CCOR_CIE, 22);
 	}
+
+	test(folset, NADA, 45);
 }
 
 
@@ -187,12 +193,16 @@ void declarador_init(set folset)
 
 void lista_inicializadores(set folset)
 {
-	constante(PLACEHOLDER);
+	constante(folset | CCOMA | F_CONSTANTE);
 
-	while(lookahead_in(CCOMA))
+	while(lookahead_in(CCOMA | F_CONSTANTE))
 	{
-		scanner();
-		constante(PLACEHOLDER);
+		if(lookahead_in(CCOMA))
+			scanner();
+		else
+			error_handler(64);
+
+		constante(folset | CCOMA | F_CONSTANTE);
 	}
 }
 
@@ -215,20 +225,24 @@ void proposicion_compuesta(set folset)
 
 void lista_declaraciones(set folset)
 {
-	declaracion(PLACEHOLDER);
+	declaracion(folset | F_DECLARACION);
 
-	while(lookahead_in(CVOID | CCHAR | CINT | CFLOAT))
-		declaracion(PLACEHOLDER);
+	while(lookahead_in(F_DECLARACION))
+	{
+		declaracion(folset | F_DECLARACION);
+	}
 }
 
 
 void declaracion(set folset)
 {
-	especificador_tipo(PLACEHOLDER);
+	especificador_tipo(folset | F_LISTA_DECLARACIONES_INIT | CPYCOMA);
 
-	lista_declaraciones_init(PLACEHOLDER);
+	lista_declaraciones_init(folset | CPYCOMA);
 
-	match(CPYCOMA, 10);
+	match(CPYCOMA, 23);
+
+	test(folset, NADA, 51);
 }
 
 
@@ -289,34 +303,34 @@ void proposicion(set folset)
 
 void proposicion_iteracion(set folset)
 {
-	match(CWHILE, 10);
+	match(CWHILE, 27);
 
-	match(CPAR_ABR, 10);
+	match(CPAR_ABR, 20);
 
-	expresion(PLACEHOLDER);
+	expresion(folset | CPAR_CIE | F_PROPOSICION);
 
-	match(CPAR_CIE, 10);
+	match(CPAR_CIE, 21);
 
-	proposicion(PLACEHOLDER);
+	proposicion(folset);
 }
 
 
 void proposicion_seleccion(set folset)
 {
-	match(CIF, 10);
+	match(CIF, 28);
 
-	match(CPAR_ABR, 10);
+	match(CPAR_ABR, 20);
 
-	expresion(PLACEHOLDER);
+	expresion(folset | CPAR_CIE | F_PROPOSICION | F_ELSE_OPCIONAL);
 
-	match(CPAR_CIE, 10);
+	match(CPAR_CIE, 21);
 
-	proposicion(PLACEHOLDER);
+	proposicion(folset | F_ELSE_OPCIONAL);
 
-	if(lookahead_in(CELSE))
+	if(lookahead_in(F_ELSE_OPCIONAL))
 	{
 		scanner();
-		proposicion(PLACEHOLDER);
+		proposicion(folset);
 	}
 }
 
@@ -448,14 +462,16 @@ void termino(set folset)
 
 void factor(set folset)
 {
+	test(F_FACTOR, folset, 57);
+
 	switch(lookahead())
 	{
 		case CIDENT:
 			/***************** Re-hacer *****************/
 			if(sbol->lexema[0] == 'f')
-				llamada_funcion(PLACEHOLDER);
+				llamada_funcion(folset);
 			else
-				variable(PLACEHOLDER);
+				variable(folset);
 			/********************************************/
 			/* El alumno debera evaluar con consulta a TS
 			si bifurca a variable o llamada a funcion */
@@ -464,7 +480,7 @@ void factor(set folset)
 		case CCONS_ENT:
 		case CCONS_FLO:
 		case CCONS_CAR:
-			constante(PLACEHOLDER);
+			constante(folset);
 			break;
 
 		case CCONS_STR:
@@ -473,18 +489,20 @@ void factor(set folset)
 
 		case CPAR_ABR:
 			scanner();
-			expresion(PLACEHOLDER);
-			match(CPAR_CIE, 10);
+			expresion(folset | CPAR_CIE);
+			match(CPAR_CIE, 21);
 			break;
 
 		case CNEG:
 			scanner();
-			expresion(PLACEHOLDER);
+			expresion(folset);
 			break;
 
 		default:
-			error_handler(10);
+			break;
 	}
+
+	test(folset, 0, 58);
 }
 
 
@@ -532,6 +550,8 @@ void lista_expresiones(set folset)
 
 void constante(set folset)
 {
+	test(F_CONSTANTE, folset, 62);
+
 	switch(lookahead())
 	{
 		case CCONS_ENT:
@@ -547,6 +567,8 @@ void constante(set folset)
 			break;
 
 		default:
-			error_handler(10);
+			break;
 	}
+
+	test(folset, 0, 63);
 }
