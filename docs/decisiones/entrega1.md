@@ -806,32 +806,8 @@ Instrumentación de `proposicion_compuesta(set folset)`, `lista_proposiciones(se
   salgan tres errores en vez de uno. El folset heredado va en `c2`, no en `c1`, por la regla 4: si
   entrara en `c1` el test dejaría de reportar justo en el caso que se quiere detectar.
 
-  **El test intermedio obliga a que `proposicion_compuesta` tenga la guarda de la regla 9**, que
-  hasta ahora no tenía pese a corresponderle —lleva test inicial (el `49`)—. Sin ella, sobre
-  `void main()` seguido de `}` sin llave de apertura: el test inicial no encuentra `}` en `c1` ni
-  en `c2`, reporta `49` y **descarta el `}`** al resincronizar; queda `CEOF`; `match(CLLA_ABR, 24)`
-  falla; y el test intermedio corre sobre un `CEOF` que está en el folset heredado pero no en su
-  `c1`, así que reporta un `52` sobre un token ya en estado de error. Cuatro errores donde había
-  tres.
-
-  ```c
-  test(F_PROPOSICION_COMPUESTA, folset | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES, 49);
-
-  if(!lookahead_in(F_PROPOSICION_COMPUESTA | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES))
-  	return;
-
-  match(CLLA_ABR, 24);
-  ```
-
-  Con la guarda, ese caso pasa de **tres errores a uno** —mejor que antes del test intermedio, no
-  solo mejor que sin guarda—: el `49` solo, y el cuerpo no corre porque nada de él aplica. Es la
-  cuarta fila de la tabla de la regla 9, la única que pide retornar. Los otros seis casos de llave
-  de apertura faltante (con declaraciones, con proposición, dentro de `while`, dentro de `if`, con
-  basura, y con ambas llaves ausentes) no cambian.
-
-  El test intermedio en sí no necesita guarda propia: lo que le sigue son dos guardianes ya
-  condicionales. Lo que necesitaba guarda era el test inicial, y el intermedio solo hizo visible
-  que faltaba.
+  No lleva salida temprana (regla 9) porque no es un test inicial: lo que sigue son dos guardianes
+  ya condicionales, que se saltean solos si la resincronización frenó en el folset heredado.
 
   **Por qué no alcanza con ensanchar el segundo guardián** a `if(!lookahead_in(CLLA_CIE))`.
   Funciona en los casos simples —`proposicion` lleva test inicial (`52`) y resincroniza sin
@@ -1311,7 +1287,6 @@ Medición, errores reportados antes → después:
 | `void f(& int x)` | 6 | 1 |
 | `12_cascada_bloques_anidados` | 6 | 3 |
 | `*` al inicio de un bloque anidado (`while`, `else`, desnudo) | 3 | 1 |
-| `void main()` + `}` sin llave de apertura (con la guarda de regla 9) | 3 | 1 |
 | `14_expresion_simple_salida_folset` (pendiente) | 5 | 2 |
 
 Ningún caso válido cambia de salida: el test pasa en silencio cuando el lookahead está en `c1`.
