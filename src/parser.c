@@ -220,8 +220,7 @@ void proposicion_compuesta(set folset)
 	if(!lookahead_in(F_PROPOSICION_COMPUESTA | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES))
 		return;
 
-	if(lookahead_in(CLLA_ABR))
-		scanner();
+	match(CLLA_ABR, 24);
 
 	test(F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES | CLLA_CIE, folset, 52);
 
