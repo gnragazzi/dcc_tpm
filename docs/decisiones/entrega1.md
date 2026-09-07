@@ -814,18 +814,20 @@ Instrumentación de los procedimientos `proposicion_e_s(set folset)`, `proposici
     - Al carecer de test inicial, conserva en su rama por defecto la emisión del error correspondiente: `default: error_handler(29); break;` (`Error 29: Falta cin o cout`).
   - **Consumo de palabras clave garantizadas (Consigna 10):** Tanto `case CIN:` como `case COUT:` consumen su terminal con `scanner();` al estar pre-validados por el llamador.
   - **Separadores de flujo olvidables y bucles de repetición (Consigna 12 y Regla 7):**
-    - Los operadores de redirección de flujo `>>` (`CSHR`) y `<<` (`CSHL`) operan sintácticamente como separadores de repetición análogos a la coma `,` en listas de identificadores o expresiones, siendo propensos al olvido accidental (ej: `cin >> a b;` o `cout << x y;`).
+    - Los operadores de redirección de flujo `>>` (`CSHR` / `F_RESTO_PROP_IN`) y `<<` (`CSHL` / `F_RESTO_PROP_OUT`) operan sintácticamente como separadores de repetición análogos a la coma `,` en listas de identificadores o expresiones, siendo propensos al olvido accidental (ej: `cin >> a b;` o `cout << x y;`).
+    - Se utilizan los macros arquitectónicos `F_RESTO_PROP_IN` y `F_RESTO_PROP_OUT` (fijados en Capa 0 / T2) para la construcción de conjuntos y condiciones de bucle, reservando `CSHR` y `CSHL` exclusivamente para los `match()`.
     - Se aplica la técnica de guardián ensanchado reutilizando `match()`:
-      - Para `cin`: `while(lookahead_in(CSHR | F_VARIABLE))` con `match(CSHR, 30);`. Si `CSHR` está presente lo consume con `scanner()`; si falta pero sigue una variable (`F_VARIABLE`), `match` emite `Error 30: Falta >>` sin avanzar el token, procesando inmediatamente la variable subsiguiente.
-      - Para `cout`: `while(lookahead_in(CSHL | F_EXPRESION))` con `match(CSHL, 31);`. Análogamente, ante la omisión de `<<` emite `Error 31: Falta <<` y procesa la siguiente expresión.
+      - Para `cin`: `while(lookahead_in(F_RESTO_PROP_IN | F_VARIABLE))` con `match(CSHR, 30);`. Si `CSHR` está presente lo consume con `scanner()`; si falta pero sigue una variable (`F_VARIABLE`), `match` emite `Error 30: Falta >>` sin avanzar el token, procesando inmediatamente la variable subsiguiente.
+      - Para `cout`: `while(lookahead_in(F_RESTO_PROP_OUT | F_EXPRESION))` con `match(CSHL, 31);`. Análogamente, ante la omisión de `<<` emite `Error 31: Falta <<` y procesa la siguiente expresión.
+    - *Trade-off del guardián ensanchado en `cout`:* Al incluir `F_EXPRESION` en la condición del bucle (`while(lookahead_in(F_RESTO_PROP_OUT | F_EXPRESION))`), si el usuario omite el punto y coma final `;` tras un `cout` y en la línea siguiente empieza una sentencia con identificador (ej: `a = 1;`), el bucle interpretará ese identificador como una expresión encadenada donde faltó `<<`, reportando `Error 31: Falta <<` en lugar de `Error 23: Falta ;`. Este compromiso (*trade-off*) es asumido deliberadamente para priorizar la recuperación limpia de omisión de `<<` entre expresiones múltiples encadenadas en la misma proposición según la Consigna 12.
   - **Construcción amplia del follower set en E/S (Regla 6):**
     - En `cin`: La primera variable y cada variable del bucle reciben:
       ```c
-      variable(folset | CSHR | F_VARIABLE | CPYCOMA);
+      variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA);
       ```
     - En `cout`: La primera expresión y cada expresión del bucle reciben:
       ```c
-      expresion(folset | CSHL | F_EXPRESION | CPYCOMA);
+      expresion(folset | F_RESTO_PROP_OUT | F_EXPRESION | CPYCOMA);
       ```
       De este modo, si ocurre un fallo dentro de un elemento, la recuperación frena de inmediato en el siguiente operador de flujo, en el siguiente operando o en el punto y coma `;`, evitando el descarte indiscriminado del resto de la instrucción.
   - **Consumo de delimitador y Test final (Regla 6):** Ambas ramas consumen el punto y coma final con `match(CPYCOMA, 23);` (`Error 23: Falta ;`). Concluido el `switch`, se ejecuta el test final general del procedimiento:

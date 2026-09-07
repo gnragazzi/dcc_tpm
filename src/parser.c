@@ -350,12 +350,12 @@ void proposicion_e_s(set folset)
 
 			match(CSHR, 30);
 
-			variable(folset | CSHR | F_VARIABLE | CPYCOMA);
+			variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA);
 
-			while(lookahead_in(CSHR | F_VARIABLE))
+			while(lookahead_in(F_RESTO_PROP_IN | F_VARIABLE))
 			{
 				match(CSHR, 30);
-				variable(folset | CSHR | F_VARIABLE | CPYCOMA);
+				variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA);
 			}
 
 			match(CPYCOMA, 23);
@@ -367,12 +367,12 @@ void proposicion_e_s(set folset)
 
 			match(CSHL, 31);
 
-			expresion(folset | CSHL | F_EXPRESION | CPYCOMA);
+			expresion(folset | F_RESTO_PROP_OUT | F_EXPRESION | CPYCOMA);
 
-			while(lookahead_in(CSHL | F_EXPRESION))
+			while(lookahead_in(F_RESTO_PROP_OUT | F_EXPRESION))
 			{
 				match(CSHL, 31);
-				expresion(folset | CSHL | F_EXPRESION | CPYCOMA);
+				expresion(folset | F_RESTO_PROP_OUT | F_EXPRESION | CPYCOMA);
 			}
 
 			match(CPYCOMA, 23);
