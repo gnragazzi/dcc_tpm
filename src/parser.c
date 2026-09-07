@@ -216,7 +216,9 @@ void lista_inicializadores(set folset)
 void proposicion_compuesta(set folset)
 {
 	test(F_PROPOSICION_COMPUESTA, folset | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES, 49);
-	match(CLLA_ABR, 24);
+
+	if (lookahead_in(CLLA_ABR))
+		match(CLLA_ABR, 24);
 
 	if(lookahead_in(F_LISTA_DECLARACIONES))
 		lista_declaraciones(folset | F_LISTA_PROPOSICIONES | CLLA_CIE);
