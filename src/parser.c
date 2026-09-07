@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
 
 	unidad_traduccion(CEOF);
 
-	match(CEOF, 10);
+	match(CEOF, 9);
 
 	last_call=1;
 
