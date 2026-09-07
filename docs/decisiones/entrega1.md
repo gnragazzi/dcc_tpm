@@ -1299,7 +1299,7 @@ solo el del guardián inmediato — ver el `F_LISTA_DECLARACIONES` de `proposici
 |---|---|---|---|---|
 | `definicion_funcion` | `<lista decl parámetros>` | `)` | 41 | aplicado |
 | `proposicion_compuesta` | `<lista declaración>`, `<lista proposición>` | `}` | 52 | aplicado (`N4`) |
-| `llamada_funcion` | `<lista expresiones>` | `)` | 56 | identificado, pendiente |
+| `llamada_funcion` | `<lista expresiones>` | `)` | 56 | aplicado |
 
 Medición, errores reportados antes → después:
 
@@ -1312,7 +1312,7 @@ Medición, errores reportados antes → después:
 | `12_cascada_bloques_anidados` | 6 | 3 |
 | `*` al inicio de un bloque anidado (`while`, `else`, desnudo) | 3 | 1 |
 | `void main()` + `}` sin llave de apertura (con la guarda de regla 9) | 3 | 1 |
-| `14_expresion_simple_salida_folset` (pendiente) | 5 | 2 |
+| `14_expresion_simple_salida_folset` | 5 | 2 |
 
 Ningún caso válido cambia de salida: el test pasa en silencio cuando el lookahead está en `c1`.
 
@@ -1320,8 +1320,11 @@ Ningún caso válido cambia de salida: el test pasa en silencio cuando el lookah
 mismos códigos que ya usan `especificador_tipo` y `proposicion` en sus tests iniciales, así que la
 juntura habla el mismo idioma que el procedimiento al que iba a entrar. Para `llamada_funcion` no
 hay código propio de `<lista expresiones>`; el `56` es prestado de `expresion_simple` y describe
-mal lo que falta. Los slots 36–39 están reservados para errores personalizados y ese es el lugar
-natural si se decide numerarlo aparte.
+mal lo que falta —sobre `fop4( , b)` lo que sobra es una coma, no lo que falta una expresión
+simple—. Se dejó el `56` porque es el que la juntura efectivamente hereda y el que fija
+`14_expresion_simple_salida_folset`. Los slots 36–39 están reservados para errores personalizados
+y ese es el lugar natural si se decide numerarlo aparte; sería un cambio de una línea en
+`error.c` y otra en `llamada_funcion`, más el `.esperado` de ese lote.
 
 **Cobertura.** Los siete casos de `definicion_funcion` no tenían ningún test que los cubriera: el
 único que ejercitaba esa juntura era `05_tipo_invalido_param`, que se movió a
@@ -1334,8 +1337,27 @@ Basura en el **medio** de una lista, no al principio: `{ a = 1; * a = 2; }` sigu
 el test final de `proposicion_expresion` (55) y no desde el inicial de `proposicion` (52). El test
 de la juntura ya pasó cuando eso ocurre. No es cascada —un símbolo, un error— sino el punto de
 detección más externo, el mismo fenómeno que hace que `int a;` seguido de `* a = 5;` reporte 51 y
-no 52. Casos `09_cascada_misma_linea`, `13_cascada_misma_linea_multiple` y el segundo error de
-`14_expresion_simple_salida_folset`: los `.esperado` predecían el error del nivel más profundo
-(`57`, en `factor`) y el parser reporta el del nivel que efectivamente lo intercepta primero (`56`,
-en `expresion_simple`). El parser es correcto ahí; lo que hay que ajustar son los `.esperado`.
+no 52. Casos `09_cascada_misma_linea` y `13_cascada_misma_linea_multiple`: los `.esperado` predecían el
+error del nivel más profundo (`57`, en `factor`) y el parser reporta el del nivel que efectivamente
+lo intercepta primero (`56`, en `expresion_simple`). El parser es correcto ahí y los `.esperado` se
+corrigieron.
+
+Vale la pena ver los dos errores de `09` juntos, porque la asimetría entre ellos no es un defecto:
+
+```c
+a = 5 + ; b = * 3;
+```
+
+- El `;` que sigue al `+` aparece **dentro** de la expresión simple, con su test inicial ya pasado
+  (el `5` lo satisfizo), así que el flujo baja hasta `factor` y reporta `57`.
+- El `*` que sigue al `=` aparece **al comienzo** de la expresión simple de la derecha, así que lo
+  intercepta el test inicial de `expresion_simple` y reporta `56`; `factor` nunca corre, por la
+  regla 9.
+
+Mismo símbolo inesperado, distinto punto de detección, según en qué lugar de la producción caiga.
+Es la contracara buscada de la regla 9 —un error, un reporte— y no un caso donde el esquema no
+alcance. El mismo fenómeno explica que `int a;` seguido de `* a = 5;` reporte `51` (test final de
+`declaracion`) y no `52` (test inicial de `proposicion`): el test de salida del no terminal
+anterior intercepta antes que el de entrada del siguiente. Mientras haya tests finales, ese es el
+diagnóstico que corresponde.
 

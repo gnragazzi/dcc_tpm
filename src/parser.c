@@ -549,6 +549,8 @@ void llamada_funcion(set folset)
 
 	match(CPAR_ABR, 20);
 
+	test(F_LISTA_EXPRESIONES | CPAR_CIE, folset, 56);
+
 	if(lookahead_in(F_LISTA_EXPRESIONES))
 		lista_expresiones(folset | CPAR_CIE);
 
