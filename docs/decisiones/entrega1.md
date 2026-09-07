@@ -639,9 +639,13 @@ Instrumentación de recuperación antipánico para las producciones de inicializ
     - **`switch` sin `default` (Regla 1 y 8):** Al ser una alternancia con $\lambda$, caer fuera de los `case` (`CASIGNAC` y `CCOR_ABR`) cuando el lookahead pertenece a `folset` representa la derivación vacía legítima. Por lo tanto, no lleva cláusula `default:` que emita error.
   - **Propagación del `folset` y códigos canónicos (Reglas 6 y 8 / Consigna 10):**
     - En la rama de asignación escalar `CASIGNAC` (`=`): se consume con `scanner()` y se invoca `constante(folset)`.
-    - En la rama de arreglos `CCOR_ABR` (`[`): se consume con `scanner()`. Si se especifica dimensión opcional entera (`lookahead_in(CCONS_ENT)`), se invoca `constante(CCOR_CIE | CASIGNAC | folset)`. El cierre del corchete valida con `match(CCOR_CIE, 22);` (`Error 22: Falta ]`).
+    - En la rama de arreglos `CCOR_ABR` (`[`): se consume con `scanner()`. Conforme a la BNFE oficial, la dimensión opcional es el terminal entero `cons_ent` (`CCONS_ENT`), por lo que al verificarse con `if(lookahead_in(CCONS_ENT))` se consume directamente con `scanner()`. El cierre del corchete valida con `match(CCOR_CIE, 22);` (`Error 22: Falta ]`).
     - Si a continuación se presenta una inicialización de arreglo (`lookahead_in(CASIGNAC)`): se consume `=`, se valida la apertura con `match(CLLA_ABR, 24);` (`Error 24: Falta {`), se delega la secuencia a `lista_inicializadores(CLLA_CIE | folset);` y se exige la llave de cierre con `match(CLLA_CIE, 25);` (`Error 25: Falta }`).
-  - **Test final:** No lleva test final propio, pues sus ramas concluyen en llamada a procedimiento subordinado (`constante`) o derivan en $\lambda$, delegando la verificación posterior en el llamador.
+  - **Test final (Reglas 2 y 6):** Culmina con test final obligatorio:
+    ```c
+    test(folset, NADA, 48);
+    ```
+    emitiendo `Error 48: Simbolo inesperado despues de declarador init`. La incorporación del test final se fundamenta en que al derivar en $\lambda$ no se delega en ningún procedimiento subordinado que valide el seguidor, y la rama de arreglos concluye en consumos de terminales (`match(CCOR_CIE, 22)` o `match(CLLA_CIE, 25)`).
 
 - **Procedimiento `<lista_declaraciones_init>`:**
   - **Contexto gramatical:** $\langle\text{lista declaraciones init}\rangle ::= \mathbf{ident} \ \langle\text{declarador init}\rangle \ \{ \ \mathbf{,} \ \mathbf{ident} \ \langle\text{declarador init}\rangle \}$.
@@ -653,7 +657,11 @@ Instrumentación de recuperación antipánico para las producciones de inicializ
       ```c
       while(lookahead_in(CCOMA | F_LISTA_DECLARACIONES_INIT))
       ```
-    - Si el lookahead es un identificador (`F_LISTA_DECLARACIONES_INIT`), se emite `Error 64: Falta , ` mediante `error_handler(64);` y se continúa procesando la declaración sin abortar ni descartar tokens espuriamente.
+    - Siguiendo el estilo unificado con `N3` y `N6`, se emplea la abstracción canónica:
+      ```c
+      match(CCOMA, 64);
+      ```
+      la cual avanza si está la coma o reporta `Error 64: Falta , ` ante su omisión, continuando el procesamiento del identificador siguiente.
   - **Propagación del `folset` (Regla 6):** En cada invocación a `declarador_init`, se propaga `(folset | CCOMA | F_LISTA_DECLARACIONES_INIT)`. Esto asegura que si una variable intermedia no posee inicializador o dimensión, el test inicial de `declarador_init` reconozca inmediatamente a la coma `,` o al siguiente identificador como seguidores legítimos, derivando $\lambda$ en silencio.
 
 - **Procedimiento `<declaracion_variable>`:**
@@ -662,15 +670,11 @@ Instrumentación de recuperación antipánico para las producciones de inicializ
   - **Propagación del `folset` (Regla 6):** Invoca inicialmente a `declarador_init` con `(folset | CCOMA | F_LISTA_DECLARACIONES_INIT | CPYCOMA)`. Esto permite que variables escalares sin inicializar (ej. `int a;` o `int a = 1 b = 2;`) resuelvan la ausencia de inicializador de forma transparente ante `;`, `,` o un identificador siguiente.
   - **Separador olvidable en bloque opcional (Consigna 12):**
     - Al igual que en la lista repetitiva, la coma que precede a `<lista declaraciones init>` puede ser omitida (ej. `int a = 1 b = 2;`).
-    - Se ensancha la condición del bloque condicional opcional:
+    - Se ensancha la condición del bloque condicional opcional utilizando la abstracción canónica `match(CCOMA, 64);`:
       ```c
       if(lookahead_in(CCOMA | F_LISTA_DECLARACIONES_INIT))
       {
-          if(lookahead_in(CCOMA))
-              scanner();
-          else
-              error_handler(64);
-
+          match(CCOMA, 64);
           lista_declaraciones_init(folset | CPYCOMA);
       }
       ```

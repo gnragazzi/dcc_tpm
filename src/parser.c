@@ -141,11 +141,7 @@ void lista_declaraciones_init(set folset)
 
 	while(lookahead_in(CCOMA | F_LISTA_DECLARACIONES_INIT))
 	{
-		if(lookahead_in(CCOMA))
-			scanner();
-		else
-			error_handler(64);
-
+		match(CCOMA, 64);
 		match(CIDENT, 17);
 		declarador_init(folset | CCOMA | F_LISTA_DECLARACIONES_INIT);
 	}
@@ -158,11 +154,7 @@ void declaracion_variable(set folset)
 
 	if(lookahead_in(CCOMA | F_LISTA_DECLARACIONES_INIT))
 	{
-		if(lookahead_in(CCOMA))
-			scanner();
-		else
-			error_handler(64);
-
+		match(CCOMA, 64);
 		lista_declaraciones_init(folset | CPYCOMA);
 	}
 
@@ -187,7 +179,7 @@ void declarador_init(set folset)
 			scanner();
 
 			if(lookahead_in(CCONS_ENT))
-				constante(CCOR_CIE | CASIGNAC | folset);
+				scanner();
 
 			match(CCOR_CIE, 22);
 
@@ -200,6 +192,8 @@ void declarador_init(set folset)
 			}
 			break;
 	}
+
+	test(folset, NADA, 48);
 }
 
 
