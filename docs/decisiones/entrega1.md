@@ -224,9 +224,9 @@ test final y se la invoca con `folset | F_DECLARACION`.
 
 **Por qué el chequeo tiene que existir igual.** Sin él —esté donde esté— un error dentro de
 una iteración no resincroniza a la siguiente: sale del bucle y lo agarra el test final del
-procedimiento de la lista, que ya está afuera. Sobre `int a; ) int b;` dentro de un bloque,
-sin chequeo se descarta `int b;` en silencio; con él se reporta un error y la segunda
-declaración se parsea entera.
+procedimiento de la lista, que ya está afuera. Sobre `int a; xyz int b;` el test final de
+`unidad_traduccion` (`c1 = CEOF`) saltea hasta fin de archivo y se come `int b;`: un error
+reportado, medio archivo descartado en silencio.
 
 **Caso particular: separador olvidable.** Cuando la condición del `{ }` es un separador fácil de
 olvidar, además se ensancha el guardián:
@@ -457,6 +457,149 @@ Cálculo y definición en `src/conjuntos.h` de los conjuntos FIRST para la regi�
 # Capa 2 · Instrumentación
 
 ## N1
+
+Instrumentación de `expresion(set folset)`, `expresion_simple(set folset)` y `termino(set folset)`
+en `src/parser.c`: decisión sobre si el `while` de cada una de las tres necesita test propio, o si
+le alcanza con la condición del propio `while`.
+
+- **Contexto gramatical — las tres producciones abarcadas.** Las tres son de una sola alternativa
+  y su cuerpo siempre termina en una invocación al no terminal inmediatamente inferior, nunca en
+  un match directo a un terminal:
+  - `<expresión> ::= <expresión_simple> { (:= | relop) <expresión_simple> }`
+  - `<expresión_simple> ::= [ + | - ] <término> { (+ | - | ||) <término> }`
+  - `<término> ::= <factor> { (* | / | &&) <factor> }`
+- **Aplicación de la regla 7 (T5).** El test explícito en el bucle es redundante cuando el cuerpo
+  termina en una invocación a un procedimiento que ya lleva test final, invocado con
+  `folset | FIRST(A)` — exactamente el caso de las tres. Una vez que `factor` tenga su test final
+  con ese folset, la garantía se propaga hacia arriba: el retorno de `factor` deja a `termino` en
+  `folset | F_RESTO_TERMINO`, el de `termino` deja a `expresion_simple` en
+  `folset | F_RESTO_EXPRESION_SIMPLE`, y el de `expresion_simple` deja a `expresion` en
+  `folset | F_RESTO_EXPRESION` — siempre antes de evaluar la condición del `while` correspondiente,
+  tanto al entrar como al cerrar cada vuelta. Un `test()` puesto en cualquiera de los tres nunca
+  encontraría el lookahead fuera de `c1`: sería una llamada que jamás reporta ni resincroniza.
+- **Por qué no es automático — contraejemplo de la cátedra.** Las diapositivas de Recuperación de
+  Errores (Observación 2) muestran `<idlist> ::= ID { , ID }*`, donde el `ID` del cuerpo se
+  resuelve con `match(ID)` directo, no con una llamada a un no terminal. Ahí sí hace falta el
+  test en las dos posiciones del bucle: no hay ningún test final subordinado que garantice el
+  folset al volver. La distinción no es "es iteración BNFE", es "el cuerpo termina en llamada a
+  procedimiento con test final coincidente, o en un match crudo".
+- **Dependencia con `N2`.** La garantía completa de la cadena `expresion → expresion_simple →
+  termino → factor` descansa en que `factor()` tenga su test final implementado (pendiente,
+  ticket `N2`): es el único punto de la cadena que matchea terminales directamente (`CCONS_STR`
+  con `scanner()`, el `)` de `(expresión)` con `match()`). Hasta que `N2` cierre, la ausencia de
+  test en los `while` de `expresion`/`expresion_simple`/`termino` es correcta en el diseño pero
+  no está garantizada en el binario actual.
+- **Verificación.** `tests/entrega1/pendientes/validos/05_stress_iteracion_expr.c` (cadena larga
+  en las tres producciones; no debe fallar bajo ninguna versión del `while`) y
+  `tests/entrega1/pendientes/invalidos/08_error_en_expresion_termino_profundo.c` (operando
+  faltante después de 7 iteraciones exitosas de `termino`, para diffear la salida entre la
+  versión con test-en-el-while y sin él una vez integrado `N2`).
+- **DECISIÓN DE DISEÑO — la guarda de `expresion_simple` tiene tres salidas, no dos.**
+
+  La regla 9 (`T5`) alcanza para todos los demás procedimientos con test inicial: si el test
+  resincronizó en el folset heredado, se retorna sin correr el cuerpo. `expresion_simple` es la
+  única donde no alcanza, y por dos razones distintas que conviene no mezclar: **es dueña de su
+  propio ciclo de reconfiguración**, y **es la única producción de la gramática con cabeza
+  opcional**. La primera decide que exista una rama del medio; la segunda, que la guarda no pueda
+  preguntar por el folset.
+
+  **Quién es dueño del ciclo.** Cuando el test de `factor` frena en un `*`, `factor` retorna y el
+  `while` de `termino` —que está justo arriba— consume el `*` y sigue: el token no se pierde porque
+  el dueño del ciclo de reconfiguración es el llamador. `expresion_simple` no tiene a nadie arriba
+  con un ciclo sobre `+ - ||`: el ciclo es el suyo. Si retorna parada en un `||`, el control vuelve
+  a `expresion`, cuyo `while` solo mira `=` y los relacionales, y de ahí a `proposicion_seleccion`,
+  que hace `match())` sobre un `||` y reporta un segundo error que no corresponde. Ese token lo
+  tiene que consumir `expresion_simple` misma.
+
+  El `[ + | - ]` es lo que impide delegar: como la cabeza de la producción no es una llamada a
+  procedimiento, `expresion_simple` no puede pasarle el test inicial a un subordinado (regla 3), y
+  el test y el ciclo quedan en el mismo cuerpo. `expresion` y `termino` sí delegan, y por eso no
+  tienen el problema.
+
+  Esta parte **no es exclusiva de `expresion_simple`**: cualquier procedimiento con test inicial,
+  cabeza obligatoria y un punto interno fuera de su FIRST necesita la misma rama del medio. Ver
+  *Alcance* al final de este ticket.
+
+  **Las tres salidas.** Al terminar el test inicial el lookahead está en
+  `F_EXPRESION_SIMPLE ∪ folset ∪ F_RESTO_EXPRESION_SIMPLE`, y cada caso pide algo distinto:
+
+  | Lookahead al salir del test | Qué pasó | Acción |
+  |---|---|---|
+  | ∈ `F_EXPRESION_SIMPLE` | el test no reportó, o resincronizó a algo con lo que se puede arrancar | cuerpo completo: signo opcional si lo hay, y después `termino()` |
+  | ∈ `F_RESTO_EXPRESION_SIMPLE` y ∉ `F_EXPRESION_SIMPLE` (es decir, `||`) | el test reportó y frenó en un operador propio | saltear la cabeza y entrar al ciclo: `scanner()` y `termino()` |
+  | en ninguno de los dos | el test reportó y frenó en el folset heredado | retornar (regla 9) |
+
+  **El orden de las condiciones importa.** `+` y `-` están en los dos conjuntos: son el signo unario
+  de la cabeza y también operadores del resto. Si se pregunta primero por
+  `F_RESTO_EXPRESION_SIMPLE`, un signo unario legítimo entra por la rama de recuperación. Hoy
+  consume exactamente los mismos tokens que la rama correcta, así que ningún caso de prueba lo
+  distingue; con acciones semánticas encima construiría un binario con el operando izquierdo
+  faltante. Por eso la pregunta por `F_EXPRESION_SIMPLE` va primero, y la rama del medio queda
+  alcanzable solo por `||`, que es el único símbolo en
+  `F_RESTO_EXPRESION_SIMPLE − F_EXPRESION_SIMPLE`.
+
+  **La guarda no puede preguntar por el folset.** Hacerlo supone que el folset y
+  `F_EXPRESION_SIMPLE` son disjuntos, y no lo son: en `<factor> ::= ! <expresión>` nada sigue a
+  `<expresión>` dentro de `factor`, así que `folset(expresión) = folset(factor)`, que por la regla
+  de propagación contiene `+`, `-`, `||`, `*`, `/` y `&&`. Con `a = !-b;` el `-` es un signo unario
+  válido que el test acepta, y una guarda por folset retorna sin parsear ni reportar nada: el `-`
+  lo termina consumiendo el `while` de la `expresion_simple` de afuera y sale `(!) - b`. La forma
+  correcta es la de la regla 9, `!lookahead_in(F_EXPRESION_SIMPLE | F_RESTO_EXPRESION_SIMPLE)`, que
+  no depende de que el folset sea disjunto de nada.
+
+  **Y esto sí es exclusivo de `expresion_simple`.** El solapamiento `FIRST ∩ folset` existe en
+  varios procedimientos, pero solo rompe **entrada válida** cuando la cabeza es opcional. Si la
+  cabeza es obligatoria —`ident` en `variable` y en `lista_declaraciones_init`, `{` en
+  `proposicion_compuesta`— un test que pasa significa siempre "este token es mío", y el
+  solapamiento solo cambia qué tan bien se recupera de entrada **ya inválida**: eso es calidad de
+  recuperación (consigna 14), no corrección. `expresion_simple` es la única con cabeza opcional, así
+  que es la única donde el mismo token es ambiguo con el programa bien escrito: en `a = !-b;` el
+  `-` es un signo unario legal y una guarda por folset lo lee como operador binario, con cero
+  errores.
+
+  **Elegida la rama, la llamada a `termino()` es incondicional.** Si el signo se consumió y lo que
+  sigue no arranca un término, falta un operando: es un error real y lo reporta el test de `factor`,
+  una sola vez. Condicionar esa llamada —por ejemplo saltearla cuando el lookahead ya está en el
+  resto— hace que `a = + + b;` se acepte en silencio.
+
+  Corrección de una nota anterior de este ticket: `||` está en `resto − first`, no en
+  `first − resto`. `first − resto` es todo lo que arranca un término.
+
+  **Alcance — dónde más aplica la rama del medio.** Condición: el procedimiento lleva test inicial,
+  tiene un punto de reconfiguración interno que no está en su FIRST, y lo que precede a ese punto en
+  el cuerpo es obligatorio. Si lo previo es opcional y ya está guardado por un `if`, la regla 8 lo
+  resuelve sola (`declarador_init`); si es una alternación, el `switch` con `default: return` lo
+  resuelve solo (`factor`, `proposicion`, `especificador_tipo`, `especificador_declaracion`,
+  `constante`); si delega o solo se invoca condicionalmente, no lleva test inicial y la pregunta no
+  se plantea. Quedan tres, además de `expresion_simple`:
+
+  - `lista_declaraciones_init` (`ident <declarador init> { , ident <declarador init> }`): punto
+    interno `,`, precedido por `match(ident)` obligatorio. Sonda: `int , y;`.
+  - `proposicion_compuesta`: cualquier punto interno está precedido por `match({)` obligatorio.
+    Sonda: `void f() int x; }`.
+  - `variable` (`ident | ident [ <expresión> ]`): punto interno `[`, precedido por `match(ident)`
+    obligatorio. Sonda: `cin >> [i];`.
+
+  En los tres la forma es la misma y más simple que acá: hacer la cabeza salteable
+  (`if(lookahead_in(FIRST)) scanner();` en vez de un `match` incondicional), sin necesidad de
+  ordenar guardas, porque con cabeza obligatoria no hay ambigüedad que ordenar. No entran en este
+  PR; se instrumentan en sus tickets `N`.
+
+- **Verificación de la guarda.** Válidos, que deben dar cero errores hoy:
+  `tests/entrega1/validos/04_expresion_simple_signo_unario.c` y
+  `05_expresion_simple_folset_solapado.c`. El segundo **no discrimina por conteo de errores**: la
+  guarda vieja por folset también daba cero, porque lo que cambia es el árbol y no la cantidad de
+  mensajes. Queda igual porque es la única forma de dejar el caso fijado antes de entrega 2.
+  Inválidos: lote `L14`, en `pendientes/invalidos/`.
+
+### Guía práctica 6: por qué <relación> no tiene función en el parser.
+- `<relación>` es la única de las 30 producciones gramaticales que no cuenta con un procedimiento 
+  independiente en parser.c debido a que es una producción no recursiva formada puramente por una 
+  alternativa de operadores terminales (!=, ==, <, <=, >=, >), los cuales no pueden aparecer de 
+  manera aislada y son reconocidos de forma inline directamente dentro de la selección de 
+  expresion().
+- En criollo: el no-terminal aparece únicamente en expresión y únicamente trata alternancia de ter-
+  minales, así que se optó por ir in-line.
 
 ## N2
 
@@ -897,6 +1040,18 @@ Creación de los 5 lotes de prueba inválidos para evaluación exhaustiva de err
 - **Ubicación en pendientes:** Permanecen en `pendientes/invalidos/` hasta que la instrumentación antipánico (`N2`, `N4`, `N5`, `N6`) y el fix `T4` estén integrados en `develop`.
 
 ## L14
+
+Creación de los lotes de prueba para la guarda de `expresion_simple` (`N1`):
+
+- **Válidos (`tests/entrega1/validos/`, deben pasar hoy):**
+  - `04_expresion_simple_signo_unario.c`: el signo unario opcional en todos sus contextos de folset — asignación, argumento de llamada, índice de arreglo, condición de `while` e `if`, y `cout`.
+  - `05_expresion_simple_folset_solapado.c`: el signo unario cuando el folset heredado contiene `+` y `-`, es decir como operando de `!`. Fija el árbol correcto; no discrimina por conteo de errores hasta entrega 2.
+- **Inválidos (`tests/entrega1/pendientes/invalidos/14_expresion_simple_*.c` y sus `.esperado`):**
+  - `14_expresion_simple_signo_sin_operando.c` (`a = + + b;`, `a = - - b;`, `a = !-;`, `fop3(-, b);`): signo consumido y término faltante. Cuatro instancias del `Error 57`. Es la regresión de la llamada incondicional a `termino()`: si esa llamada se condiciona, las cuatro sentencias se aceptan sin reportar nada.
+  - `14_expresion_simple_or_huerfano.c` (`if(a < || c)`, `a = || b;`): falta el operando izquierdo de `||`. Dos instancias del `Error 56`, nunca un `Error 57` encima, y `|| c` y `|| b` tienen que quedar analizados.
+  - `14_expresion_simple_salida_folset.c` (`cout << ) ;`, `fop4( , b);`): el test frena en un token del folset heredado y la guarda retorna. Dos instancias del `Error 56` sin cascada, y la lista de expresiones sigue reconociendo `b`.
+  - `14_expresion_simple_signo_en_termino.c` (`a = b - -c;`, `a = b || -c;`, `a = b * -c;`): el signo unario solo es legal en la cabeza de `<expresión simple>`; los operandos de las repeticiones son `<término>` y `<factor>`, y ninguno de los dos FIRST contiene `+` ni `-`. Tres instancias del `Error 57`.
+- **Ubicación en pendientes:** los inválidos permanecen en `pendientes/invalidos/` hasta que la instrumentación de `factor()` (`N2`) esté integrada en `develop`, incluido el cambio de `default: error(...)` a `default: return` en su `switch`. Hasta entonces cada archivo reporta de más.
 
 # Capa 5 · Cierre
 
