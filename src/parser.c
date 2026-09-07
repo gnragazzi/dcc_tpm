@@ -89,6 +89,8 @@ void definicion_funcion(set folset)
 {
 	match(CPAR_ABR, 20);
 
+	test(F_LISTA_DECLARACIONES_PARAM | CPAR_CIE, folset, 41);
+
 	if(lookahead_in(F_LISTA_DECLARACIONES_PARAM))
 		lista_declaraciones_param(folset | CPAR_CIE | F_PROPOSICION_COMPUESTA);
 
