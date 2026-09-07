@@ -768,11 +768,12 @@ Instrumentación de `proposicion_compuesta(set folset)`, `lista_proposiciones(se
   `folset` correcto, el diseño de `lista_proposiciones` es el correcto para cuando todo esté
   instrumentado, pero no está garantizado en el binario actual.
 
-- **`proposicion_compuesta` lleva un test intermedio después de `match(CLLA_ABR, 24)`.** El cuerpo
+- **`proposicion_compuesta` lleva un test intermedio después de consumir la `{`.** El cuerpo
   del bloque son dos guardianes seguidos de un `match` obligatorio:
 
   ```c
-  match(CLLA_ABR, 24);
+  if(lookahead_in(CLLA_ABR))
+  	scanner();
 
   test(F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES | CLLA_CIE, folset, 52);
 
@@ -832,6 +833,52 @@ Instrumentación de `proposicion_compuesta(set folset)`, `lista_proposiciones(se
   El test intermedio en sí no necesita guarda propia: lo que le sigue son dos guardianes ya
   condicionales. Lo que necesitaba guarda era el test inicial, y el intermedio solo hizo visible
   que faltaba.
+
+  **El `match(CLLA_ABR, 24)` era doble reporte y se reemplaza por consumo silencioso (regla 8).**
+  Señalado en revisión de código, es un defecto anterior a este ticket. `proposicion_compuesta`
+  lleva test inicial con `c1 = F_PROPOSICION_COMPUESTA = CLLA_ABR`, así que la llave de apertura ya
+  fue verificada ahí: volver a mirarla con un `match` es exactamente lo que la regla 8 prohíbe.
+  Sobre `void main()` seguido de `int x; }` el test inicial reportaba `49` y resincronizaba en
+  `int`, y acto seguido el `match` miraba ese mismo `int` y reportaba `24`. Dos errores por una
+  sola llave.
+
+  | entrada | con `match` | con `if`/`scanner` |
+  |---|---|---|
+  | `void main()` + `int x; }` | 49, 24 | **49** |
+  | `void main()` + `a = 1; }` | 49, 24 | **49** |
+  | `void main()` + `* a = 1; }` | 49, 24 | **49** |
+  | sin ninguna de las dos llaves | 49, 24, 25 | **49**, 25 |
+
+  Ninguno de los 34 casos de `pendientes/invalidos` cambia de veredicto, y el CI sigue en 10/10.
+
+  **Las tres piezas cubren casos distintos y ninguna reemplaza a otra.** El procedimiento quedó con
+  guarda de regla 9, consumo de regla 8 y test de juntura conviviendo, que es más maquinaria de la
+  habitual para un solo no terminal. La razón de cada una:
+
+  | pieza | qué cubre | si falta |
+  |---|---|---|
+  | `return` (regla 9) | el test inicial resincronizó al folset heredado | `void main()` + `}` da `49, 52, 25` en vez de `49` |
+  | `if`/`scanner` (regla 8) | la `{` ya la verificó el test inicial | `49, 24` en vez de `49` |
+  | test de juntura | símbolo intruso tras la `{`, que los guardianes se saltean | `25, 50` en vez de `52`, más un `50` por nivel de anidamiento |
+
+  **El test de juntura no se puede demostrar en aislamiento en esta rama.** `unidad_traduccion`
+  todavía invoca `declaraciones(PLACEHOLDER)`, y `PLACEHOLDER` es `LLONG_MAX`: **todos los bits**.
+  Ese folset baja por `especificador_declaracion` → `definicion_funcion` → `proposicion_compuesta`,
+  de modo que cualquier token pertenece al `c2` de cualquier test y **ningún `test` de la cadena
+  puede descartar nada**. El de la juntura reporta el `52` que corresponde, pero la
+  resincronización queda inutilizada y la cascada aparece igual. Reemplazando solo esas dos líneas
+  por el folset real (lo que hace `N1`/`N2`), el contraste sale limpio:
+
+  | caso | con el test | sin el test |
+  |---|---|---|
+  | `{ * a = 5; }` | `52` | `25, 50` |
+  | `{ * int a; }` | `52` | `25, 50, 51` |
+  | un `*` en el más interno de cinco bloques anidados | `52` | `25, 50, 25, 25, 25, 25, 51` |
+
+  Por eso los dos casos que fijan este comportamiento —`16_bloque_simbolo_inesperado` y
+  `16_bloque_anidado_cascada`— quedan en `tests/entrega1/pendientes/invalidos/` en vez de entrar al
+  CI: sus `.esperado` son los correctos y ya están verificados como estables contra el parser
+  completo, pero no pasan hasta que `N1`/`N2` estén mergeados. Dependencia registrada.
 
   **Por qué no alcanza con ensanchar el segundo guardián** a `if(!lookahead_in(CLLA_CIE))`.
   Funciona en los casos simples —`proposicion` lleva test inicial (`52`) y resincroniza sin
@@ -1312,6 +1359,7 @@ Medición, errores reportados antes → después:
 | `12_cascada_bloques_anidados` | 6 | 3 |
 | `*` al inicio de un bloque anidado (`while`, `else`, desnudo) | 3 | 1 |
 | `void main()` + `}` sin llave de apertura (con la guarda de regla 9) | 3 | 1 |
+| `void main()` + `int x; }` (con la regla 8 sobre la `{`) | 2 | 1 |
 | `14_expresion_simple_salida_folset` (pendiente) | 5 | 2 |
 
 Ningún caso válido cambia de salida: el test pasa en silencio cuando el lookahead está en `c1`.
