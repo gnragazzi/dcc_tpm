@@ -47,6 +47,7 @@ void error_print(int ne)
 		case 35: printf("\t Error %d: Falta [\n", ne); break;
 		/* posibles errores personalizados (que no sean parafrasis de errores ya existentes) 36-39*/
 		case 36: printf("\t Error %d: folset mal formado.\n", ne); break;
+		case 37: printf("\t Error %d: Simbolo inesperado o falta simb. al comienzo del archivo fuente", ne); break;
 		/* errores de recuperacion de errores */
 		case 40: printf("\t Error %d: Al inicio del programa\n", ne); break;
 		case 41: printf("\t Error %d: Simbolo inesperado o falta especificador de tipo\n", ne); break;
