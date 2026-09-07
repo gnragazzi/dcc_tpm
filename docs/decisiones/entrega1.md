@@ -498,7 +498,10 @@ le alcanza con la condición del propio `while`.
 
   La regla 9 (`T5`) alcanza para todos los demás procedimientos con test inicial: si el test
   resincronizó en el folset heredado, se retorna sin correr el cuerpo. `expresion_simple` es la
-  única producción de la gramática donde no alcanza, y la razón no es el prefijo `[ + | - ]` en sí.
+  única donde no alcanza, y por dos razones distintas que conviene no mezclar: **es dueña de su
+  propio ciclo de reconfiguración**, y **es la única producción de la gramática con cabeza
+  opcional**. La primera decide que exista una rama del medio; la segunda, que la guarda no pueda
+  preguntar por el folset.
 
   **Quién es dueño del ciclo.** Cuando el test de `factor` frena en un `*`, `factor` retorna y el
   `while` de `termino` —que está justo arriba— consume el `*` y sigue: el token no se pierde porque
@@ -508,10 +511,14 @@ le alcanza con la condición del propio `while`.
   que hace `match())` sobre un `||` y reporta un segundo error que no corresponde. Ese token lo
   tiene que consumir `expresion_simple` misma.
 
-  El `[ + | - ]` es la **causa** de eso, no el criterio: como la cabeza de la producción no es una
-  llamada a procedimiento, `expresion_simple` no puede delegar su test inicial en un subordinado
-  (regla 3), y el test y el ciclo de reconfiguración quedan en el mismo cuerpo. `expresion` y
-  `termino` sí delegan, y por eso no tienen el problema.
+  El `[ + | - ]` es lo que impide delegar: como la cabeza de la producción no es una llamada a
+  procedimiento, `expresion_simple` no puede pasarle el test inicial a un subordinado (regla 3), y
+  el test y el ciclo quedan en el mismo cuerpo. `expresion` y `termino` sí delegan, y por eso no
+  tienen el problema.
+
+  Esta parte **no es exclusiva de `expresion_simple`**: cualquier procedimiento con test inicial,
+  cabeza obligatoria y un punto interno fuera de su FIRST necesita la misma rama del medio. Ver
+  *Alcance* al final de este ticket.
 
   **Las tres salidas.** Al terminar el test inicial el lookahead está en
   `F_EXPRESION_SIMPLE ∪ folset ∪ F_RESTO_EXPRESION_SIMPLE`, y cada caso pide algo distinto:
@@ -540,6 +547,16 @@ le alcanza con la condición del propio `while`.
   correcta es la de la regla 9, `!lookahead_in(F_EXPRESION_SIMPLE | F_RESTO_EXPRESION_SIMPLE)`, que
   no depende de que el folset sea disjunto de nada.
 
+  **Y esto sí es exclusivo de `expresion_simple`.** El solapamiento `FIRST ∩ folset` existe en
+  varios procedimientos, pero solo rompe **entrada válida** cuando la cabeza es opcional. Si la
+  cabeza es obligatoria —`ident` en `variable` y en `lista_declaraciones_init`, `{` en
+  `proposicion_compuesta`— un test que pasa significa siempre "este token es mío", y el
+  solapamiento solo cambia qué tan bien se recupera de entrada **ya inválida**: eso es calidad de
+  recuperación (consigna 14), no corrección. `expresion_simple` es la única con cabeza opcional, así
+  que es la única donde el mismo token es ambiguo con el programa bien escrito: en `a = !-b;` el
+  `-` es un signo unario legal y una guarda por folset lo lee como operador binario, con cero
+  errores.
+
   **Elegida la rama, la llamada a `termino()` es incondicional.** Si el signo se consumió y lo que
   sigue no arranca un término, falta un operando: es un error real y lo reporta el test de `factor`,
   una sola vez. Condicionar esa llamada —por ejemplo saltearla cuando el lookahead ya está en el
@@ -547,6 +564,26 @@ le alcanza con la condición del propio `while`.
 
   Corrección de una nota anterior de este ticket: `||` está en `resto − first`, no en
   `first − resto`. `first − resto` es todo lo que arranca un término.
+
+  **Alcance — dónde más aplica la rama del medio.** Condición: el procedimiento lleva test inicial,
+  tiene un punto de reconfiguración interno que no está en su FIRST, y lo que precede a ese punto en
+  el cuerpo es obligatorio. Si lo previo es opcional y ya está guardado por un `if`, la regla 8 lo
+  resuelve sola (`declarador_init`); si es una alternación, el `switch` con `default: return` lo
+  resuelve solo (`factor`, `proposicion`, `especificador_tipo`, `especificador_declaracion`,
+  `constante`); si delega o solo se invoca condicionalmente, no lleva test inicial y la pregunta no
+  se plantea. Quedan tres, además de `expresion_simple`:
+
+  - `lista_declaraciones_init` (`ident <declarador init> { , ident <declarador init> }`): punto
+    interno `,`, precedido por `match(ident)` obligatorio. Sonda: `int , y;`.
+  - `proposicion_compuesta`: cualquier punto interno está precedido por `match({)` obligatorio.
+    Sonda: `void f() int x; }`.
+  - `variable` (`ident | ident [ <expresión> ]`): punto interno `[`, precedido por `match(ident)`
+    obligatorio. Sonda: `cin >> [i];`.
+
+  En los tres la forma es la misma y más simple que acá: hacer la cabeza salteable
+  (`if(lookahead_in(FIRST)) scanner();` en vez de un `match` incondicional), sin necesidad de
+  ordenar guardas, porque con cabeza obligatoria no hay ambigüedad que ordenar. No entran en este
+  PR; se instrumentan en sus tickets `N`.
 
 - **Verificación de la guarda.** Válidos, que deben dar cero errores hoy:
   `tests/entrega1/validos/04_expresion_simple_signo_unario.c` y
