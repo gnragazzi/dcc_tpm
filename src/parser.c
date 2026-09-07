@@ -357,40 +357,43 @@ void proposicion_e_s(set folset)
 		case CIN:
 			scanner();
 
-			match(CSHR, 10);
+			match(CSHR, 30);
 
-			variable(PLACEHOLDER);
+			variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA);
 
-			while(lookahead_in(CSHR))
+			while(lookahead_in(F_RESTO_PROP_IN | F_VARIABLE))
 			{
-				scanner();
-				variable(PLACEHOLDER);
+				match(CSHR, 30);
+				variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA);
 			}
 
-			match(CPYCOMA, 10);
+			match(CPYCOMA, 23);
 
 			break;
 
 		case COUT:
 			scanner();
 
-			match(CSHL, 10);
+			match(CSHL, 31);
 
-			expresion(PLACEHOLDER);
+			expresion(folset | F_RESTO_PROP_OUT | F_EXPRESION | CPYCOMA);
 
-			while(lookahead_in(CSHL))
+			while(lookahead_in(F_RESTO_PROP_OUT | F_EXPRESION))
 			{
-				scanner();
-				expresion(PLACEHOLDER);
+				match(CSHL, 31);
+				expresion(folset | F_RESTO_PROP_OUT | F_EXPRESION | CPYCOMA);
 			}
 
-			match(CPYCOMA, 10);
+			match(CPYCOMA, 23);
 
 			break;
 
 		default:
-			error_handler(10);
+			error_handler(29);
+			break;
 	}
+
+	test(folset, NADA, 53);
 }
 
 
@@ -398,18 +401,22 @@ void proposicion_retorno(set folset)
 {
 	scanner();
 
-	expresion(PLACEHOLDER);
+	expresion(folset | CPYCOMA);
 
-	match(CPYCOMA, 10);
+	match(CPYCOMA, 23);
+
+	test(folset, NADA, 54);
 }
 
 
 void proposicion_expresion(set folset)
 {
-	if(lookahead_in(CMAS | CMENOS | CIDENT | CPAR_ABR | CNEG | CCONS_ENT | CCONS_FLO | CCONS_CAR | CCONS_STR))
-		expresion(PLACEHOLDER);
+	if(lookahead_in(F_EXPRESION))
+		expresion(folset | CPYCOMA);
 
-	match(CPYCOMA, 10);
+	match(CPYCOMA, 23);
+
+	test(folset, NADA, 55);
 }
 
 
