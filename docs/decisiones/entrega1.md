@@ -772,7 +772,69 @@ Instrumentación de los procedimientos `proposicion_iteracion(set folset)` y `pr
 
 ## N6
 
-## N7
+Instrumentación de los procedimientos `proposicion_e_s(set folset)`, `proposicion_retorno(set folset)` y `proposicion_expresion(set folset)` en `src/parser.c` para la recuperación antipánica (Consignas 5, 8, 10 y 12):
+
+- **Procedimiento `proposicion_retorno(set folset)`:**
+  - **Contexto gramatical:** $\langle\text{proposición retorno}\rangle ::= \mathbf{return} \ \langle\text{expresión}\rangle \ \mathbf{;}$.
+  - **Test inicial (Regla 2):** No lleva test inicial propio. Su único punto de invocación es la rama `case CRETURN:` dentro de `proposicion()`, quedando su símbolo inicial plenamente verificado por el llamador.
+  - **Arranque con `scanner()` (Guía práctica 7 y Consigna 10):**
+    - *¿Por qué arranca con `scanner()` en lugar de `match(CRETURN, ...)`?* En la gramática BNFE, la selección de alternativa se realiza en `proposicion()` mediante un `switch(lookahead())` donde la rama `case CRETURN:` ya verificó de forma fehaciente que el token actual es la palabra reservada `return`. Repetir un `match` o test inicial dentro del cuerpo sería una comprobación redundante. Por lo tanto, `proposicion_retorno()` consume inmediatamente el terminal mediante `scanner();` y avanza a la expresión.
+  - **Cálculo amplio del follower set (Regla 6):** Al invocar `expresion()`, el follower set acumula la cola restante de la producción:
+    ```c
+    expresion(folset | CPYCOMA);
+    ```
+    Si se omite el punto y coma `;` al final del retorno (ej: `return x + 1`), `expresion()` frena en el follower set heredado (`}` de cierre de bloque, etc.), permitiendo que `match(CPYCOMA, 23)` detecte la omisión y reporte puntualmente `Error 23: Falta ;`.
+  - **Consumo de terminal y Test final (Regla 6):** Concluye consumiendo el delimitador `;` con `match(CPYCOMA, 23);`. Al terminar en un terminal y no en una llamada subordinada, ejecuta su test final:
+    ```c
+    test(folset, NADA, 54);
+    ```
+    emitiendo `Error 54: Simbolo inesperado despues de proposicion retorno` ante tokens espurios tras el punto y coma.
+
+- **Procedimiento `proposicion_expresion(set folset)`:**
+  - **Contexto gramatical:** $\langle\text{proposición expresión}\rangle ::= [ \ \langle\text{expresión}\rangle \ ] \ \mathbf{;}$.
+  - **Test inicial (Regla 2):** No lleva test inicial propio al ser invocado condicionalmente desde las etiquetas de `proposicion()` correspondientes a $\text{FIRST}(\langle\text{proposición expresión}\rangle) = \text{FIRST}(\langle\text{expresión}\rangle) \cup \{ \mathbf{;} \}$.
+  - **Expresión opcional y proposición nula:** Se evalúa la presencia de la expresión con el macro unificado:
+    ```c
+    if(lookahead_in(F_EXPRESION))
+        expresion(folset | CPYCOMA);
+    ```
+    reemplazando la enumeración explícita de terminales de expresión. Si no hay expresión (caso de sentencia vacía o proposición nula `;`), el parser continúa directamente hacia la verificación del delimitador.
+  - **Cálculo amplio del follower set (Regla 6):** `expresion()` recibe `folset | CPYCOMA`.
+  - **Consumo de terminal y Test final (Regla 6):** Consume el delimitador con `match(CPYCOMA, 23);` (`Error 23: Falta ;`) y ejecuta su test final:
+    ```c
+    test(folset, NADA, 55);
+    ```
+    emitiendo `Error 55: Simbolo inesperado despues de proposicion expresion` ante símbolos no pertenecientes al seguimiento del bloque o sentencia.
+
+- **Procedimiento `proposicion_e_s(set folset)`:**
+  - **Contexto gramatical:**
+    $$\langle\text{proposición e/s}\rangle ::= \mathbf{cin} \ \mathbf{>>} \ \langle\text{variable}\rangle \ \{ \ \mathbf{>>} \ \langle\text{variable}\rangle \ \} \ \mathbf{;} \mid \mathbf{cout} \ \mathbf{<<} \ \langle\text{expresión}\rangle \ \{ \ \mathbf{<<} \ \langle\text{expresión}\rangle \ \} \ \mathbf{;}$$
+  - **Test inicial y tratamiento de `default` (Reglas 2 y 8):**
+    - No lleva test inicial propio al ser invocado condicionalmente desde `case CIN: case COUT:` en `proposicion()`.
+    - Al carecer de test inicial, conserva en su rama por defecto la emisión del error correspondiente: `default: error_handler(29); break;` (`Error 29: Falta cin o cout`).
+  - **Consumo de palabras clave garantizadas (Consigna 10):** Tanto `case CIN:` como `case COUT:` consumen su terminal con `scanner();` al estar pre-validados por el llamador.
+  - **Separadores de flujo olvidables y bucles de repetición (Consigna 12 y Regla 7):**
+    - Los operadores de redirección de flujo `>>` (`CSHR` / `F_RESTO_PROP_IN`) y `<<` (`CSHL` / `F_RESTO_PROP_OUT`) operan sintácticamente como separadores de repetición análogos a la coma `,` en listas de identificadores o expresiones, siendo propensos al olvido accidental (ej: `cin >> a b;` o `cout << x y;`).
+    - Se utilizan los macros arquitectónicos `F_RESTO_PROP_IN` y `F_RESTO_PROP_OUT` (fijados en Capa 0 / T2) para la construcción de conjuntos y condiciones de bucle, reservando `CSHR` y `CSHL` exclusivamente para los `match()`.
+    - Se aplica la técnica de guardián ensanchado reutilizando `match()`:
+      - Para `cin`: `while(lookahead_in(F_RESTO_PROP_IN | F_VARIABLE))` con `match(CSHR, 30);`. Si `CSHR` está presente lo consume con `scanner()`; si falta pero sigue una variable (`F_VARIABLE`), `match` emite `Error 30: Falta >>` sin avanzar el token, procesando inmediatamente la variable subsiguiente.
+      - Para `cout`: `while(lookahead_in(F_RESTO_PROP_OUT | F_EXPRESION))` con `match(CSHL, 31);`. Análogamente, ante la omisión de `<<` emite `Error 31: Falta <<` y procesa la siguiente expresión.
+    - *Trade-off del guardián ensanchado en `cout`:* Al incluir `F_EXPRESION` en la condición del bucle (`while(lookahead_in(F_RESTO_PROP_OUT | F_EXPRESION))`), si el usuario omite el punto y coma final `;` tras un `cout` y en la línea siguiente empieza una sentencia con identificador (ej: `a = 1;`), el bucle interpretará ese identificador como una expresión encadenada donde faltó `<<`, reportando `Error 31: Falta <<` en lugar de `Error 23: Falta ;`. Este compromiso (*trade-off*) es asumido deliberadamente para priorizar la recuperación limpia de omisión de `<<` entre expresiones múltiples encadenadas en la misma proposición según la Consigna 12.
+  - **Construcción amplia del follower set en E/S (Regla 6):**
+    - En `cin`: La primera variable y cada variable del bucle reciben:
+      ```c
+      variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA);
+      ```
+    - En `cout`: La primera expresión y cada expresión del bucle reciben:
+      ```c
+      expresion(folset | F_RESTO_PROP_OUT | F_EXPRESION | CPYCOMA);
+      ```
+      De este modo, si ocurre un fallo dentro de un elemento, la recuperación frena de inmediato en el siguiente operador de flujo, en el siguiente operando o en el punto y coma `;`, evitando el descarte indiscriminado del resto de la instrucción.
+  - **Consumo de delimitador y Test final (Regla 6):** Ambas ramas consumen el punto y coma final con `match(CPYCOMA, 23);` (`Error 23: Falta ;`). Concluido el `switch`, se ejecuta el test final general del procedimiento:
+    ```c
+    test(folset, NADA, 53);
+    ```
+    emitiendo `Error 53: Simbolo inesperado despues de proposicion entrada - salida` si el lookahead resultante no es un inicio válido de proposición o delimitador de bloque.
 
 Instrumentación de `unidad_traduccion(set folset)`, `declaraciones(set folset)` y `especificador_tipo(set folset)` en `src/parser.c` para la recuperación antipánico (Consigna 7):
 
@@ -878,6 +940,72 @@ Instrumentación de los procedimientos `lista_declaraciones_param(set folset)` y
   - **Resolución de $\lambda$ (migración BNF $\to$ BNFE):** En la BNF clásica, la lista era anulable ($\to \lambda$). En la BNFE, la posibilidad de funciones sin parámetros (`void f()`) se absorbe en el llamador (`definicion_funcion`) con el guardián `if(lookahead_in(F_LISTA_DECLARACIONES_PARAM))`, y el corte de la iteración en el `while` absorbe la derivación vacía final sin requerir conjuntos anulables.
 
 ## N10
+
+Instrumentación de recuperación antipánico para las producciones de inicialización y declaración de variables (`declarador_init`, `lista_declaraciones_init`, `declaracion_variable`) en `src/parser.c` (Consignas 5, 8, 10 y 12):
+
+- **Procedimiento `<declarador_init>`:**
+  - **Contexto gramatical y contradicción BNF vs BNFE (T6):**
+    - BNFE operativa: $\langle\text{declarador init}\rangle ::= [ \ \mathbf{=} \ \langle\text{constante}\rangle \mid [ \ [ \ \mathbf{cons\_ent} \ ] \ ] \ [ \ \mathbf{=} \ \{ \ \langle\text{lista de inicializadores}\rangle \ \} \ ] \ ]$.
+    - En la BNF impresa, el corchete `[` figuraba erróneamente posterior al `=`. Conforme a `T6`, se respeta la BNFE operativa donde la inicialización escalar (`= <constante>`) y la dimensión/inicialización de arreglos (`[ ... ]`) son alternativas disjuntas.
+  - **Tratamiento de $\lambda$ y Test inicial (Reglas 1 y 2):**
+    - Es un no terminal anulable ($\to \lambda$), ya que una variable o parámetro puede declararse sin dimensión ni inicializador (ej. `int a;` o `int a, b;`).
+    - Al ser invocado incondicionalmente desde `declaracion_variable` y `lista_declaraciones_init`, y no iniciar con llamada a procedimiento, lleva test inicial bajo la cláusula para anulables:
+      $$c_1 = \text{FIRST}(\langle\text{declarador init}\rangle) \cup \text{folset} = \text{F\_DECLARADOR\_INIT} \mid \text{folset}$$
+      $$c_2 = \text{NADA} = 0$$
+      ```c
+      test(F_DECLARADOR_INIT | folset, NADA, 47);
+      ```
+      emitiendo `Error 47: Simbolo inesperado al comienzo de declarador init`.
+    - **`switch` sin `default` (Regla 1 y 8):** Al ser una alternancia con $\lambda$, caer fuera de los `case` (`CASIGNAC` y `CCOR_ABR`) cuando el lookahead pertenece a `folset` representa la derivación vacía legítima. Por lo tanto, no lleva cláusula `default:` que emita error.
+  - **Propagación del `folset` y códigos canónicos (Reglas 6 y 8 / Consigna 10):**
+    - En la rama de asignación escalar `CASIGNAC` (`=`): se consume con `scanner()` y se invoca `constante(folset)`.
+    - En la rama de arreglos `CCOR_ABR` (`[`): se consume con `scanner()`. Conforme a la BNFE oficial, la dimensión opcional es el terminal entero `cons_ent` (`CCONS_ENT`), por lo que al verificarse con `if(lookahead_in(CCONS_ENT))` se consume directamente con `scanner()`. El cierre del corchete valida con `match(CCOR_CIE, 22);` (`Error 22: Falta ]`).
+    - Si a continuación se presenta una inicialización de arreglo (`lookahead_in(CASIGNAC)`): se consume `=`, se valida la apertura con `match(CLLA_ABR, 24);` (`Error 24: Falta {`), se delega la secuencia a `lista_inicializadores(CLLA_CIE | folset);` y se exige la llave de cierre con `match(CLLA_CIE, 25);` (`Error 25: Falta }`).
+  - **Test final (Reglas 2 y 6):** Culmina con test final obligatorio:
+    ```c
+    test(folset, NADA, 48);
+    ```
+    emitiendo `Error 48: Simbolo inesperado despues de declarador init`. La incorporación del test final se fundamenta en que al derivar en $\lambda$ no se delega en ningún procedimiento subordinado que valide el seguidor, y la rama de arreglos concluye en consumos de terminales (`match(CCOR_CIE, 22)` o `match(CLLA_CIE, 25)`).
+
+- **Procedimiento `<lista_declaraciones_init>`:**
+  - **Contexto gramatical:** $\langle\text{lista declaraciones init}\rangle ::= \mathbf{ident} \ \langle\text{declarador init}\rangle \ \{ \ \mathbf{,} \ \mathbf{ident} \ \langle\text{declarador init}\rangle \}$.
+  - **Test inicial y final:** No lleva test inicial ni test final propios (Regla 2), comenzando directamente con la verificación del identificador obligatorio.
+  - **Consumo de terminales:** Valida y consume el identificador inicial y subsiguientes mediante el código canónico `match(CIDENT, 17);` (`Error 17: Falta identificador`).
+  - **Iteración con separador olvidable (Consigna 12):**
+    - La coma `,` es un separador de puntuación susceptible a omisión en declaraciones múltiples (ej. `int a b;`).
+    - Se ensancha el guardián del bucle de repetición:
+      ```c
+      while(lookahead_in(CCOMA | F_LISTA_DECLARACIONES_INIT))
+      ```
+    - Siguiendo el estilo unificado con `N3` y `N6`, se emplea la abstracción canónica:
+      ```c
+      match(CCOMA, 64);
+      ```
+      la cual avanza si está la coma o reporta `Error 64: Falta , ` ante su omisión, continuando el procesamiento del identificador siguiente.
+  - **Propagación del `folset` (Regla 6):** En cada invocación a `declarador_init`, se propaga `(folset | CCOMA | F_LISTA_DECLARACIONES_INIT)`. Esto asegura que si una variable intermedia no posee inicializador o dimensión, el test inicial de `declarador_init` reconozca inmediatamente a la coma `,` o al siguiente identificador como seguidores legítimos, derivando $\lambda$ en silencio.
+
+- **Procedimiento `<declaracion_variable>`:**
+  - **Contexto gramatical:** $\langle\text{declaración de variable}\rangle ::= \langle\text{declarador init}\rangle \ [ \ \mathbf{,} \ \langle\text{lista declaraciones init}\rangle \ ] \ \mathbf{;}$.
+  - **Test inicial:** Inicia con una llamada a `declarador_init()`. Al estar además protegida su invocación en el llamador (`especificador_declaracion`) mediante un `switch(lookahead())` con casos explícitos, no requiere test inicial propio (Regla 2).
+  - **Propagación del `folset` (Regla 6):** Invoca inicialmente a `declarador_init` con `(folset | CCOMA | F_LISTA_DECLARACIONES_INIT | CPYCOMA)`. Esto permite que variables escalares sin inicializar (ej. `int a;` o `int a = 1 b = 2;`) resuelvan la ausencia de inicializador de forma transparente ante `;`, `,` o un identificador siguiente.
+  - **Separador olvidable en bloque opcional (Consigna 12):**
+    - Al igual que en la lista repetitiva, la coma que precede a `<lista declaraciones init>` puede ser omitida (ej. `int a = 1 b = 2;`).
+    - Se ensancha la condición del bloque condicional opcional utilizando la abstracción canónica `match(CCOMA, 64);`:
+      ```c
+      if(lookahead_in(CCOMA | F_LISTA_DECLARACIONES_INIT))
+      {
+          match(CCOMA, 64);
+          lista_declaraciones_init(folset | CPYCOMA);
+      }
+      ```
+      reportando `Error 64: Falta , ` en caso de omisión y continuando con el análisis de los identificadores restantes.
+  - **Consumo de terminal y Test final (Reglas 2 y 6):**
+    - Valida y consume el punto y coma de cierre con `match(CPYCOMA, 23);` (`Error 23: Falta ;`).
+    - Al culminar en un terminal obligatorio (`;`), ejecuta su test final:
+      ```c
+      test(folset, NADA, 51);
+      ```
+      emitiendo `Error 51: Simbolo inesperado despues de declaracion` si el lookahead posterior al delimitador no pertenece al conjunto seguidor heredado.
 
 ## N11
 
