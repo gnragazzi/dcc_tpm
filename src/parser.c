@@ -511,7 +511,7 @@ void variable(set folset)
 
 	if(lookahead_in(CCOR_ABR))
 	{
-		match(CCOR_ABR, 35);
+		scanner();
 		expresion(folset | CCOR_CIE);
 		match(CCOR_CIE, 22);
 	}
