@@ -786,7 +786,7 @@ Instrumentación de los procedimientos `proposicion_e_s(set folset)`, `proposici
     Si se omite el punto y coma `;` al final del retorno (ej: `return x + 1`), `expresion()` frena en el follower set heredado (`}` de cierre de bloque, etc.), permitiendo que `match(CPYCOMA, 23)` detecte la omisión y reporte puntualmente `Error 23: Falta ;`.
   - **Consumo de terminal y Test final (Regla 6):** Concluye consumiendo el delimitador `;` con `match(CPYCOMA, 23);`. Al terminar en un terminal y no en una llamada subordinada, ejecuta su test final:
     ```c
-    test(folset, 0, 54);
+    test(folset, NADA, 54);
     ```
     emitiendo `Error 54: Simbolo inesperado despues de proposicion retorno` ante tokens espurios tras el punto y coma.
 
@@ -802,7 +802,7 @@ Instrumentación de los procedimientos `proposicion_e_s(set folset)`, `proposici
   - **Cálculo amplio del follower set (Regla 6):** `expresion()` recibe `folset | CPYCOMA`.
   - **Consumo de terminal y Test final (Regla 6):** Consume el delimitador con `match(CPYCOMA, 23);` (`Error 23: Falta ;`) y ejecuta su test final:
     ```c
-    test(folset, 0, 55);
+    test(folset, NADA, 55);
     ```
     emitiendo `Error 55: Simbolo inesperado despues de proposicion expresion` ante símbolos no pertenecientes al seguimiento del bloque o sentencia.
 
@@ -830,7 +830,7 @@ Instrumentación de los procedimientos `proposicion_e_s(set folset)`, `proposici
       De este modo, si ocurre un fallo dentro de un elemento, la recuperación frena de inmediato en el siguiente operador de flujo, en el siguiente operando o en el punto y coma `;`, evitando el descarte indiscriminado del resto de la instrucción.
   - **Consumo de delimitador y Test final (Regla 6):** Ambas ramas consumen el punto y coma final con `match(CPYCOMA, 23);` (`Error 23: Falta ;`). Concluido el `switch`, se ejecuta el test final general del procedimiento:
     ```c
-    test(folset, 0, 53);
+    test(folset, NADA, 53);
     ```
     emitiendo `Error 53: Simbolo inesperado despues de proposicion entrada - salida` si el lookahead resultante no es un inicio válido de proposición o delimitador de bloque.
 

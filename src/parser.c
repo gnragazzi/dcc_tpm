@@ -375,9 +375,10 @@ void proposicion_e_s(set folset)
 
 		default:
 			error_handler(29);
+			break;
 	}
 
-	test(folset, 0, 53);
+	test(folset, NADA, 53);
 }
 
 
@@ -389,7 +390,7 @@ void proposicion_retorno(set folset)
 
 	match(CPYCOMA, 23);
 
-	test(folset, 0, 54);
+	test(folset, NADA, 54);
 }
 
 
@@ -400,7 +401,7 @@ void proposicion_expresion(set folset)
 
 	match(CPYCOMA, 23);
 
-	test(folset, 0, 55);
+	test(folset, NADA, 55);
 }
 
 
