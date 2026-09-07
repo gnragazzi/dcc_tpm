@@ -774,6 +774,42 @@ Instrumentación de los procedimientos `proposicion_iteracion(set folset)` y `pr
 
 ## N7
 
+Instrumentación de `unidad_traduccion(set folset)`, `declaraciones(set folset)` y `especificador_tipo(set folset)` en `src/parser.c` para la recuperación antipánico (Consigna 7):
+
+- **Procedimiento `unidad_traduccion(set folset)`:**
+  - **Test inicial:** Se invoca incondicionalmente desde el driver y su primera sentencia es un `while`, no una llamada a procedimiento, por lo que requiere test inicial.
+  - **`c1` debe incluir el folset heredado.** `<unidad de traducción> ::= { <declaraciones> }` deriva λ —cero repeticiones es una derivación válida— y la teoría es explícita: si `X → λ` entonces `c1 = FIRST(X) ∪ folset`. Con `c1 = F_UNIDAD_TRADUCCION` a secas, un archivo fuente vacío, cuyo único token es `eof` y por lo tanto pertenece al folset, reporta un error sobre entrada sintácticamente válida:
+    ```c
+    test(F_UNIDAD_TRADUCCION | folset, folset, 40);
+    ```
+    *Decisión abierta:* si se resuelve rechazar el archivo vacío de manera deliberada, `c1 = F_UNIDAD_TRADUCCION` es la forma correcta, pero pasa a ser una desviación de la regla y se documenta como tal en este ticket.
+  - **Número de error: se reutiliza el 40 en lugar de definir uno nuevo.** `error.c` ya define `case 40: Al inicio del programa`, que cubre exactamente esta condición. El rango 36–39 está reservado por la cátedra a "posibles errores personalizados **que no sean parafrasis de errores ya existentes**", de modo que un error 37 con el texto "al comienzo del archivo fuente" no corresponde.
+  - **`c2` = folset heredado.** El único punto de reconfiguración interno de la producción es `FIRST(<declaraciones>)`, que ya está contenido en `c1`; no hay nada que agregar.
+  - **Sin test en el ciclo ni test final (Regla 7).** El cuerpo del `while` termina en `declaraciones(folset | F_UNIDAD_TRADUCCION)` y la cadena `declaraciones → especificador_declaracion` cierra en el test final de este último, invocado con ese mismo folset. Un `test()` en el ciclo nunca encontraría el lookahead fuera de `c1`.
+  - **Invariante: el ciclo solo puede salir con `eof`.** Al retornar de `declaraciones()`, el test final de `especificador_declaracion()` garantiza el lookahead en `c1 = {eof, void, char, int, float}`. El `while` reentra con los cuatro especificadores de tipo y sale únicamente con `eof`. Consecuencia directa: el `match(eof)` del driver no puede reportar el `Error 9: No se encontro el fin de archivo`.
+  - **Dependencia con `N8`.** El invariante anterior descansa por completo en que `especificador_declaracion()` tenga su test final. Hasta que `N8` cierre, un símbolo ajeno a `FIRST(<declaraciones>)` entre dos declaraciones globales hace salir el ciclo y **el resto del archivo fuente queda sin analizar**. La ausencia de test en el ciclo es correcta en el diseño pero no está garantizada en el binario actual.
+
+- **Procedimiento `declaraciones(set folset)`:**
+  - **Sin test inicial (Regla 3).** Su primera sentencia es una invocación a `especificador_tipo()` y `FIRST(<declaraciones>) = FIRST(<especificador de tipo>)`, así que delega el test en el subordinado.
+  - **Sin test final (Regla 6).** Su última sentencia es una invocación a procedimiento.
+  - **Propagación del `folset`:** `especificador_tipo(folset | CIDENT | F_ESPECIFICADOR_DECLARACION)`, `match(CIDENT, 17)` y `especificador_declaracion(folset)` — nada sigue a `<especificador de declaración>` dentro de la producción, por lo que hereda el folset sin agregados.
+  - **Decisión: `F_ESPECIFICADOR_DECLARACION` viaja en el folset, no en el `c2` del test.** Estrictamente, lo que sigue a `<especificador de tipo>` en la producción es el terminal `ident`, que no deriva λ, así que la regla de propagación daría `folset | CIDENT` solamente. Se agrega igual `F_ESPECIFICADOR_DECLARACION` porque lo necesita el test final de `especificador_tipo`. Ante `int ( ) {}`, donde falta el identificador:
+    - *Sin el agregado:* el test final de `especificador_tipo` no encuentra `(` en su `c1`, reporta el `Error 42` y resincroniza saltando `(`, `)`, `{` y `}`; se pierde la definición de función entera.
+    - *Con el agregado:* el test final pasa, `match(CIDENT, 17)` reporta el error real (`Falta identificador`) y `especificador_declaracion()` recupera la definición completa. Un solo error y cero símbolos perdidos.
+  - **Alcance de esa decisión.** Es segura **porque `especificador_tipo` es una hoja**: no invoca a nadie, así que el punto de reconfiguración inyectado no se propaga hacia abajo. El mismo recurso aplicado a un no terminal con subordinados filtra ese punto a todo el subárbol y produce solapamientos entre `FIRST` y `folset` — exactamente el mecanismo que en `N1` hace que `a = !-b;` se lea mal. No generalizar sin verificar que el destino sea una hoja.
+
+- **Procedimiento `especificador_tipo(set folset)`:**
+  - **Test inicial:** Se invoca incondicionalmente desde `declaraciones()` y desde `declaracion_parametro()`, y su primera sentencia es un `switch` de selección sobre `lookahead()`:
+    ```c
+    test(F_ESPECIFICADOR_TIPO, folset, 41);
+    ```
+    Emite `Error 41: Simbolo inesperado o falta especificador de tipo`.
+  - **`c2` = folset heredado y `default: break;` (Regla 8).** Alternancia pura de terminales, sin puntos de reconfiguración internos determinables antes de elegir rama; mismo criterio que `factor` y `constante` en `N2`. El `default` no vuelve a reportar.
+  - **Se preservan los cuatro `case` idénticos.** Los cuatro cuerpos son `scanner(); break;` y podrían colapsarse en un único `if(lookahead_in(F_ESPECIFICADOR_TIPO)) scanner();`. Se mantienen separados por el mismo criterio aplicado a `constante` en `N2`: son el punto de enganche de las acciones semánticas de las entregas siguientes, donde cada rama fija un tipo distinto.
+  - **Test final (Regla 6):** `test(folset, NADA, 42)`, que emite `Error 42: Simbolo inesperado despues de especificador de tipo`.
+  - **El test final no es alcanzable por el camino del `default`.** Al salir del test inicial el lookahead está garantizado en `FIRST ∪ folset`; llegar al `default` implica que no está en `FIRST`, luego está en el folset y el test final pasa siempre. El `Error 42` solo puede reportarse después de haber consumido un especificador de tipo —por ejemplo ante `int 5 ...`—, que es justamente donde sirve. No es un defecto: se documenta para no buscar el 42 en el camino equivocado.
+  - **Verificación:** `void f(& a)` produce un único error (`41`) y `declaracion_parametro()` recupera el parámetro completo, en coherencia con la tabla de la *Decisión sobre la cascada de errores* de `T5`.
+
 ## N8
 
 Instrumentación de los procedimientos `especificador_declaracion(set folset)` y `definicion_funcion(set folset)` en `src/parser.c` para la recuperación antipánica (Consigna 7):

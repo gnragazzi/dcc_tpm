@@ -21,23 +21,28 @@ int main(int argc, char *argv[])
 
 void unidad_traduccion(set folset)
 {
-	while(lookahead_in(CVOID | CCHAR | CINT | CFLOAT))
-		declaraciones(PLACEHOLDER);
+	test((F_UNIDAD_TRADUCCION | folset), NADA, 40);
+
+	while(lookahead_in(F_UNIDAD_TRADUCCION)) {
+		declaraciones(folset | F_UNIDAD_TRADUCCION);
+	}
 }
 
 
 void declaraciones(set folset)
 {
-	especificador_tipo(PLACEHOLDER);
+	especificador_tipo(folset | CIDENT | F_ESPECIFICADOR_DECLARACION);
 
-	match(CIDENT, 10);
+	match(CIDENT, 17);
 
-	especificador_declaracion(PLACEHOLDER);
+	especificador_declaracion(folset);
 }
 
 
 void especificador_tipo(set folset)
 {
+	test(F_ESPECIFICADOR_TIPO, folset, 41);
+
 	switch(lookahead())
 	{
 		case CVOID:
@@ -57,8 +62,10 @@ void especificador_tipo(set folset)
 			break;
 
 		default:
-			error_handler(10);
+			break;
 	}
+
+	test(folset, NADA, 42);
 }
 
 
