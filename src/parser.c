@@ -135,59 +135,65 @@ void declaracion_parametro(set folset)
 
 void lista_declaraciones_init(set folset)
 {
-	match(CIDENT, 10);
+	match(CIDENT, 17);
 
-	declarador_init(PLACEHOLDER);
+	declarador_init(folset | CCOMA | F_LISTA_DECLARACIONES_INIT);
 
-	while(lookahead_in(CCOMA))
+	while(lookahead_in(CCOMA | F_LISTA_DECLARACIONES_INIT))
 	{
-		scanner();
-		match(CIDENT, 10);
-		declarador_init(PLACEHOLDER);
+		match(CCOMA, 64);
+		match(CIDENT, 17);
+		declarador_init(folset | CCOMA | F_LISTA_DECLARACIONES_INIT);
 	}
 }
 
 
 void declaracion_variable(set folset)
 {
-	declarador_init(PLACEHOLDER);
+	declarador_init(folset | CCOMA | F_LISTA_DECLARACIONES_INIT | CPYCOMA);
 
-	if(lookahead_in(CCOMA))
+	if(lookahead_in(CCOMA | F_LISTA_DECLARACIONES_INIT))
 	{
-		scanner();
-		lista_declaraciones_init(PLACEHOLDER);
+		match(CCOMA, 64);
+		lista_declaraciones_init(folset | CPYCOMA);
 	}
 
-	match(CPYCOMA, 10);
+	match(CPYCOMA, 23);
+
+	test(folset, NADA, 51);
 }
 
 
 void declarador_init(set folset)
 {
+	test(F_DECLARADOR_INIT | folset, NADA, 47);
+
 	switch(lookahead())
 	{
 		case CASIGNAC:
 			scanner();
-			constante(PLACEHOLDER);
+			constante(folset);
 			break;
 
 		case CCOR_ABR:
 			scanner();
 
 			if(lookahead_in(CCONS_ENT))
-				constante(PLACEHOLDER);
+				scanner();
 
-			match(CCOR_CIE, 10);
+			match(CCOR_CIE, 22);
 
 			if(lookahead_in(CASIGNAC))
 			{
 				scanner();
-				match(CLLA_ABR, 10);
-				lista_inicializadores(PLACEHOLDER);
-				match(CLLA_CIE, 10);
+				match(CLLA_ABR, 24);
+				lista_inicializadores(CLLA_CIE | folset);
+				match(CLLA_CIE, 25);
 			}
 			break;
 	}
+
+	test(folset, NADA, 48);
 }
 
 
@@ -400,15 +406,15 @@ void proposicion_expresion(set folset)
 
 void expresion(set folset)
 {
-	expresion_simple(PLACEHOLDER);
+	expresion_simple(folset | F_RESTO_EXPRESION);
 
-	while(lookahead_in(CASIGNAC | CDISTINTO | CIGUAL | CMENOR | CMEIG | CMAYOR | CMAIG))
+	while(lookahead_in(F_RESTO_EXPRESION))
 	{
 		switch(lookahead())
 		{
 			case CASIGNAC:
 				scanner();
-				expresion_simple(PLACEHOLDER);
+				expresion_simple(folset | F_RESTO_EXPRESION);
 				break;
 
 			case CDISTINTO:
@@ -418,36 +424,44 @@ void expresion(set folset)
 			case CMAYOR:
 			case CMAIG:
 				scanner();
-				expresion_simple(PLACEHOLDER);
+				expresion_simple(folset | F_RESTO_EXPRESION);
 				break;
 		}
 	}
 }
 
 
-void expresion_simple(set folset)
-{
-	if(lookahead_in(CMAS | CMENOS))
-		scanner();
+void expresion_simple(set folset) {
+	test(F_EXPRESION_SIMPLE, (folset | F_RESTO_EXPRESION_SIMPLE), 56);
 
-	termino(PLACEHOLDER);
+	if (!lookahead_in(F_EXPRESION_SIMPLE | F_RESTO_EXPRESION_SIMPLE))
+		return;
 
-	while(lookahead_in(CMAS | CMENOS | COR))
-	{
+	if (lookahead_in(F_EXPRESION_SIMPLE)) {
+		if (lookahead_in(F_OPERADOR_OPCIONAL))
+			scanner();
+		termino(folset | F_RESTO_EXPRESION_SIMPLE);
+	} else {
 		scanner();
-		termino(PLACEHOLDER);
+		termino(folset | F_RESTO_EXPRESION_SIMPLE);
+	}
+
+
+	while (lookahead_in(F_RESTO_EXPRESION_SIMPLE)) {
+		scanner();
+		termino(folset | F_RESTO_EXPRESION_SIMPLE);
 	}
 }
 
 
 void termino(set folset)
 {
-	factor(PLACEHOLDER);
+	factor(folset | F_RESTO_TERMINO);
 
-	while(lookahead_in(CMULT | CDIV | CAND))
+	while(lookahead_in(F_RESTO_TERMINO))
 	{
 		scanner();
-		factor(PLACEHOLDER);
+		factor(folset | F_RESTO_TERMINO);
 	}
 }
 
@@ -500,7 +514,10 @@ void factor(set folset)
 
 void variable(set folset)
 {
-	match(CIDENT, 10);
+	test(F_VARIABLE, folset | CCOR_ABR, 59);
+
+	if(lookahead_in(CIDENT))
+		scanner();
 
 	/* El alumno debera verificar con una consulta a TS
 	si, siendo la variable un arreglo, corresponde o no
@@ -509,33 +526,37 @@ void variable(set folset)
 	if(lookahead_in(CCOR_ABR))
 	{
 		scanner();
-		expresion(PLACEHOLDER);
-		match(CCOR_CIE, 10);
+		expresion(folset | CCOR_CIE);
+		match(CCOR_CIE, 22);
 	}
+
+	test(folset, NADA, 60);
 }
 
 
 void llamada_funcion(set folset)
 {
-	match(CIDENT, 10);
+	match(CIDENT, 17);
 
-	match(CPAR_ABR, 10);
+	match(CPAR_ABR, 20);
 
-	if(lookahead_in(CMAS | CMENOS | CIDENT | CPAR_ABR | CNEG | CCONS_ENT | CCONS_FLO | CCONS_CAR | CCONS_STR))
-		lista_expresiones(PLACEHOLDER);
+	if(lookahead_in(F_LISTA_EXPRESIONES))
+		lista_expresiones(folset | CPAR_CIE);
 
-	match(CPAR_CIE, 10);
+	match(CPAR_CIE, 21);
+
+	test(folset, NADA, 61);
 }
 
 
 void lista_expresiones(set folset)
 {
-	expresion(PLACEHOLDER);
+	expresion(folset | CCOMA | F_EXPRESION);
 
-	while(lookahead_in(CCOMA))
+	while(lookahead_in(CCOMA | F_EXPRESION))
 	{
-		scanner();
-		expresion(PLACEHOLDER);
+		match(CCOMA, 64);
+		expresion(folset | CCOMA | F_EXPRESION);
 	}
 }
 
