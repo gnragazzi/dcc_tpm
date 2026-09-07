@@ -414,7 +414,7 @@ void expresion(set folset)
 		{
 			case CASIGNAC:
 				scanner();
-				expresion_simple(folset);
+				expresion_simple(folset | F_RESTO_EXPRESION);
 				break;
 
 			case CDISTINTO:
@@ -424,7 +424,7 @@ void expresion(set folset)
 			case CMAYOR:
 			case CMAIG:
 				scanner();
-				expresion_simple(folset);
+				expresion_simple(folset | F_RESTO_EXPRESION);
 				break;
 		}
 	}
