@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 
 void unidad_traduccion(set folset)
 {
-	test(F_UNIDAD_TRADUCCION, folset, 37);
+	test((F_UNIDAD_TRADUCCION | folset), NADA, 40);
 
 	while(lookahead_in(F_UNIDAD_TRADUCCION)) {
 		declaraciones(folset | F_UNIDAD_TRADUCCION);
