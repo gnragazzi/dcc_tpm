@@ -751,9 +751,7 @@ Instrumentación de `proposicion_compuesta(set folset)`, `lista_proposiciones(se
   `proposicion` no tiene test final propio — delega en sus **seis** subordinados —, así que la
   garantía que necesita `lista_proposiciones` está repartida entre todos ellos, no concentrada en
   uno solo:
-  - `proposicion_compuesta` ya cierra bien (`test(folset, NADA, 50)`, folset correcto). Su test
-    **final** nunca fue el problema; el que faltaba es el intermedio, tras la `{` (bullet
-    siguiente).
+  - `proposicion_compuesta` ya cierra bien (`test(folset, NADA, 50)`, folset correcto).
   - `proposicion_iteracion` y `proposicion_seleccion` (`N5`) delegan correctamente: terminan
     llamando a `proposicion(folset)` recursivamente sin alterar el conjunto, así que heredan la
     garantía de la propia recursión (inducción sobre el anidamiento de proposiciones).
@@ -767,54 +765,6 @@ Instrumentación de `proposicion_compuesta(set folset)`, `lista_proposiciones(se
   identificado el ticket que los cierra todavía). Hasta que los tres tengan su test final con
   `folset` correcto, el diseño de `lista_proposiciones` es el correcto para cuando todo esté
   instrumentado, pero no está garantizado en el binario actual.
-
-- **`proposicion_compuesta` lleva un test intermedio después de `match(CLLA_ABR, 24)`.** El cuerpo
-  del bloque son dos guardianes seguidos de un `match` obligatorio:
-
-  ```c
-  match(CLLA_ABR, 24);
-
-  test(F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES | CLLA_CIE, folset, 52);
-
-  if(lookahead_in(F_LISTA_DECLARACIONES))
-  	lista_declaraciones(folset | F_LISTA_PROPOSICIONES | CLLA_CIE);
-
-  if(lookahead_in(F_LISTA_PROPOSICIONES))
-  	lista_proposiciones(folset | CLLA_CIE);
-
-  match(CLLA_CIE, 25);
-  ```
-
-  Los dos guardianes son legítimos por la regla 1: la BNFE dice
-  `<proposición compuesta> ::= { [ <lista de declaraciones> ] [ <lista de proposiciones> ] }`, o
-  sea que ambos elementos pueden faltar. Pero un guardián no reporta ni resincroniza, y lo que
-  sigue a los dos es un terminal obligatorio. Con un lookahead que no está en ningún FIRST ni es
-  `}` —`* a = 5;` como primera proposición del bloque— los dos `if` se saltean en silencio y el
-  error lo termina reportando `match(CLLA_CIE, 25)`: *"falta `}`"*, que es falso, y **sin
-  consumir**. El bloque se da por cerrado donde no corresponde y el desfasaje sube un error 50 por
-  cada nivel de anidamiento. Es el caso general del que `N4` ya describía una instancia: la
-  cascada no viene del token intruso sino de que nadie lo resincroniza antes del `match`.
-
-  Medido sobre `12_cascada_bloques_anidados`: **seis errores antes del test, tres después** —los
-  tres reales—. Sobre un `*` al inicio del cuerpo de un `while`, de un `else` o de un bloque
-  desnudo: tres errores antes, uno después.
-
-  **`c1` lleva `F_LISTA_DECLARACIONES`** aunque el test esté escrito antes de los dos guardianes.
-  Es el conjunto director completo de lo que puede aparecer tras la `{`: declaración, proposición o
-  cierre. Ubicarlo *entre* los dos guardianes —con `c1 = F_LISTA_PROPOSICIONES | CLLA_CIE`— hace
-  que sobre `{ * int a; ... }` la resincronización se lleve puesto el `int` junto con el `*`, y
-  salgan tres errores en vez de uno. El folset heredado va en `c2`, no en `c1`, por la regla 4: si
-  entrara en `c1` el test dejaría de reportar justo en el caso que se quiere detectar.
-
-  No lleva salida temprana (regla 9) porque no es un test inicial: lo que sigue son dos guardianes
-  ya condicionales, que se saltean solos si la resincronización frenó en el folset heredado.
-
-  **Por qué no alcanza con ensanchar el segundo guardián** a `if(!lookahead_in(CLLA_CIE))`.
-  Funciona en los casos simples —`proposicion` lleva test inicial (`52`) y resincroniza sin
-  consumir de más—, pero falla en el mismo `{ * int a; ... }` por la razón de arriba, y además
-  hace que la corrección de `proposicion_compuesta` dependa de un detalle interno de `proposicion`:
-  si ese test cambiara, el guardián se rompe en silencio. Regla 1 en su forma menos obvia — el
-  guardián no reemplaza al test ni siquiera cuando el procedimiento invocado tiene uno propio.
 
 - **Disjunción en el `c2` de `proposicion_compuesta` — chequeado, no hay problema.** El test
   inicial usa `c2 = F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES`, conjuntos tan anchos como el
@@ -1228,89 +1178,3 @@ Creación de los lotes de prueba para la guarda de `expresion_simple` (`N1`):
 # Justificación
 
 ## Casos donde el esquema de recuperación antipánico no alcanzó y cómo se reconfiguró
-
-### El patrón guardián + terminal obligatorio
-
-Las reglas 1 a 9 fijan dónde va cada test y qué llevan `c1` y `c2`, pero ninguna habla de la
-**juntura** entre un guardián y lo que viene después. Los lotes mostraron que esa juntura tiene una
-forma recurrente que el esquema no cubría:
-
-```c
-if(lookahead_in(FIRST_del_opcional))
-	no_terminal_opcional(...);
-
-match(TERMINAL_DE_CIERRE, ne);
-```
-
-Las dos piezas son correctas por separado. El guardián lo es por la regla 1 —la BNFE marca el
-elemento como `[ ]`, su ausencia es legal—, y el `match` lo es porque el terminal sí es
-obligatorio. El agujero es el hueco entre ambas: si el lookahead no está en `FIRST(opcional)`
-**ni** es el terminal de cierre, el guardián se saltea en silencio y el único que reporta es el
-`match`. De ahí salen dos consecuencias, y la segunda pesa más que la primera:
-
-1. **El mensaje es falso.** No falta el terminal: sobra un símbolo antes de él.
-2. **`match` no consume cuando falla.** El símbolo intruso sigue en el lookahead, la producción se
-   da por terminada donde no corresponde, y el desfasaje se propaga hacia arriba por los tests
-   finales de cada llamador. Esto es lo que convierte un error en cinco o siete.
-
-Es un caso de la consigna 14 y encaja en el diagnóstico de la sección *Decisión sobre la cascada de
-errores*: el problema no es el token, es que **nadie resincroniza antes del `match`**. La regla 9
-corta la cascada dentro de un procedimiento que ya reportó; acá no había reporte alguno que la
-disparara.
-
-**Reconfiguración.** Un test inmediatamente antes del guardián, con el conjunto director completo
-de la juntura en `c1` y el folset heredado en `c2`:
-
-```c
-test(FIRST_del_opcional | TERMINAL_DE_CIERRE, folset, ne);
-```
-
-El folset va en `c2` y no en `c1` por la regla 4: en `c1` el test dejaría de reportar exactamente
-en el caso que se quiere cazar. Y el `c1` tiene que llevar **todos** los FIRST de la juntura, no
-solo el del guardián inmediato — ver el `F_LISTA_DECLARACIONES` de `proposicion_compuesta` en `N4`.
-
-**Los tres sitios de la gramática con esta forma:**
-
-| procedimiento | opcional | cierre | `ne` | estado |
-|---|---|---|---|---|
-| `definicion_funcion` | `<lista decl parámetros>` | `)` | 41 | aplicado |
-| `proposicion_compuesta` | `<lista declaración>`, `<lista proposición>` | `}` | 52 | aplicado (`N4`) |
-| `llamada_funcion` | `<lista expresiones>` | `)` | 56 | identificado, pendiente |
-
-Medición, errores reportados antes → después:
-
-| entrada | antes | después |
-|---|---|---|
-| `void f(double dato)` | 7 | 1 |
-| `void f(, int x)` | 6 | 1 |
-| `void f((int x)` | 8 | 1 |
-| `void f(& int x)` | 6 | 1 |
-| `12_cascada_bloques_anidados` | 6 | 3 |
-| `*` al inicio de un bloque anidado (`while`, `else`, desnudo) | 3 | 1 |
-| `14_expresion_simple_salida_folset` (pendiente) | 5 | 2 |
-
-Ningún caso válido cambia de salida: el test pasa en silencio cuando el lookahead está en `c1`.
-
-**Elección de `ne`.** El `41` de `definicion_funcion` y el `52` de `proposicion_compuesta` son los
-mismos códigos que ya usan `especificador_tipo` y `proposicion` en sus tests iniciales, así que la
-juntura habla el mismo idioma que el procedimiento al que iba a entrar. Para `llamada_funcion` no
-hay código propio de `<lista expresiones>`; el `56` es prestado de `expresion_simple` y describe
-mal lo que falta. Los slots 36–39 están reservados para errores personalizados y ese es el lugar
-natural si se decide numerarlo aparte.
-
-**Cobertura.** Los siete casos de `definicion_funcion` no tenían ningún test que los cubriera: el
-único que ejercitaba esa juntura era `05_tipo_invalido_param`, que se movió a
-`tests/entrega2/pendientes/invalidos/` por pedir un error 18 que necesita tabla de símbolos. Se
-agregaron trece casos `15_param_*` en `tests/entrega1/invalidos/`.
-
-### Lo que esta reconfiguración no cubre
-
-Basura en el **medio** de una lista, no al principio: `{ a = 1; * a = 2; }` sigue reportando desde
-el test final de `proposicion_expresion` (55) y no desde el inicial de `proposicion` (52). El test
-de la juntura ya pasó cuando eso ocurre. No es cascada —un símbolo, un error— sino el punto de
-detección más externo, el mismo fenómeno que hace que `int a;` seguido de `* a = 5;` reporte 51 y
-no 52. Casos `09_cascada_misma_linea`, `13_cascada_misma_linea_multiple` y el segundo error de
-`14_expresion_simple_salida_folset`: los `.esperado` predecían el error del nivel más profundo
-(`57`, en `factor`) y el parser reporta el del nivel que efectivamente lo intercepta primero (`56`,
-en `expresion_simple`). El parser es correcto ahí; lo que hay que ajustar son los `.esperado`.
-
