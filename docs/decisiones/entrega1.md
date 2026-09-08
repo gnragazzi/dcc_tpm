@@ -1351,6 +1351,14 @@ Curado y consolidación de la documentación de la 1ª Entrega:
 
 ## C2
 
+Automatización y validación del empaquetado de la entrega (`scripts/empaquetar.sh 1`):
+- **Contenido del entregable (`ucc_entrega1.zip`):**
+  - Directorio `src/`: código fuente completo y compilable del compilador `ucc`, incluyendo `scanner.token.lex`, `parser.c`, `error.c`, `util.c` y sus respectivos headers (`conjuntos.h`, `codigos.h`, `var_globales.h`, etc.).
+  - Binario ejecutable `src/ucc`: compilado desde cero con GCC utilizando `-g -fcommon -lm`.
+  - `entrega1.md` y `decisiones.md`: bitácora técnica completa y decisiones de diseño requeridas por la cátedra (ambos nombres incluidos por compatibilidad y concordancia con las referencias del informe).
+  - `informe_entrega1.pdf`: informe ejecutivo de cierre en formato PDF.
+- **Soporte de limpieza multiplataforma:** Se ajustó la regla `clean` en `src/Makefile` para garantizar la eliminación del binario tanto en Linux (`ucc`) como en Windows (`ucc.exe`) al recompilar desde cero antes de empaquetar.
+
 ## C3
 
 ## C4
