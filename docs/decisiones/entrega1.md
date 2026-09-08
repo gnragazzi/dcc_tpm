@@ -818,7 +818,105 @@ Instrumentación de los procedimientos `proposicion_iteracion(set folset)` y `pr
 
 ## N6
 
-## N7
+Instrumentación de los procedimientos `proposicion_e_s(set folset)`, `proposicion_retorno(set folset)` y `proposicion_expresion(set folset)` en `src/parser.c` para la recuperación antipánica (Consignas 5, 8, 10 y 12):
+
+- **Procedimiento `proposicion_retorno(set folset)`:**
+  - **Contexto gramatical:** $\langle\text{proposición retorno}\rangle ::= \mathbf{return} \ \langle\text{expresión}\rangle \ \mathbf{;}$.
+  - **Test inicial (Regla 2):** No lleva test inicial propio. Su único punto de invocación es la rama `case CRETURN:` dentro de `proposicion()`, quedando su símbolo inicial plenamente verificado por el llamador.
+  - **Arranque con `scanner()` (Guía práctica 7 y Consigna 10):**
+    - *¿Por qué arranca con `scanner()` en lugar de `match(CRETURN, ...)`?* En la gramática BNFE, la selección de alternativa se realiza en `proposicion()` mediante un `switch(lookahead())` donde la rama `case CRETURN:` ya verificó de forma fehaciente que el token actual es la palabra reservada `return`. Repetir un `match` o test inicial dentro del cuerpo sería una comprobación redundante. Por lo tanto, `proposicion_retorno()` consume inmediatamente el terminal mediante `scanner();` y avanza a la expresión.
+  - **Cálculo amplio del follower set (Regla 6):** Al invocar `expresion()`, el follower set acumula la cola restante de la producción:
+    ```c
+    expresion(folset | CPYCOMA);
+    ```
+    Si se omite el punto y coma `;` al final del retorno (ej: `return x + 1`), `expresion()` frena en el follower set heredado (`}` de cierre de bloque, etc.), permitiendo que `match(CPYCOMA, 23)` detecte la omisión y reporte puntualmente `Error 23: Falta ;`.
+  - **Consumo de terminal y Test final (Regla 6):** Concluye consumiendo el delimitador `;` con `match(CPYCOMA, 23);`. Al terminar en un terminal y no en una llamada subordinada, ejecuta su test final:
+    ```c
+    test(folset, NADA, 54);
+    ```
+    emitiendo `Error 54: Simbolo inesperado despues de proposicion retorno` ante tokens espurios tras el punto y coma.
+
+- **Procedimiento `proposicion_expresion(set folset)`:**
+  - **Contexto gramatical:** $\langle\text{proposición expresión}\rangle ::= [ \ \langle\text{expresión}\rangle \ ] \ \mathbf{;}$.
+  - **Test inicial (Regla 2):** No lleva test inicial propio al ser invocado condicionalmente desde las etiquetas de `proposicion()` correspondientes a $\text{FIRST}(\langle\text{proposición expresión}\rangle) = \text{FIRST}(\langle\text{expresión}\rangle) \cup \{ \mathbf{;} \}$.
+  - **Expresión opcional y proposición nula:** Se evalúa la presencia de la expresión con el macro unificado:
+    ```c
+    if(lookahead_in(F_EXPRESION))
+        expresion(folset | CPYCOMA);
+    ```
+    reemplazando la enumeración explícita de terminales de expresión. Si no hay expresión (caso de sentencia vacía o proposición nula `;`), el parser continúa directamente hacia la verificación del delimitador.
+  - **Cálculo amplio del follower set (Regla 6):** `expresion()` recibe `folset | CPYCOMA`.
+  - **Consumo de terminal y Test final (Regla 6):** Consume el delimitador con `match(CPYCOMA, 23);` (`Error 23: Falta ;`) y ejecuta su test final:
+    ```c
+    test(folset, NADA, 55);
+    ```
+    emitiendo `Error 55: Simbolo inesperado despues de proposicion expresion` ante símbolos no pertenecientes al seguimiento del bloque o sentencia.
+
+- **Procedimiento `proposicion_e_s(set folset)`:**
+  - **Contexto gramatical:**
+    $$\langle\text{proposición e/s}\rangle ::= \mathbf{cin} \ \mathbf{>>} \ \langle\text{variable}\rangle \ \{ \ \mathbf{>>} \ \langle\text{variable}\rangle \ \} \ \mathbf{;} \mid \mathbf{cout} \ \mathbf{<<} \ \langle\text{expresión}\rangle \ \{ \ \mathbf{<<} \ \langle\text{expresión}\rangle \ \} \ \mathbf{;}$$
+  - **Test inicial y tratamiento de `default` (Reglas 2 y 8):**
+    - No lleva test inicial propio al ser invocado condicionalmente desde `case CIN: case COUT:` en `proposicion()`.
+    - Al carecer de test inicial, conserva en su rama por defecto la emisión del error correspondiente: `default: error_handler(29); break;` (`Error 29: Falta cin o cout`).
+  - **Consumo de palabras clave garantizadas (Consigna 10):** Tanto `case CIN:` como `case COUT:` consumen su terminal con `scanner();` al estar pre-validados por el llamador.
+  - **Separadores de flujo olvidables y bucles de repetición (Consigna 12 y Regla 7):**
+    - Los operadores de redirección de flujo `>>` (`CSHR` / `F_RESTO_PROP_IN`) y `<<` (`CSHL` / `F_RESTO_PROP_OUT`) operan sintácticamente como separadores de repetición análogos a la coma `,` en listas de identificadores o expresiones, siendo propensos al olvido accidental (ej: `cin >> a b;` o `cout << x y;`).
+    - Se utilizan los macros arquitectónicos `F_RESTO_PROP_IN` y `F_RESTO_PROP_OUT` (fijados en Capa 0 / T2) para la construcción de conjuntos y condiciones de bucle, reservando `CSHR` y `CSHL` exclusivamente para los `match()`.
+    - Se aplica la técnica de guardián ensanchado reutilizando `match()`:
+      - Para `cin`: `while(lookahead_in(F_RESTO_PROP_IN | F_VARIABLE))` con `match(CSHR, 30);`. Si `CSHR` está presente lo consume con `scanner()`; si falta pero sigue una variable (`F_VARIABLE`), `match` emite `Error 30: Falta >>` sin avanzar el token, procesando inmediatamente la variable subsiguiente.
+      - Para `cout`: `while(lookahead_in(F_RESTO_PROP_OUT | F_EXPRESION))` con `match(CSHL, 31);`. Análogamente, ante la omisión de `<<` emite `Error 31: Falta <<` y procesa la siguiente expresión.
+    - *Trade-off del guardián ensanchado en `cout`:* Al incluir `F_EXPRESION` en la condición del bucle (`while(lookahead_in(F_RESTO_PROP_OUT | F_EXPRESION))`), si el usuario omite el punto y coma final `;` tras un `cout` y en la línea siguiente empieza una sentencia con identificador (ej: `a = 1;`), el bucle interpretará ese identificador como una expresión encadenada donde faltó `<<`, reportando `Error 31: Falta <<` en lugar de `Error 23: Falta ;`. Este compromiso (*trade-off*) es asumido deliberadamente para priorizar la recuperación limpia de omisión de `<<` entre expresiones múltiples encadenadas en la misma proposición según la Consigna 12.
+  - **Construcción amplia del follower set en E/S (Regla 6):**
+    - En `cin`: La primera variable y cada variable del bucle reciben:
+      ```c
+      variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA);
+      ```
+    - En `cout`: La primera expresión y cada expresión del bucle reciben:
+      ```c
+      expresion(folset | F_RESTO_PROP_OUT | F_EXPRESION | CPYCOMA);
+      ```
+      De este modo, si ocurre un fallo dentro de un elemento, la recuperación frena de inmediato en el siguiente operador de flujo, en el siguiente operando o en el punto y coma `;`, evitando el descarte indiscriminado del resto de la instrucción.
+  - **Consumo de delimitador y Test final (Regla 6):** Ambas ramas consumen el punto y coma final con `match(CPYCOMA, 23);` (`Error 23: Falta ;`). Concluido el `switch`, se ejecuta el test final general del procedimiento:
+    ```c
+    test(folset, NADA, 53);
+    ```
+    emitiendo `Error 53: Simbolo inesperado despues de proposicion entrada - salida` si el lookahead resultante no es un inicio válido de proposición o delimitador de bloque.
+
+Instrumentación de `unidad_traduccion(set folset)`, `declaraciones(set folset)` y `especificador_tipo(set folset)` en `src/parser.c` para la recuperación antipánico (Consigna 7):
+
+- **Procedimiento `unidad_traduccion(set folset)`:**
+  - **Test inicial:** Se invoca incondicionalmente desde el driver y su primera sentencia es un `while`, no una llamada a procedimiento, por lo que requiere test inicial.
+  - **`c1` debe incluir el folset heredado.** `<unidad de traducción> ::= { <declaraciones> }` deriva λ —cero repeticiones es una derivación válida— y la teoría es explícita: si `X → λ` entonces `c1 = FIRST(X) ∪ folset`. Con `c1 = F_UNIDAD_TRADUCCION` a secas, un archivo fuente vacío, cuyo único token es `eof` y por lo tanto pertenece al folset, reporta un error sobre entrada sintácticamente válida:
+    ```c
+    test(F_UNIDAD_TRADUCCION | folset, folset, 40);
+    ```
+    *Decisión abierta:* si se resuelve rechazar el archivo vacío de manera deliberada, `c1 = F_UNIDAD_TRADUCCION` es la forma correcta, pero pasa a ser una desviación de la regla y se documenta como tal en este ticket.
+  - **Número de error: se reutiliza el 40 en lugar de definir uno nuevo.** `error.c` ya define `case 40: Al inicio del programa`, que cubre exactamente esta condición. El rango 36–39 está reservado por la cátedra a "posibles errores personalizados **que no sean parafrasis de errores ya existentes**", de modo que un error 37 con el texto "al comienzo del archivo fuente" no corresponde.
+  - **`c2` = folset heredado.** El único punto de reconfiguración interno de la producción es `FIRST(<declaraciones>)`, que ya está contenido en `c1`; no hay nada que agregar.
+  - **Sin test en el ciclo ni test final (Regla 7).** El cuerpo del `while` termina en `declaraciones(folset | F_UNIDAD_TRADUCCION)` y la cadena `declaraciones → especificador_declaracion` cierra en el test final de este último, invocado con ese mismo folset. Un `test()` en el ciclo nunca encontraría el lookahead fuera de `c1`.
+  - **Invariante: el ciclo solo puede salir con `eof`.** Al retornar de `declaraciones()`, el test final de `especificador_declaracion()` garantiza el lookahead en `c1 = {eof, void, char, int, float}`. El `while` reentra con los cuatro especificadores de tipo y sale únicamente con `eof`. Consecuencia directa: el `match(eof)` del driver no puede reportar el `Error 9: No se encontro el fin de archivo`.
+  - **Dependencia con `N8`.** El invariante anterior descansa por completo en que `especificador_declaracion()` tenga su test final. Hasta que `N8` cierre, un símbolo ajeno a `FIRST(<declaraciones>)` entre dos declaraciones globales hace salir el ciclo y **el resto del archivo fuente queda sin analizar**. La ausencia de test en el ciclo es correcta en el diseño pero no está garantizada en el binario actual.
+
+- **Procedimiento `declaraciones(set folset)`:**
+  - **Sin test inicial (Regla 3).** Su primera sentencia es una invocación a `especificador_tipo()` y `FIRST(<declaraciones>) = FIRST(<especificador de tipo>)`, así que delega el test en el subordinado.
+  - **Sin test final (Regla 6).** Su última sentencia es una invocación a procedimiento.
+  - **Propagación del `folset`:** `especificador_tipo(folset | CIDENT | F_ESPECIFICADOR_DECLARACION)`, `match(CIDENT, 17)` y `especificador_declaracion(folset)` — nada sigue a `<especificador de declaración>` dentro de la producción, por lo que hereda el folset sin agregados.
+  - **Decisión: `F_ESPECIFICADOR_DECLARACION` viaja en el folset, no en el `c2` del test.** Estrictamente, lo que sigue a `<especificador de tipo>` en la producción es el terminal `ident`, que no deriva λ, así que la regla de propagación daría `folset | CIDENT` solamente. Se agrega igual `F_ESPECIFICADOR_DECLARACION` porque lo necesita el test final de `especificador_tipo`. Ante `int ( ) {}`, donde falta el identificador:
+    - *Sin el agregado:* el test final de `especificador_tipo` no encuentra `(` en su `c1`, reporta el `Error 42` y resincroniza saltando `(`, `)`, `{` y `}`; se pierde la definición de función entera.
+    - *Con el agregado:* el test final pasa, `match(CIDENT, 17)` reporta el error real (`Falta identificador`) y `especificador_declaracion()` recupera la definición completa. Un solo error y cero símbolos perdidos.
+  - **Alcance de esa decisión.** Es segura **porque `especificador_tipo` es una hoja**: no invoca a nadie, así que el punto de reconfiguración inyectado no se propaga hacia abajo. El mismo recurso aplicado a un no terminal con subordinados filtra ese punto a todo el subárbol y produce solapamientos entre `FIRST` y `folset` — exactamente el mecanismo que en `N1` hace que `a = !-b;` se lea mal. No generalizar sin verificar que el destino sea una hoja.
+
+- **Procedimiento `especificador_tipo(set folset)`:**
+  - **Test inicial:** Se invoca incondicionalmente desde `declaraciones()` y desde `declaracion_parametro()`, y su primera sentencia es un `switch` de selección sobre `lookahead()`:
+    ```c
+    test(F_ESPECIFICADOR_TIPO, folset, 41);
+    ```
+    Emite `Error 41: Simbolo inesperado o falta especificador de tipo`.
+  - **`c2` = folset heredado y `default: break;` (Regla 8).** Alternancia pura de terminales, sin puntos de reconfiguración internos determinables antes de elegir rama; mismo criterio que `factor` y `constante` en `N2`. El `default` no vuelve a reportar.
+  - **Se preservan los cuatro `case` idénticos.** Los cuatro cuerpos son `scanner(); break;` y podrían colapsarse en un único `if(lookahead_in(F_ESPECIFICADOR_TIPO)) scanner();`. Se mantienen separados por el mismo criterio aplicado a `constante` en `N2`: son el punto de enganche de las acciones semánticas de las entregas siguientes, donde cada rama fija un tipo distinto.
+  - **Test final (Regla 6):** `test(folset, NADA, 42)`, que emite `Error 42: Simbolo inesperado despues de especificador de tipo`.
+  - **El test final no es alcanzable por el camino del `default`.** Al salir del test inicial el lookahead está garantizado en `FIRST ∪ folset`; llegar al `default` implica que no está en `FIRST`, luego está en el folset y el test final pasa siempre. El `Error 42` solo puede reportarse después de haber consumido un especificador de tipo —por ejemplo ante `int 5 ...`—, que es justamente donde sirve. No es un defecto: se documenta para no buscar el 42 en el camino equivocado.
+  - **Verificación:** `void f(& a)` produce un único error (`41`) y `declaracion_parametro()` recupera el parámetro completo, en coherencia con la tabla de la *Decisión sobre la cascada de errores* de `T5`.
 
 ## N8
 
