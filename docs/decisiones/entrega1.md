@@ -1361,6 +1361,10 @@ Automatización y validación del empaquetado de la entrega (`scripts/empaquetar
 
 ## C3
 
+Integración en la rama principal (`main`) y versionado inmutable:
+- **Consolidación vía Pull Request:** Integración final desde `develop` hacia `main` mediante Pull Request formal, validado con la suite completa de CI (76 tests ejecutados, 0 fallas) y aprobado por consenso de los tres integrantes del equipo.
+- **Etiquetado de release:** Creación y publicación del tag oficial `entrega1` sobre el commit de cierre en `main`, congelando el estado del compilador y la documentación para la primera etapa.
+
 ## C4
 
 # Justificación
