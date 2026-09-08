@@ -96,6 +96,8 @@ void definicion_funcion(set folset)
 {
 	match(CPAR_ABR, 20);
 
+	test(F_LISTA_DECLARACIONES_PARAM | CPAR_CIE, folset, 41);
+
 	if(lookahead_in(F_LISTA_DECLARACIONES_PARAM))
 		lista_declaraciones_param(folset | CPAR_CIE | F_PROPOSICION_COMPUESTA);
 
@@ -224,8 +226,13 @@ void proposicion_compuesta(set folset)
 {
 	test(F_PROPOSICION_COMPUESTA, folset | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES, 49);
 
-	if (lookahead_in(CLLA_ABR))
-		match(CLLA_ABR, 24);
+	if(!lookahead_in(F_PROPOSICION_COMPUESTA | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES))
+		return;
+
+	if(lookahead_in(CLLA_ABR))
+		scanner();
+
+	test(F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES | CLLA_CIE, folset, 52);
 
 	if(lookahead_in(F_LISTA_DECLARACIONES))
 		lista_declaraciones(folset | F_LISTA_PROPOSICIONES | CLLA_CIE);
@@ -555,6 +562,8 @@ void llamada_funcion(set folset)
 	match(CIDENT, 17);
 
 	match(CPAR_ABR, 20);
+
+	test(F_LISTA_EXPRESIONES | CPAR_CIE, folset, 56);
 
 	if(lookahead_in(F_LISTA_EXPRESIONES))
 		lista_expresiones(folset | CPAR_CIE);
