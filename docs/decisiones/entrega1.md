@@ -1345,6 +1345,10 @@ Creación de los lotes de prueba para la guarda de `expresion_simple` (`N1`):
 
 ## C1
 
+Curado y consolidación de la documentación de la 1ª Entrega:
+- **Informe Ejecutivo (PDF):** Se redactó y formalizó `docs/informe_entrega1.pdf`, consolidando la metodología de trabajo, las 9 reglas de diseño del esquema antipánico, los casos de reconfiguración arquitectónica y el alcance del compilador.
+- **Bitácora Técnica (Markdown):** El presente documento (`entrega1.md`) actúa como el anexo exhaustivo de referencia técnica procedimiento por procedimiento y call site por call site, según lo referenciado en la Sección 5 del informe.
+
 ## C2
 
 ## C3
