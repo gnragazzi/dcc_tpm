@@ -1,3 +1,6 @@
+# Expectativa: compilacion limpia, 0 errores sintacticos #
+# Prueba: Se prueba todas las combinaciones relevantes de funciones y sus llamadas #
+
 void fsaludo()
 {
 }

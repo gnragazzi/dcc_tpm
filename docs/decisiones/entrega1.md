@@ -757,22 +757,25 @@ Instrumentación de `proposicion_compuesta(set folset)`, `lista_proposiciones(se
   - `proposicion_iteracion` y `proposicion_seleccion` (`N5`) delegan correctamente: terminan
     llamando a `proposicion(folset)` recursivamente sin alterar el conjunto, así que heredan la
     garantía de la propia recursión (inducción sobre el anidamiento de proposiciones).
-  - `proposicion_e_s`, `proposicion_retorno` y `proposicion_expresion` **todavía no** tienen test
-    final — siguen terminando en `match(..., 10)` crudo sin instrumentar. Mientras no lo tengan,
-    un error dentro de una asignación, un `return` o un `cin`/`cout` no resincroniza ahí: se
-    escapa en silencio del `while` de `lista_proposiciones`, el mismo riesgo de cascada silenciosa
-    que la regla 7 describe para `int a; xyz int b;`, pero a nivel proposición.
+  - `proposicion_e_s`, `proposicion_retorno` y `proposicion_expresion` cierran con
+    `test(folset, NADA, 53)`, `54` y `55` respectivamente. Con eso las seis ramas del `switch` de
+    `proposicion` tienen su test final y la garantía que `lista_proposiciones` necesita queda
+    completa: un error dentro de una asignación, un `return` o un `cin`/`cout` resincroniza ahí y
+    no se escapa del `while`.
 
-  Dependencia pendiente: `proposicion_e_s`, `proposicion_retorno` y `proposicion_expresion` (no
-  identificado el ticket que los cierra todavía). Hasta que los tres tengan su test final con
-  `folset` correcto, el diseño de `lista_proposiciones` es el correcto para cuando todo esté
-  instrumentado, pero no está garantizado en el binario actual.
+  Con los seis subordinados cerrados, la dependencia que este ticket registraba queda saldada y el
+  diseño de `lista_proposiciones` —sin test explícito en el bucle, por delegación de la regla 7—
+  pasa a estar garantizado en el binario, no solo en el diseño. Se verificó agregando el
+  `test(F_PROPOSICION | folset, NADA, 68)` canónico antes del bucle y al cerrar cada iteración e
+  instrumentándolo: **0 disparos** sobre los 48 casos de la suite más una treintena de ejemplos
+  construidos a mano, y salida idéntica en todos. Es código muerto y se descarta.
 
-- **`proposicion_compuesta` lleva un test intermedio después de `match(CLLA_ABR, 24)`.** El cuerpo
+- **`proposicion_compuesta` lleva un test intermedio después de consumir la `{`.** El cuerpo
   del bloque son dos guardianes seguidos de un `match` obligatorio:
 
   ```c
-  match(CLLA_ABR, 24);
+  if(lookahead_in(CLLA_ABR))
+  	scanner();
 
   test(F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES | CLLA_CIE, folset, 52);
 
@@ -809,10 +812,10 @@ Instrumentación de `proposicion_compuesta(set folset)`, `lista_proposiciones(se
   **El test intermedio obliga a que `proposicion_compuesta` tenga la guarda de la regla 9**, que
   hasta ahora no tenía pese a corresponderle —lleva test inicial (el `49`)—. Sin ella, sobre
   `void main()` seguido de `}` sin llave de apertura: el test inicial no encuentra `}` en `c1` ni
-  en `c2`, reporta `49` y **descarta el `}`** al resincronizar; queda `CEOF`; `match(CLLA_ABR, 24)`
-  falla; y el test intermedio corre sobre un `CEOF` que está en el folset heredado pero no en su
-  `c1`, así que reporta un `52` sobre un token ya en estado de error. Cuatro errores donde había
-  tres.
+  en `c2`, reporta `49` y **descarta el `}`** al resincronizar; queda `CEOF`; el consumo condicional
+  de la `{` no dispara; y el test intermedio corre sobre un `CEOF` que está en el folset heredado
+  pero no en su `c1`, así que reporta un `52` sobre un token ya en estado de error, y el
+  `match(CLLA_CIE, 25)` agrega un tercero. Medido: `49, 52, 25` sin la guarda contra `49` con ella.
 
   ```c
   test(F_PROPOSICION_COMPUESTA, folset | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES, 49);
@@ -820,7 +823,8 @@ Instrumentación de `proposicion_compuesta(set folset)`, `lista_proposiciones(se
   if(!lookahead_in(F_PROPOSICION_COMPUESTA | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES))
   	return;
 
-  match(CLLA_ABR, 24);
+  if(lookahead_in(CLLA_ABR))
+  	scanner();
   ```
 
   Con la guarda, ese caso pasa de **tres errores a uno** —mejor que antes del test intermedio, no
