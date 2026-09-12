@@ -67,12 +67,17 @@ elemento es legal. Poner un guardián sobre un elemento obligatorio se traga el 
 `α * ) β`, con `if(lookahead_in(F_FACTOR)) factor();` en `termino()`, el compilador acepta
 `(a * )` como programa válido.
 
-Los `switch` con `default` son otra cosa: la BNFE ahí describe alternancia sin λ, así que el
-`default` es un caso de error legítimo. Misma forma en C, semántica opuesta.
+Los `switch` son otra cosa. Donde la BNFE describe alternancia **sin** λ, caer fuera de todos
+los `case` es un caso de error legítimo; donde la describe **con** λ (`declarador_init`), es la
+derivación vacía. Misma forma en C, semántica opuesta.
 
-Y hay una tercera forma: el `switch` **sin** `default` (`declarador_init`). Es un guardián
-disfrazado — codifica una alternancia **con** λ, donde caer fuera de todos los `case` es la
-derivación vacía, no un error. No se le agrega un `default` que reporte.
+**La forma del `switch` no distingue los dos casos.** Se podría pensar que la presencia de una
+rama `default` codifica esa diferencia, pero no: por el corolario de la regla 8, en todo
+procedimiento con test inicial llegar al `default` implica que el test ya reportó, así que la
+rama queda en `default: break;` — inerte, y por lo tanto eliminable sin cambiar nada. Una vez
+eliminadas, un `switch` sin λ y uno con λ se escriben igual. La distinción vive en la BNFE y en
+esta documentación, no en la sintaxis del `switch`; el lugar del código donde sí se lee es el
+test inicial, que es el que reporta o no reporta.
 
 #### 2. Test inicial: dónde va y qué lleva `c1`
 
@@ -272,14 +277,17 @@ silenciosamente**. Un `scanner()` incondicional se comería el símbolo cuando e
 **Corolario — los `default:` de los `switch` no reportan**, *en los procedimientos que llevan
 test inicial*. Después del test, el lookahead está en `c1 ∪ c2`. Si está en `c1`, alguna rama
 matchea. Llegar al `default` significa que está en `c2 \ c1`, o sea que **el test ya reportó**.
-Queda `default: break;`.
+La rama queda reducida a `default: break;`, que es exactamente lo mismo que no tenerla: se
+elimina. Los `switch` de `especificador_tipo`, `especificador_declaracion`, `proposicion`,
+`factor` y `constante` no llevan `default`.
 
 Dos excepciones, por lo mismo leído al revés:
 
-- `proposicion_e_s` **no** lleva test inicial (regla 2), así que su `default` conserva el
+- `proposicion_e_s` **no** lleva test inicial (regla 2), así que conserva su `default` con el
   `error_handler(29)`.
-- `declarador_init` no tiene `default` y no se le agrega (regla 1): caer fuera de los `case` es
-  la derivación λ, no un error.
+- `declarador_init` tampoco lleva `default`, pero por otro motivo (regla 1): caer fuera de los
+  `case` es la derivación λ, no un error. Coincide en forma con los cinco de arriba y difiere en
+  significado.
 
 La otra mitad de la consigna 10 —reemplazar `scanner()` por `match()`— aplica al caso opuesto:
 los `scanner()` a ciegas que consumen un símbolo que el llamador garantizó (`case CIN: scanner();`
@@ -611,7 +619,7 @@ Instrumentación de los procedimientos `factor(set folset)` y `constante(set fol
     test(F_FACTOR, folset, 57);
     ```
     Emite `Error 57: Simbolo inesperado o falta simb. al comienzo de factor` ante cualquier token que no pertenezca a $\text{FIRST}(\langle\text{factor}\rangle)$.
-  - **Sincronización $c_2$ y forzar entrada (Regla 8 / Consigna 10):** Siguiendo la Regla 5 de la bitácora, al tratarse de una alternancia pura sin puntos de recuperación internos determinables antes de elegir rama, $c_2 = \text{folset}$ heredado. Asimismo, en concordancia con la Regla 8, el `default:` del `switch` no vuelve a reportar (`default: break;`) ya que `test()` ya validó y resincronizó en $c_1 \cup c_2$, permitiendo una salida fluida al test final sin requerir guardas redundantes.
+  - **Sincronización $c_2$ y forzar entrada (Regla 8 / Consigna 10):** Siguiendo la Regla 5 de la bitácora, al tratarse de una alternancia pura sin puntos de recuperación internos determinables antes de elegir rama, $c_2 = \text{folset}$ heredado. Asimismo, en concordancia con la Regla 8, el `switch` no lleva rama `default`: `test()` ya validó y resincronizó en $c_1 \cup c_2$, de modo que un `default` sólo podría alcanzarse cuando el error ya fue reportado, permitiendo una salida fluida al test final sin requerir guardas redundantes.
   - **Decisión sobre `)` en $c_2$ y ausencia de `case CPAR_CIE`:** Se evaluó exhaustivamente si convenía incluir `CPAR_CIE` en $c_2$ o añadir un `case CPAR_CIE:` en el `switch` de `factor`:
     - *Cuando `)` cierra algo real* (por ejemplo, en `<llamada a función>`): el paréntesis que cierra ya llega dentro del `folset` heredado, por lo que el test frena ahí de forma natural. Ante `fsum(x, )` (falta operando):
       - Sin `)` en $c_2$ propio ni rama forzada: el resultado es 1 solo error limpio (`Error 57: comienzo de factor`) y `llamada_funcion()` consume legítimamente su propio `)`.
@@ -636,7 +644,7 @@ Instrumentación de los procedimientos `factor(set folset)` y `constante(set fol
     test(F_CONSTANTE, folset, 62);
     ```
     Emite `Error 62: Simbolo inesperado o falta simb. al comienzo de constante`.
-  - **Estructura canónica y forzar entrada (Regla 8 / Consigna 10):** Se preservan los tres `case` independientes (`CCONS_ENT`, `CCONS_FLO`, `CCONS_CAR`) con su respectivo `scanner(); break;` para permitir la futura incorporación de acciones semánticas y gramáticas de atributos en las siguientes entregas. En concordancia con la Regla 8 (*Forzar entrada*), el `default:` no vuelve a reportar error (`default: break;`) puesto que `test()` ya validó el inicio y resincronizó en `c1 | c2`.
+  - **Estructura canónica y forzar entrada (Regla 8 / Consigna 10):** Se preservan los tres `case` independientes (`CCONS_ENT`, `CCONS_FLO`, `CCONS_CAR`) con su respectivo `scanner(); break;` para permitir la futura incorporación de acciones semánticas y gramáticas de atributos en las siguientes entregas. En concordancia con la Regla 8 (*Forzar entrada*), el `switch` no lleva rama `default`: `test()` ya validó el inicio y resincronizó en `c1 | c2`, así que un `default` sólo se alcanzaría con el error ya reportado.
   - **Test final:** Al ser un procedimiento hoja que concluye consumiendo un terminal literal mediante `scanner()`, se instrumenta el test final según la Regla 6:
     ```c
     test(folset, 0, 63);
@@ -990,10 +998,10 @@ Instrumentación de `unidad_traduccion(set folset)`, `declaraciones(set folset)`
     test(F_ESPECIFICADOR_TIPO, folset, 41);
     ```
     Emite `Error 41: Simbolo inesperado o falta especificador de tipo`.
-  - **`c2` = folset heredado y `default: break;` (Regla 8).** Alternancia pura de terminales, sin puntos de reconfiguración internos determinables antes de elegir rama; mismo criterio que `factor` y `constante` en `N2`. El `default` no vuelve a reportar.
+  - **`c2` = folset heredado y `switch` sin `default` (Regla 8).** Alternancia pura de terminales, sin puntos de reconfiguración internos determinables antes de elegir rama; mismo criterio que `factor` y `constante` en `N2`. El `switch` no lleva rama `default`.
   - **Se preservan los cuatro `case` idénticos.** Los cuatro cuerpos son `scanner(); break;` y podrían colapsarse en un único `if(lookahead_in(F_ESPECIFICADOR_TIPO)) scanner();`. Se mantienen separados por el mismo criterio aplicado a `constante` en `N2`: son el punto de enganche de las acciones semánticas de las entregas siguientes, donde cada rama fija un tipo distinto.
   - **Test final (Regla 6):** `test(folset, NADA, 42)`, que emite `Error 42: Simbolo inesperado despues de especificador de tipo`.
-  - **El test final no es alcanzable por el camino del `default`.** Al salir del test inicial el lookahead está garantizado en `FIRST ∪ folset`; llegar al `default` implica que no está en `FIRST`, luego está en el folset y el test final pasa siempre. El `Error 42` solo puede reportarse después de haber consumido un especificador de tipo —por ejemplo ante `int 5 ...`—, que es justamente donde sirve. No es un defecto: se documenta para no buscar el 42 en el camino equivocado.
+  - **El test final no es alcanzable por el camino de la alternativa vacía.** Al salir del test inicial el lookahead está garantizado en `FIRST ∪ folset`; no matchear ningún `case` implica que no está en `FIRST`, luego está en el folset y el test final pasa siempre. El `Error 42` solo puede reportarse después de haber consumido un especificador de tipo —por ejemplo ante `int 5 ...`—, que es justamente donde sirve. No es un defecto: se documenta para no buscar el 42 en el camino equivocado.
   - **Verificación:** `void f(& a)` produce un único error (`41`) y `declaracion_parametro()` recupera el parámetro completo, en coherencia con la tabla de la *Decisión sobre la cascada de errores* de `T5`.
 
 ## N8
@@ -1008,7 +1016,7 @@ Instrumentación de los procedimientos `especificador_declaracion(set folset)` y
     test(F_ESPECIFICADOR_DECLARACION, folset, 43);
     ```
     Emite `Error 43: Simbolo inesperado o falta simb. al comienzo de especificador de declaracion` si el lookahead no pertenece a $\text{FIRST}(\langle\text{especificador de declaración}\rangle) = \{ \mathbf{(}, \mathbf{=}, \mathbf{[}, \mathbf{,}, \mathbf{;} \}$.
-  - **Forzar entrada (Regla 8 / Consigna 10):** El `default:` del `switch` se implementa silencioso (`default: break;`) puesto que `test()` ya validó el inicio y resincronizó en $c_1 \cup c_2$. Si el símbolo resincronizado pertenece a $c_2 \setminus c_1$, cae en `default` y finaliza sin emitir mensajes redundantes.
+  - **Forzar entrada (Regla 8 / Consigna 10):** El `switch` no lleva rama `default`, porque `test()` ya validó el inicio y resincronizó en $c_1 \cup c_2$. Si el símbolo resincronizado pertenece a $c_2 \setminus c_1$, no matchea ningún `case` y el procedimiento finaliza sin emitir mensajes redundantes.
   - **Propagación del `folset`:** Pasa directamente `folset` a `definicion_funcion(folset)` y a `declaracion_variable(folset)`.
   - **Test final:** No lleva test final propio, ya que ambas ramas delegan su cierre en los procedimientos subordinados (`proposicion_compuesta` y `;` respectivamente).
 
