@@ -539,8 +539,7 @@ void variable(set folset)
 {
 	test(F_VARIABLE, folset | CCOR_ABR, 59);
 
-	if(lookahead_in(CIDENT))
-		scanner();
+	match(CIDENT, 17);
 
 	/* El alumno debera verificar con una consulta a TS
 	si, siendo la variable un arreglo, corresponde o no

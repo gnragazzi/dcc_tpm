@@ -257,17 +257,31 @@ Cuentan como olvidables los **separadores de puntuación**: la `,` en
 
 #### 8. Forzar entrada (consigna 10)
 
-Cuando un test inicial ya verificó el primer símbolo, el cuerpo **no lo vuelve a verificar**:
+Cuando un test inicial ya verificó el primer símbolo, el cuerpo **no lo vuelve a consumir a
+ciegas**. Un `scanner()` incondicional se comería el símbolo cuando el test frenó en `c2`. Pero la
+forma correcta de evitarlo es `match`, no un consumo condicional silencioso:
 
 ```c
 test(CIDENT, c2, ne);
-if(lookahead_in(CIDENT))       /* en vez de match(CIDENT, ne2) */
-	scanner();
+match(CIDENT, ne2);
 ```
 
-El `test` se queda con la responsabilidad de reportar; el cuerpo consume **condicional y
-silenciosamente**. Un `scanner()` incondicional se comería el símbolo cuando el test frenó en
-`c2`; un `match` reportaría dos veces lo mismo.
+`match` ya tiene exactamente la semántica que hace falta: consume si el símbolo está, y si no está
+reporta sin avanzar. El punto es que **el test no garantiza el primer símbolo**: si la cadena se
+reconfiguró, el lookahead quedó en `c2 \ c1` y el símbolo de cabeza —que la producción exige—
+efectivamente falta. Corresponde reportarlo. Un `if(lookahead_in(CIDENT)) scanner();` deja pasar esa
+ausencia en silencio y el error solo se manifiesta después, desplazado o no se manifiesta.
+
+El costo aceptado es que cuando el test **no** reconfigura (el lookahead ya estaba en el folset
+heredado) el test y el `match` reportan sobre el mismo token: dos mensajes para un error. Se prefiere
+eso a omitir la ausencia de un terminal obligatorio. Corrección posterior a la devolución de la 1ra
+entrega (punto 7); la formulación original de esta regla prescribía el consumo condicional y era
+incorrecta.
+
+**Alcance: solo la cabeza obligatoria.** Esta regla habla del terminal que la producción exige al
+comienzo del cuerpo. No aplica a los símbolos opcionales (`if(lookahead_in(CCOR_ABR))` para el
+subíndice de `variable`, `if(lookahead_in(CAMPER))` en `declaracion_parametro`), que siguen siendo
+condicionales y silenciosos porque su ausencia no es un error.
 
 **Corolario — los `default:` de los `switch` no reportan**, *en los procedimientos que llevan
 test inicial*. Después del test, el lookahead está en `c1 ∪ c2`. Si está en `c1`, alguna rama
@@ -580,10 +594,14 @@ le alcanza con la condición del propio `while`.
   - `variable` (`ident | ident [ <expresión> ]`): punto interno `[`, precedido por `match(ident)`
     obligatorio. Sonda: `cin >> [i];`.
 
-  En los tres la forma es la misma y más simple que acá: hacer la cabeza salteable
-  (`if(lookahead_in(FIRST)) scanner();` en vez de un `match` incondicional), sin necesidad de
-  ordenar guardas, porque con cabeza obligatoria no hay ambigüedad que ordenar. No entran en este
-  PR; se instrumentan en sus tickets `N`.
+  En los tres la forma es la misma y más simple que acá: no hace falta ordenar guardas, porque con
+  cabeza obligatoria no hay ambigüedad que ordenar; el cuerpo corre y el punto interno se alcanza
+  solo. No entran en este PR; se instrumentan en sus tickets `N`.
+
+  Nota posterior a la devolución de la 1ra entrega (punto 7): la cabeza obligatoria se consume con
+  `match`, no salteándola con `if(lookahead_in(FIRST)) scanner();`. Si el test reconfiguró a un
+  punto interno, el terminal de cabeza falta de verdad y hay que reportarlo. Aplicado en `variable`
+  (ticket `N3`) y recogido en la regla 8.
 
 - **Verificación de la guarda.** Válidos, que deben dar cero errores hoy:
   `tests/entrega1/validos/04_expresion_simple_signo_unario.c` y
@@ -660,23 +678,28 @@ donde el primer intento no cumplía las reglas de `T5` y por qué la versión fi
   garantiza nada sobre el símbolo siguiente. Regla 2: "basta un solo call site sin garantía".
   `llamada_funcion` no tiene ese segundo call site, así que no lo lleva.
 
-- **Regla 8 — por qué `match(CIDENT, 17)` después del test duplicaba el error.** La primera
-  versión hacía `test(...); match(CIDENT, 17);`. Sobre `cin >> 5;` (falta el identificador):
-  1. `test` ve `CCONS_ENT`, no está en `c1` → **Error 59**. Como en ese momento `c2` todavía
-     incluía `F_EXPRESION`, el lookahead ya caía en `c1 ∪ c2` y el resync no saltaba nada.
-  2. `match(CIDENT, 17)` vuelve a mirar el mismo `5`, no es `CIDENT` → **Error 17**, mismo token.
-  3. Con el `if` viejo (ver punto siguiente) `5` también entraba a la rama del corchete →
-     **Error 35** de yapa.
-
-  Un solo error real reportado tres veces. Se reemplazó por el consumo forzado y silencioso de la
-  regla 8 (`test` ya se hizo cargo de reportar):
+- **Regla 8 — la cabeza va con `match`, no con consumo silencioso.** Forma final:
 
   ```c
   test(F_VARIABLE, folset | CCOR_ABR, 59);
 
-  if(lookahead_in(CIDENT))
-      scanner();
+  match(CIDENT, 17);
   ```
+
+  El test no garantiza que el lookahead sea un identificador: si la cadena se reconfiguró en `c2`,
+  el identificador que la producción exige falta, y `match` es quien lo reporta. Lo muestra la
+  sonda `cin >> [x];`, donde el test frena en el `[` (punto interno): con el consumo condicional
+  silencioso la ausencia del identificador no se reportaba en ningún lado.
+
+  *Historia de esta decisión.* La versión entregada usaba `if(lookahead_in(CIDENT)) scanner();`
+  para evitar el doble reporte sobre `cin >> 5;` (falta el identificador): ahí el `5` ya pertenece
+  al folset heredado —`F_PROPOSICION` incluye `F_PROPOSICION_EXPRESION`, y esa incluye las
+  constantes—, así que el test reporta **59** sin saltar nada y el `match` vuelve a mirar el mismo
+  token y reporta **17**. El diagnóstico era correcto y el doble mensaje sigue ocurriendo, pero la
+  conclusión no lo era: la devolución de la 1ra entrega (punto 7) señala que corresponde que
+  `match` reporte la ausencia, y el criterio queda alineado con la regla 8 reformulada. Ver el
+  tercer punto de este ticket: el `if` del subíndice mira solo `CCOR_ABR`, así que el `5` ya no
+  entra a la rama del corchete y no se suma un tercer mensaje.
 
 - **Regla 5 — por qué `F_EXPRESION` y `CCOR_CIE` no son puntos de reconfiguración válidos.** La
   intención original era antipánico razonable: *"si después del identificador aparece algo de
