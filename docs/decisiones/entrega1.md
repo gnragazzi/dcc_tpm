@@ -164,8 +164,9 @@ los posibles puntos de reconfiguración de cada alternativa deben ser disjuntos*
   `)` no es punto de reconfiguración.
 
   No alcanza con decir que el test corre antes de elegir rama: agregando el token a la
-  etiqueta del `case` la atribución se resuelve, y el `match` de esa rama pasa a forma
-  condicional. Lo que decide es si hay algo que ganar, y eso se mide caso por caso.
+  etiqueta del `case` la atribución se resuelve, y los `match` que preceden a ese punto en la
+  rama pasan a nombrar los terminales omitidos. Lo que decide es si hay algo que ganar, y eso
+  se mide caso por caso.
 
   *Esta redacción corrige la de la 1ra entrega, que descartaba `)`, `]` y `}` en bloque. La
   generalización era falsa: el criterio de la primera oración ya distingue los casos, y
@@ -580,10 +581,12 @@ le alcanza con la condición del propio `while`.
   **Alcance — dónde más aplica la rama del medio.** Condición: el procedimiento lleva test inicial,
   tiene un punto de reconfiguración interno que no está en su FIRST, y lo que precede a ese punto en
   el cuerpo es obligatorio. Si lo previo es opcional y ya está guardado por un `if`, la regla 8 lo
-  resuelve sola (`declarador_init`); si es una alternación, el `switch` con `default: return` lo
+  resuelve sola; si es una alternación, el `switch` con `default: return` lo
   resuelve solo (`factor`, `proposicion`, `especificador_tipo`, `especificador_declaracion`,
-  `constante`); si delega o solo se invoca condicionalmente, no lleva test inicial y la pregunta no
-  se plantea. Quedan tres, además de `expresion_simple`:
+  `constante`); si la alternancia es con λ y los puntos internos son terminales que la propia rama
+  consume, se resuelve forzando la entrada al `switch` con esos terminales como etiquetas de `case`
+  (`declarador_init`, ver `N10`); si delega o solo se invoca condicionalmente, no lleva test inicial
+  y la pregunta no se plantea. Quedan tres, además de `expresion_simple`:
 
   - `lista_declaraciones_init` (`ident <declarador init> { , ident <declarador init> }`): punto
     interno `,`, precedido por `match(ident)` obligatorio. Sonda: `int , y;`.
@@ -834,7 +837,7 @@ Instrumentación de `proposicion_compuesta(set folset)`, `lista_proposiciones(se
   **`}` es punto de reconfiguración del test inicial** (regla 5, punto 3 de la devolución).
   `proposicion_compuesta` consume la `}` con `match(CLLA_CIE, 25)`, así que califica, y entra en
   `c2` —no en `c1`—: una `{` faltante es un error y el `49` tiene que reportarse igual. Forzar la
-  entrada no cuesta nada acá, a diferencia de `declarador_init`: el consumo condicional de la `{`
+  entrada acá no requiere tocar el cuerpo: el consumo condicional de la `{`
   ya es tolerante por la regla 8, el test intermedio ya lleva `CLLA_CIE` en `c1`, y los dos
   guardianes no disparan; el flujo llega a `match(CLLA_CIE, 25)` y cierra el bloque. Lo único que
   hay que tocar además del `c2` es la guarda de la regla 9, que sin `CLLA_CIE` retornaría antes y
@@ -1114,21 +1117,23 @@ Instrumentación de recuperación antipánico para las producciones de inicializ
     - Es un no terminal anulable ($\to \lambda$), ya que una variable o parámetro puede declararse sin dimensión ni inicializador (ej. `int a;` o `int a, b;`).
     - Al ser invocado incondicionalmente desde `declaracion_variable` y `lista_declaraciones_init`, y no iniciar con llamada a procedimiento, lleva test inicial bajo la cláusula para anulables:
       $$c_1 = \text{FIRST}(\langle\text{declarador init}\rangle) \cup \text{folset} = \text{F\_DECLARADOR\_INIT} \mid \text{folset}$$
-      $$c_2 = \text{NADA} = 0$$
+      $$c_2 = \{\ \mathbf{]}\ ,\ \mathbf{\{}\ ,\ \mathbf{\}}\ \} = \text{CCOR\_CIE} \mid \text{CLLA\_ABR} \mid \text{CLLA\_CIE}$$
       ```c
-      test(F_DECLARADOR_INIT | folset, NADA, 47);
+      test(F_DECLARADOR_INIT | folset, CCOR_CIE | CLLA_ABR | CLLA_CIE, 47);
       ```
       emitiendo `Error 47: Simbolo inesperado al comienzo de declarador init`.
-    - **`switch` sin `default` (Regla 1 y 8):** Al ser una alternancia con $\lambda$, caer fuera de los `case` (`CASIGNAC` y `CCOR_ABR`) cuando el lookahead pertenece a `folset` representa la derivación vacía legítima. Por lo tanto, no lleva cláusula `default:` que emita error.
+    - **Puntos de reconfiguración en `c2` (Regla 5, punto 3 de la devolución):** `]`, `{` y `}` son los terminales que la segunda alternativa consume (`match(CCOR_CIE, 22)`, `match(CLLA_ABR, 24)`, `match(CLLA_CIE, 25)`) y no aparecen en la primera (`= <constante>`), de modo que satisfacen la disjunción que exige la regla 5. Van en `c2` y no en `c1` por la regla 4: llegar al `declarador_init` con un cierre es un error y el `47` tiene que reportarse igual; lo que aporta el `c2` es que la resincronización frene sobre el cierre en lugar de descartarlo.
+    - **`switch` sin `default` (Regla 1 y 8):** Al ser una alternancia con $\lambda$, caer fuera de los `case` (`CASIGNAC`, `CCOR_ABR`, `CCOR_CIE`, `CLLA_ABR` y `CLLA_CIE`) cuando el lookahead pertenece a `folset` representa la derivación vacía legítima. Por lo tanto, no lleva cláusula `default:` que emita error.
   - **Propagación del `folset` y códigos canónicos (Reglas 6 y 8 / Consigna 10):**
     - En la rama de asignación escalar `CASIGNAC` (`=`): se consume con `scanner()` y se invoca `constante(folset)`.
-    - En la rama de arreglos `CCOR_ABR` (`[`): se consume con `scanner()`. Conforme a la BNFE oficial, la dimensión opcional es el terminal entero `cons_ent` (`CCONS_ENT`), por lo que al verificarse con `if(lookahead_in(CCONS_ENT))` se consume directamente con `scanner()`. El cierre del corchete valida con `match(CCOR_CIE, 22);` (`Error 22: Falta ]`).
-    - Si a continuación se presenta una inicialización de arreglo (`lookahead_in(CASIGNAC)`): se consume `=`, se valida la apertura con `match(CLLA_ABR, 24);` (`Error 24: Falta {`), se delega la secuencia a `lista_inicializadores(CLLA_CIE | folset);` y se exige la llave de cierre con `match(CLLA_CIE, 25);` (`Error 25: Falta }`).
+    - La rama de arreglos agrupa los `case` `CCOR_ABR`, `CCOR_CIE`, `CLLA_ABR` y `CLLA_CIE`: al forzar la entrada por cualquiera de los tres puntos de reconfiguración, cada terminal obligatorio previo se exige con la abstracción canónica en lugar de consumirse con `scanner()`, de modo que el `match` correspondiente nombra el token omitido. La apertura del corchete valida con `match(CCOR_ABR, 35);` (`Error 35: Falta [`). Conforme a la BNFE oficial, la dimensión opcional es el terminal entero `cons_ent` (`CCONS_ENT`), por lo que al verificarse con `if(lookahead_in(CCONS_ENT))` se consume directamente con `scanner()`. El cierre del corchete valida con `match(CCOR_CIE, 22);` (`Error 22: Falta ]`).
+    - El bloque de inicialización de arreglo se guarda con `if(lookahead_in(CASIGNAC | CLLA_ABR | CLLA_CIE))`, ensanchado con los dos puntos de reconfiguración internos para que la entrada por `{` o por `}` no lo saltee. Dentro: se valida el `=` con `match(CASIGNAC, 66);` (`Error 66: Falta = `), la apertura con `match(CLLA_ABR, 24);` (`Error 24: Falta {`), se delega la secuencia a `lista_inicializadores(CLLA_CIE | folset);` y se exige la llave de cierre con `match(CLLA_CIE, 25);` (`Error 25: Falta }`).
   - **Test final (Reglas 2 y 6):** Culmina con test final obligatorio:
     ```c
     test(folset, NADA, 48);
     ```
     emitiendo `Error 48: Simbolo inesperado despues de declarador init`. La incorporación del test final se fundamenta en que al derivar en $\lambda$ no se delega en ningún procedimiento subordinado que valide el seguidor, y la rama de arreglos concluye en consumos de terminales (`match(CCOR_CIE, 22)` o `match(CLLA_CIE, 25)`).
+  - **Cobertura.** Los tres puntos de reconfiguración se fijan con siete casos `19_reconfig_*` en `tests/entrega1/invalidos/`: entrada por `]` en declaración local y en global, la misma omisión con la dimensión escrita (donde el lookahead del test inicial es `cons_ent` y el `]` no llega a ser lookahead), entrada por `{` local y global, y entrada por `}` sobre una declaración local sin `;` antes del cierre del bloque, sola y con otra definición de función a continuación. `tests/entrega1/validos/12_arreglo_local_inicializado.c` fija que las formas válidas —arreglo con dimensión e inicializador, escalar y bloque anidado con declaración propia— no entren por ninguno de los tres.
 
 - **Procedimiento `<lista_declaraciones_init>`:**
   - **Contexto gramatical:** $\langle\text{lista declaraciones init}\rangle ::= \mathbf{ident} \ \langle\text{declarador init}\rangle \ \{ \ \mathbf{,} \ \mathbf{ident} \ \langle\text{declarador init}\rangle \}$.

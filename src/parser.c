@@ -175,7 +175,7 @@ void declaracion_variable(set folset)
 
 void declarador_init(set folset)
 {
-	test(F_DECLARADOR_INIT | folset, NADA, 47);
+	test(F_DECLARADOR_INIT | folset, CCOR_CIE | CLLA_ABR | CLLA_CIE, 47);
 
 	switch(lookahead())
 	{
@@ -184,17 +184,22 @@ void declarador_init(set folset)
 			constante(folset);
 			break;
 
+		/* ] { } son puntos de reconfiguracion de esta alternativa: se entra por
+		ellos y cada match anterior reporta el token obligatorio omitido */
 		case CCOR_ABR:
-			scanner();
+		case CCOR_CIE:
+		case CLLA_ABR:
+		case CLLA_CIE:
+			match(CCOR_ABR, 35);
 
 			if(lookahead_in(CCONS_ENT))
 				scanner();
 
 			match(CCOR_CIE, 22);
 
-			if(lookahead_in(CASIGNAC))
+			if(lookahead_in(CASIGNAC | CLLA_ABR | CLLA_CIE))
 			{
-				scanner();
+				match(CASIGNAC, 66);
 				match(CLLA_ABR, 24);
 				lista_inicializadores(CLLA_CIE | folset);
 				match(CLLA_CIE, 25);
