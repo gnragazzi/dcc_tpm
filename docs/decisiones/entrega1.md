@@ -151,14 +151,26 @@ los posibles puntos de reconfiguración de cada alternativa deben ser disjuntos*
   procedimiento **delega** (regla 3), así que esos símbolos no llegan como `c2` propio sino
   dentro del **folset** que recibe `especificador_tipo` — que por la regla 6 es el mismo
   conjunto. La categoría "punto interno" queda para los procedimientos que sí cargan el test.
-- **No**: los símbolos de cierre (`)`, `]`, `}`). Un token es punto de reconfiguración de `X`
-  solo si `X` es quien lo **consume**. El `)` lo consumen `llamada_funcion`,
+- **Sí también los símbolos de cierre que el propio procedimiento consume.** El criterio es
+  el mismo de siempre: un token es punto de reconfiguración de `X` solo si `X` es quien lo
+  **consume**. `declarador_init` consume `]`, `{` y `}` en su segunda alternativa
+  (`match(CCOR_CIE, 22)`, `match(CLLA_ABR, 24)`, `match(CLLA_CIE, 25)`) y
+  `proposicion_compuesta` consume `}` (`match(CLLA_CIE, 25)`): en esos dos el cierre califica.
+  La restricción de disjunción se cumple —los tres son de la segunda alternativa de
+  `declarador_init`, ninguno aparece en la primera (`= <constante>`)—.
+- **No**: un cierre que `X` **no** consume. El `)` lo consumen `llamada_funcion`,
   `proposicion_iteracion`, `proposicion_seleccion`, `definicion_funcion` y la rama
-  `( <expresión> )` de `factor` — nunca `factor` como alternancia.
+  `( <expresión> )` de `factor` — nunca `factor` como alternancia, así que para `factor` el
+  `)` no es punto de reconfiguración.
 
   No alcanza con decir que el test corre antes de elegir rama: agregando el token a la
   etiqueta del `case` la atribución se resuelve, y el `match` de esa rama pasa a forma
-  condicional. Lo que decide es que no hay nada que ganar.
+  condicional. Lo que decide es si hay algo que ganar, y eso se mide caso por caso.
+
+  *Esta redacción corrige la de la 1ra entrega, que descartaba `)`, `]` y `}` en bloque. La
+  generalización era falsa: el criterio de la primera oración ya distingue los casos, y
+  aplicado bien deja entrar los cierres de `declarador_init` y `proposicion_compuesta`.
+  Punto 3 de la devolución.*
 
 #### 6. Test final y construcción del folset
 
@@ -575,8 +587,10 @@ le alcanza con la condición del propio `while`.
 
   - `lista_declaraciones_init` (`ident <declarador init> { , ident <declarador init> }`): punto
     interno `,`, precedido por `match(ident)` obligatorio. Sonda: `int , y;`.
-  - `proposicion_compuesta`: cualquier punto interno está precedido por `match({)` obligatorio.
-    Sonda: `void f() int x; }`.
+  - `proposicion_compuesta`: cualquier punto interno está precedido por la `{`. **Resuelto**: la
+    `{` ya se consume en forma salteable (`if(lookahead_in(CLLA_ABR)) scanner();`, regla 8), que es
+    justamente la forma que pide este bullet, así que agregar `CLLA_CIE` al `c2` del test inicial y
+    a la guarda de la regla 9 alcanza — ver `N4`. Sonda: `void f() int x; }`.
   - `variable` (`ident | ident [ <expresión> ]`): punto interno `[`, precedido por `match(ident)`
     obligatorio. Sonda: `cin >> [i];`.
 
@@ -811,24 +825,49 @@ Instrumentación de `proposicion_compuesta(set folset)`, `lista_proposiciones(se
 
   **El test intermedio obliga a que `proposicion_compuesta` tenga la guarda de la regla 9**, que
   hasta ahora no tenía pese a corresponderle —lleva test inicial (el `49`)—. Sin ella, sobre
-  `void main()` seguido de `}` sin llave de apertura: el test inicial no encuentra `}` en `c1` ni
-  en `c2`, reporta `49` y **descarta el `}`** al resincronizar; queda `CEOF`; el consumo condicional
-  de la `{` no dispara; y el test intermedio corre sobre un `CEOF` que está en el folset heredado
-  pero no en su `c1`, así que reporta un `52` sobre un token ya en estado de error, y el
-  `match(CLLA_CIE, 25)` agrega un tercero. Medido: `49, 52, 25` sin la guarda contra `49` con ella.
+  `void main()` sin cuerpo alguno: el test inicial resincroniza en el `CEOF` del folset heredado,
+  reporta `49`; el consumo condicional de la `{` no dispara; y el test intermedio corre sobre un
+  `CEOF` que está en el folset heredado pero no en su `c1`, así que reporta un `52` sobre un token
+  ya en estado de error, y el `match(CLLA_CIE, 25)` agrega un tercero. Medido: `49, 52, 25` sin la
+  guarda contra `49` con ella. Lo fija `17_falta_llave_apertura_eof`.
+
+  **`}` es punto de reconfiguración del test inicial** (regla 5, punto 3 de la devolución).
+  `proposicion_compuesta` consume la `}` con `match(CLLA_CIE, 25)`, así que califica, y entra en
+  `c2` —no en `c1`—: una `{` faltante es un error y el `49` tiene que reportarse igual. Forzar la
+  entrada no cuesta nada acá, a diferencia de `declarador_init`: el consumo condicional de la `{`
+  ya es tolerante por la regla 8, el test intermedio ya lleva `CLLA_CIE` en `c1`, y los dos
+  guardianes no disparan; el flujo llega a `match(CLLA_CIE, 25)` y cierra el bloque. Lo único que
+  hay que tocar además del `c2` es la guarda de la regla 9, que sin `CLLA_CIE` retornaría antes y
+  dejaría el punto inerte — es exactamente el `INTERNOS_X` de la plantilla de esa regla, que hasta
+  ahora estaba vacío.
 
   ```c
-  test(F_PROPOSICION_COMPUESTA, folset | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES, 49);
+  test(F_PROPOSICION_COMPUESTA, folset | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES | CLLA_CIE, 49);
 
-  if(!lookahead_in(F_PROPOSICION_COMPUESTA | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES))
+  if(!lookahead_in(F_PROPOSICION_COMPUESTA | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES | CLLA_CIE))
   	return;
 
   if(lookahead_in(CLLA_ABR))
   	scanner();
   ```
 
-  Con la guarda, ese caso pasa de **tres errores a uno** —mejor que antes del test intermedio, no
-  solo mejor que sin guarda—: el `49` solo, y el cuerpo no corre porque nada de él aplica. Es la
+  Medido sobre los dos casos donde la `}` descartada arrastraba al resto del archivo:
+  `17_falta_llave_apertura_funcion_siguiente` (una segunda función después del bloque sin abrir)
+  **cinco errores a uno**, porque sin el punto la resincronización se saltea la `}` y frena en el
+  `void` siguiente, que `lista_declaraciones` lee como declaración local del bloque;
+  `17_falta_llave_apertura_global_siguiente` **dos a uno**, el segundo era un `25` espurio.
+  `17_falta_llave_apertura_vacia` sigue en un error, ahora por consumo de la `}` en lugar de por
+  descarte, y por eso dejó de discriminar la guarda — de ahí el caso `_eof` nuevo. Los 76 casos
+  previos de la suite dan salida idéntica.
+
+  No hay riesgo de que este punto se coma una `}` del llamador: el único call site incondicional
+  de `proposicion_compuesta` es `definicion_funcion`, cuyo folset nunca contiene `CLLA_CIE` —desde
+  `proposicion` se entra solo por `case CLLA_ABR`—. Es el mismo argumento del bullet de disjunción
+  de más abajo.
+
+  Con la guarda el caso sin cuerpo pasa de **tres errores a uno** —mejor que antes del test
+  intermedio, no solo mejor que sin guarda—: el `49` solo, y el cuerpo no corre porque nada de él
+  aplica. Es la
   cuarta fila de la tabla de la regla 9, la única que pide retornar. Los otros seis casos de llave
   de apertura faltante (con declaraciones, con proposición, dentro de `while`, dentro de `if`, con
   basura, y con ambas llaves ausentes) no cambian.
@@ -1429,7 +1468,9 @@ Medición, errores reportados antes → después:
 | `void f(& int x)` | 6 | 1 |
 | `12_cascada_bloques_anidados` | 6 | 3 |
 | `*` al inicio de un bloque anidado (`while`, `else`, desnudo) | 3 | 1 |
-| `void main()` + `}` sin llave de apertura (con la guarda de regla 9) | 3 | 1 |
+| `void main()` sin cuerpo (con la guarda de regla 9) | 3 | 1 |
+| `void main()` + `}` + otra función (con `}` como punto de reconfiguración) | 5 | 1 |
+| `void main()` + `}` + declaración global (ídem) | 2 | 1 |
 | `14_expresion_simple_salida_folset` | 5 | 2 |
 
 Ningún caso válido cambia de salida: el test pasa en silencio cuando el lookahead está en `c1`.
