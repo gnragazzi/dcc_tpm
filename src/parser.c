@@ -60,9 +60,6 @@ void especificador_tipo(set folset)
 		case CFLOAT:
 			scanner();
 			break;
-
-		default:
-			break;
 	}
 
 	test(folset, NADA, 42);
@@ -84,9 +81,6 @@ void especificador_declaracion(set folset)
 		case CCOMA:
 		case CPYCOMA:
 			declaracion_variable(folset);
-			break;
-
-		default:
 			break;
 	}
 }
@@ -316,9 +310,6 @@ void proposicion(set folset)
 		case CRETURN:
 			proposicion_retorno(folset);
 			break;
-
-		default:
-			break;
 	}
 }
 
@@ -526,9 +517,6 @@ void factor(set folset)
 			scanner();
 			expresion(folset);
 			break;
-
-		default:
-			break;
 	}
 
 	test(folset, 0, 58);
@@ -602,9 +590,6 @@ void constante(set folset)
 
 		case CCONS_CAR:
 			scanner();
-			break;
-
-		default:
 			break;
 	}
 
