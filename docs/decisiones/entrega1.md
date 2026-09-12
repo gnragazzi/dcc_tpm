@@ -787,7 +787,10 @@ Instrumentación de `proposicion_compuesta(set folset)`, `lista_proposiciones(se
   instrumentándolo: **0 disparos** sobre los 48 casos de la suite más una treintena de ejemplos
   construidos a mano, y salida idéntica en todos. Es código muerto y se descarta.
 
-- **`proposicion_compuesta` lleva un test intermedio después de consumir la `{`.** El cuerpo
+- **`proposicion_compuesta` llevaba un test intermedio después de consumir la `{` — revertido en
+  devolución, punto 4.** La cátedra pidió eliminarlo y volver al esquema de teoría (test solo al
+  comienzo y/o al final); queda el análisis original como registro de la motivación, pero
+  `src/parser.c` ya no tiene este test. El cuerpo
   del bloque son dos guardianes seguidos de un `match` obligatorio:
 
   ```c
@@ -1137,7 +1140,13 @@ Instrumentación de recuperación antipánico para las producciones de inicializ
 
 - **Procedimiento `<lista_declaraciones_init>`:**
   - **Contexto gramatical:** $\langle\text{lista declaraciones init}\rangle ::= \mathbf{ident} \ \langle\text{declarador init}\rangle \ \{ \ \mathbf{,} \ \mathbf{ident} \ \langle\text{declarador init}\rangle \}$.
-  - **Test inicial y final:** No lleva test inicial ni test final propios (Regla 2), comenzando directamente con la verificación del identificador obligatorio.
+  - **Test inicial (corregido en devolución, punto 4).** La primera redacción decía "no lleva test inicial (Regla 2), comenzando directamente con la verificación del identificador obligatorio" — pero eso describe delegación (regla 3), y acá no hay delegación: la primera sentencia del cuerpo es un `match(CIDENT, 17)` crudo, no una invocación a procedimiento, y el no terminal se invoca incondicionalmente desde `declaracion_variable` y desde `declaracion`. Es exactamente el criterio de la regla 2: **sí lleva** test inicial.
+    $$c_1 = \text{FIRST}(\langle\text{lista declaraciones init}\rangle) = \text{F\_LISTA\_DECLARACIONES\_INIT} = \text{CIDENT}$$
+    ```c
+    test(F_LISTA_DECLARACIONES_INIT, folset, 46);
+    ```
+    emitiendo `Error 46: Simbolo inesperado o falta simb. al comienzo de lista decl. init` — código ya reservado en `error.c` y hasta ahora sin ningún `test()` que lo disparara.
+  - **Test final:** No lleva test final propio (Regla 2): la última sentencia del cuerpo (tanto en la entrada como en cada vuelta del `while`) es la invocación a `declarador_init`, que cierra con su propio test final (`48`).
   - **Consumo de terminales:** Valida y consume el identificador inicial y subsiguientes mediante el código canónico `match(CIDENT, 17);` (`Error 17: Falta identificador`).
   - **Iteración con separador olvidable (Consigna 12):**
     - La coma `,` es un separador de puntuación susceptible a omisión en declaraciones múltiples (ej. `int a b;`).
@@ -1415,6 +1424,14 @@ Integración en la rama principal (`main`) y versionado inmutable:
 
 ## Casos donde el esquema de recuperación antipánico no alcanzó y cómo se reconfiguró
 
+**Revertido en devolución, punto 4.** La cátedra corrigió: hay cierta libertad para elegir puntos
+de reconfiguración, pero conviene no apartarse del esquema visto en teoría — test al comienzo y/o
+al final de cada procedimiento reconocedor, sin tests adicionales en el medio — y dejar que cada
+nivel haga la recuperación que le corresponde. Los tests intermedios de `definicion_funcion`,
+`proposicion_compuesta` y `llamada_funcion` que este apartado justificaba fueron eliminados de
+`src/parser.c`; el análisis queda documentado abajo como registro de por qué se habían agregado,
+pero ya no describe el código vigente.
+
 ### El patrón guardián + terminal obligatorio
 
 Las reglas 1 a 9 fijan dónde va cada test y qué llevan `c1` y `c2`, pero ninguna habla de la
@@ -1459,9 +1476,9 @@ solo el del guardián inmediato — ver el `F_LISTA_DECLARACIONES` de `proposici
 
 | procedimiento | opcional | cierre | `ne` | estado |
 |---|---|---|---|---|
-| `definicion_funcion` | `<lista decl parámetros>` | `)` | 41 | aplicado |
-| `proposicion_compuesta` | `<lista declaración>`, `<lista proposición>` | `}` | 52 | aplicado (`N4`) |
-| `llamada_funcion` | `<lista expresiones>` | `)` | 56 | aplicado |
+| `definicion_funcion` | `<lista decl parámetros>` | `)` | 41 | revertido (devolución, punto 4) |
+| `proposicion_compuesta` | `<lista declaración>`, `<lista proposición>` | `}` | 52 | revertido (devolución, punto 4) |
+| `llamada_funcion` | `<lista expresiones>` | `)` | 56 | revertido (devolución, punto 4) |
 
 Medición, errores reportados antes → después:
 
