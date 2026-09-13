@@ -457,18 +457,10 @@ void expresion(set folset)
 void expresion_simple(set folset) {
 	test(F_EXPRESION_SIMPLE, (folset | F_RESTO_EXPRESION_SIMPLE), 56);
 
-	if (!lookahead_in(F_EXPRESION_SIMPLE | F_RESTO_EXPRESION_SIMPLE))
-		return;
-
-	if (lookahead_in(F_EXPRESION_SIMPLE)) {
-		if (lookahead_in(F_OPERADOR_OPCIONAL))
-			scanner();
-		termino(folset | F_RESTO_EXPRESION_SIMPLE);
-	} else {
+	if (lookahead_in(F_OPERADOR_OPCIONAL))
 		scanner();
-		termino(folset | F_RESTO_EXPRESION_SIMPLE);
-	}
 
+	termino(folset | F_RESTO_EXPRESION_SIMPLE);
 
 	while (lookahead_in(F_RESTO_EXPRESION_SIMPLE)) {
 		scanner();
