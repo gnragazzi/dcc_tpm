@@ -1,3 +1,6 @@
-	 Error 52: Simbolo inesperado o falta simb. al comienzo de proposicion
+	 Error 25: Falta }
+	 Error 50: Simbolo inesperado despues de proposicion compuesta
 	 Error 23: Falta ;
+	 Error 50: Simbolo inesperado despues de proposicion compuesta
 	 Error 57: Simbolo inesperado o falta simb. al comienzo de factor
+	 Error 50: Simbolo inesperado despues de proposicion compuesta
