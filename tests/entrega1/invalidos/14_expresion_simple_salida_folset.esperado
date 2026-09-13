@@ -1,2 +1,5 @@
 	 Error 56: Simbolo inesperado o falta simb. al comienzo de expresion simple
-	 Error 56: Simbolo inesperado o falta simb. al comienzo de expresion simple
+	 Error 21: Falta )
+	 Error 61: Simbolo inesperado despues de llamada a funcion
+	 Error 23: Falta ;
+	 Error 60: Simbolo inesperado despues de variable
