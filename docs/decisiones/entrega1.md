@@ -198,6 +198,21 @@ folset = CSHL | CPYCOMA | F_EXPRESION | folset(proposicion_e_s)
 
 `F_EXPRESION` está ahí por la regla 7.
 
+**Dos formas en que la cola se lee corto.** La lectura amplia tiene dos fuentes de símbolos
+que es fácil pasar por alto, y las dos aparecieron como omisiones en la corrección de la
+entrega:
+
+- *Símbolos posteriores salteables.* Un terminal obligatorio en el medio de la cola no corta
+  la lectura: si falta en la cadena, lo que sigue **sí** puede aparecer. En
+  `<declaración parámetro> ::= <especificador tipo> [&] ident [ '[' ']' ]`, el folset de
+  `especificador_tipo` no es `CAMPER | CIDENT` sino `CAMPER | CIDENT | CCOR_ABR | CCOR_CIE`:
+  `[` y `]` son opcionales, pero pueden ser lo primero que aparezca si `ident` falta. Mismo
+  caso en `<proposición selección>`: la primera `proposicion(...)` va con
+  `F_ELSE_OPCIONAL | F_PROPOSICION`, porque si el `else` falta puede venir directamente la
+  proposición de la rama alternativa. De los dos, sólo el de `declaracion_parametro` agrega
+  bits que el folset heredado no traía ya; ver la nota al cierre de la regla 7.
+- *La cola de una iteración da la vuelta.* Ver regla 7.
+
 #### 7. Iteraciones: el chequeo en dos posiciones (consigna 12)
 
 La BNFE viene colapsada: donde la BNF tiene `X ::= A <Xtail>` / `<Xtail> ::= λ | A <Xtail>`,
@@ -253,7 +268,67 @@ completa.
 Cuentan como olvidables los **separadores de puntuación**: la `,` en
 `lista_declaraciones_param`, `lista_declaraciones_init`, `lista_inicializadores` y
 `lista_expresiones`; `>>` y `<<` en `proposicion_e_s`. **Los operadores no** — no se olvida un
-`*` como se olvida una coma.
+`*` como se olvida una coma, así que los bucles de `termino`, `expresion` y `expresion_simple`
+no se ensanchan.
+
+**Ensanchar el guardián y ensanchar el folset son decisiones distintas.** El guardián decide si
+el bucle vuelve a entrar cuando falta el separador; el folset decide dónde frena el test final
+del cuerpo. La segunda no depende de la primera: en `A { op A }` la cola de cada `A` da la
+vuelta por el bucle, así que `FIRST(A)` es alcanzable después de `A` y entra en el folset de
+**todas** las invocaciones a `A`, haya ensanche o no. Es la lectura amplia de la regla 6
+aplicada a una producción iterativa.
+
+Por eso `factor` se invoca desde `termino` con `folset | F_RESTO_TERMINO | F_FACTOR`, y
+`expresion_simple` desde `expresion` con `folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE`, aun
+cuando `*` y `<` no cuentan como olvidables. Sobre `a * b c ;` el test final del `factor` que
+reconoce `b` frena en `c` en vez de descartarlo: el error se reporta una sola vez y el token
+sobrevive para el nivel que corresponda.
+
+**Nota: tres de los cuatro folsets ampliados ya venían por herencia.** De los cuatro call sites
+corregidos, sólo el de `declaracion_parametro` (regla 6) agrega bits que el folset heredado no
+traía. Los otros tres son idempotentes sobre la gramática actual.
+
+El lema que lo sostiene: en este parser **los folsets sólo crecen al bajar**. Toda invocación a
+un procedimiento reconocedor tiene la forma `X(folset | ...)`; ninguna quita bits. Entonces
+basta ver, para cada procedimiento, qué trae el folset de *todos* sus call sites.
+
+- `F_FACTOR` en `termino`. Por definición de los conjuntos,
+  `F_EXPRESION_SIMPLE = CMAS | CMENOS | F_TERMINO` y `F_TERMINO = F_FACTOR`, luego
+  `F_FACTOR ⊆ F_EXPRESION_SIMPLE`. La cadena es única — `expresion_simple` sólo se invoca desde
+  `expresion`, `termino` sólo desde `expresion_simple`, `factor` sólo desde `termino` — así que
+
+  ```
+  folset(expresion_simple) ⊇ F_EXPRESION_SIMPLE ⊇ F_FACTOR
+  folset(termino)          = folset(expresion_simple) | F_RESTO_EXPRESION_SIMPLE ⊇ F_FACTOR
+  folset(factor)           = folset(termino) | F_RESTO_TERMINO                   ⊇ F_FACTOR
+  ```
+
+- `F_EXPRESION_SIMPLE` en `expresion`. Todo folset que llega a `expresion` viene de una
+  proposición o de una lista de expresiones, y en ambos casos ya trae `F_EXPRESION` —
+  directamente, o vía `F_PROPOSICION ⊇ F_PROPOSICION_EXPRESION ⊇ F_EXPRESION`. Y
+  `F_EXPRESION = F_EXPRESION_SIMPLE`.
+
+- `F_PROPOSICION` en `proposicion_seleccion`. El único origen de una invocación a `proposicion`
+  es `lista_proposiciones`, que ya la invoca con `folset | F_PROPOSICION`; las invocaciones de
+  `proposicion_iteracion` y de la propia `proposicion_seleccion` heredan ese folset sin quitarle
+  nada. Por inducción sobre el anidamiento, `F_PROPOSICION` está siempre.
+
+Contrastado empíricamente: instrumentando los cuatro call sites con un chequeo de
+`(base | agregado) != base` sobre los 76 casos de `tests/entrega1` y 3000 programas generados al
+azar, el de `declaracion_parametro` aporta bits 2448 veces y los otros tres, ninguna. De ahí que
+sólo el primero admita un caso de prueba que distinga (`15_param_arreglo_sin_ident` y
+`15_param_corchete_cierre_suelto`): para los otros tres no existe entrada que los distinga, y no
+por falta de cobertura sino porque el bit ya está prendido en todos los caminos.
+
+**Se escriben igual, los cuatro.** Primero, la redundancia es **contingente**, no estructural:
+descansa en que `<término>` siga siendo el primer símbolo de `<expresión simple>`, en que toda
+expresión esté dentro de una proposición y en que no aparezcan call sites nuevos fuera de esas
+cadenas — tres cosas que las etapas 2 y 3 pueden cambiar. El día que cambien, la omisión no
+daría error de compilación: daría recuperación silenciosamente peor. Segundo, y más importante,
+la consigna 8 pide folsets **precisos por call site**: que una invocación declare lo que
+legítimamente la sigue es una propiedad local de esa invocación, y no debe depender de
+inspeccionar qué le llegó heredado desde arriba. Omitirlos por redundantes convertiría folsets
+precisos en folsets correctos por accidente.
 
 #### 8. Forzar entrada (consigna 10)
 
