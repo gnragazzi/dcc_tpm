@@ -119,7 +119,7 @@ void lista_declaraciones_param(set folset)
 
 void declaracion_parametro(set folset)
 {
-	especificador_tipo(folset | CAMPER | CIDENT);
+	especificador_tipo(folset | CAMPER | CIDENT | CCOR_ABR | CCOR_CIE);
 
 	if(lookahead_in(CAMPER))
 		scanner();
@@ -169,7 +169,7 @@ void declaracion_variable(set folset)
 
 void declarador_init(set folset)
 {
-	test(F_DECLARADOR_INIT | folset, NADA, 47);
+	test(F_DECLARADOR_INIT | folset, CCOR_CIE | CLLA_ABR | CLLA_CIE, 47);
 
 	switch(lookahead())
 	{
@@ -178,17 +178,22 @@ void declarador_init(set folset)
 			constante(folset);
 			break;
 
+		/* ] { } son puntos de reconfiguracion de esta alternativa: se entra por
+		ellos y cada match anterior reporta el token obligatorio omitido */
 		case CCOR_ABR:
-			scanner();
+		case CCOR_CIE:
+		case CLLA_ABR:
+		case CLLA_CIE:
+			match(CCOR_ABR, 35);
 
 			if(lookahead_in(CCONS_ENT))
 				scanner();
 
 			match(CCOR_CIE, 22);
 
-			if(lookahead_in(CASIGNAC))
+			if(lookahead_in(CASIGNAC | CLLA_ABR | CLLA_CIE))
 			{
-				scanner();
+				match(CASIGNAC, 66);
 				match(CLLA_ABR, 24);
 				lista_inicializadores(CLLA_CIE | folset);
 				match(CLLA_CIE, 25);
@@ -218,9 +223,9 @@ void lista_inicializadores(set folset)
 
 void proposicion_compuesta(set folset)
 {
-	test(F_PROPOSICION_COMPUESTA, folset | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES, 49);
+	test(F_PROPOSICION_COMPUESTA, folset | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES | CLLA_CIE, 49);
 
-	if(!lookahead_in(F_PROPOSICION_COMPUESTA | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES))
+	if(!lookahead_in(F_PROPOSICION_COMPUESTA | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES | CLLA_CIE))
 		return;
 
 	if(lookahead_in(CLLA_ABR))
@@ -338,7 +343,7 @@ void proposicion_seleccion(set folset)
 
 	match(CPAR_CIE, 21);
 
-	proposicion(folset | F_ELSE_OPCIONAL);
+	proposicion(folset | F_ELSE_OPCIONAL | F_PROPOSICION);
 
 	if(lookahead_in(F_ELSE_OPCIONAL))
 	{
@@ -420,7 +425,7 @@ void proposicion_expresion(set folset)
 
 void expresion(set folset)
 {
-	expresion_simple(folset | F_RESTO_EXPRESION);
+	expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
 
 	while(lookahead_in(F_RESTO_EXPRESION))
 	{
@@ -428,7 +433,7 @@ void expresion(set folset)
 		{
 			case CASIGNAC:
 				scanner();
-				expresion_simple(folset | F_RESTO_EXPRESION);
+				expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
 				break;
 
 			case CDISTINTO:
@@ -438,7 +443,7 @@ void expresion(set folset)
 			case CMAYOR:
 			case CMAIG:
 				scanner();
-				expresion_simple(folset | F_RESTO_EXPRESION);
+				expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
 				break;
 		}
 	}
@@ -470,12 +475,12 @@ void expresion_simple(set folset) {
 
 void termino(set folset)
 {
-	factor(folset | F_RESTO_TERMINO);
+	factor(folset | F_RESTO_TERMINO | F_FACTOR);
 
 	while(lookahead_in(F_RESTO_TERMINO))
 	{
 		scanner();
-		factor(folset | F_RESTO_TERMINO);
+		factor(folset | F_RESTO_TERMINO | F_FACTOR);
 	}
 }
 
