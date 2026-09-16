@@ -79,3 +79,14 @@ set lookahead_in(set conjunto)
 {
 	return lookahead() & conjunto;
 }
+
+void test(set c1, set c2, int ne)
+{
+	if(!lookahead_in(c1))
+	{
+		error_handler(ne);
+		set conjunto_sincronizacion = c1 | c2;
+		while(!lookahead_in(conjunto_sincronizacion))
+			scanner();
+	}
+}

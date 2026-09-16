@@ -29,9 +29,28 @@ echo "== Empaquetando =="
 TMP_DIR="$(mktemp -d)"
 cp -r "$SRC_DIR" "$TMP_DIR/src"
 cp "$DECISIONES" "$TMP_DIR/decisiones.md"
+cp "$DECISIONES" "$TMP_DIR/entrega${ETAPA}.md"
+
+ARCHIVOS=("src" "decisiones.md" "entrega${ETAPA}.md")
+
+# Detectar e incluir informe en PDF si existe
+PDF_CANDIDATOS=(
+  "$ROOT_DIR/docs/informe_entrega${ETAPA}.pdf"
+  "$ROOT_DIR/docs/informes/informe_entrega${ETAPA}.pdf"
+  "$ROOT_DIR/docs/entrega${ETAPA}.pdf"
+)
+
+for f in "${PDF_CANDIDATOS[@]}"; do
+  if [ -f "$f" ]; then
+    echo "Incluyendo informe PDF: $(basename "$f")"
+    cp "$f" "$TMP_DIR/informe_entrega${ETAPA}.pdf"
+    ARCHIVOS+=("informe_entrega${ETAPA}.pdf")
+    break
+  fi
+done
 
 rm -f "$DEST"
-(cd "$TMP_DIR" && zip -r "$DEST" src decisiones.md)
+(cd "$TMP_DIR" && zip -r "$DEST" "${ARCHIVOS[@]}")
 rm -rf "$TMP_DIR"
 
 echo "Listo: $DEST"

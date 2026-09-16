@@ -23,11 +23,13 @@ jobs:
         run: |
           shopt -s nullglob
           fail=0
+          casos=0
 
           for entrega_dir in tests/entrega*/; do
             entrega="$(basename "$entrega_dir")"
 
-            for f in "${entrega_dir}validos/"*.txt; do
+            for f in "${entrega_dir}validos/"*.c; do
+              casos=$((casos + 1))
               out="$(timeout 5 ./src/ucc -c "$f" 2>&1)"
               status=$?
               if [ $status -ne 0 ]; then
@@ -40,8 +42,9 @@ jobs:
               fi
             done
 
-            for f in "${entrega_dir}invalidos/"*.txt; do
-              esperado="${f%.txt}.esperado"
+            for f in "${entrega_dir}invalidos/"*.c; do
+              casos=$((casos + 1))
+              esperado="${f%.c}.esperado"
               if [ ! -f "$esperado" ]; then
                 echo "::error::[$entrega/invalidos] $f: falta $esperado (secuencia de errores esperada)"
                 fail=1
@@ -66,4 +69,10 @@ jobs:
             done
           done
 
+          if [ "$casos" -eq 0 ]; then
+            echo "::error::No se ejecutó ningún caso de prueba: los tests deben ser archivos .c bajo tests/entrega*/validos/ o tests/entrega*/invalidos/"
+            fail=1
+          fi
+
+          echo "Casos ejecutados: $casos"
           exit $fail
