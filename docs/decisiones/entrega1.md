@@ -375,6 +375,18 @@ en `proposicion_e_s`, los cuatro `case` de `especificador_tipo`).
 
 #### 9. Salida temprana cuando el test frenó en el folset
 
+**Regla revertida por devolución, punto 5.** La cátedra consideró esta salida demasiado agresiva:
+un procedimiento que no puede recuperarse tiene que dejar que los demás niveles actúen a partir de
+los folset propagados, no abandonar el reconocedor. La guarda ya no está en ninguno de los dos
+procedimientos que la llevaban — `proposicion_compuesta` (ver `N4`) y `expresion_simple` (ver
+`N1`)—, y se acepta la cascada resultante. El análisis original queda abajo como registro de la
+motivación; **no describe el código vigente**.
+
+En `expresion_simple` el borrado no fue mecánico: el `return` sostenía un `if/else` cuya rama
+`else` hacía un `scanner()` incondicional, así que quitarlo solo habría hecho que un token del
+folset heredado se consumiera indebidamente. Lo que lo destrabó fue el punto 6 de la misma
+devolución, que elimina ese `if/else`. Los dos puntos son un único cambio: ver la nota en `N1`.
+
 Al salir de un test inicial el lookahead puede estar en cuatro estados. Tres piden la misma
 acción; el cuarto no:
 
@@ -462,6 +474,16 @@ distinto (falta un `;`, falta un `)`). Si en los lotes resulta ser ruido, se tra
 reescribe. No toca `test` (`T1`), ni `util.c` ni `error.c` (`T4`), ni la migración mecánica
 (`T3`). La teoría no trae ningún mecanismo anticascada: esto es una decisión de diseño propia y
 se justifica como tal en la entrega.
+
+**Revertida por devolución, punto 5.** La cátedra la juzgó una salida demasiado agresiva y pidió
+dejar que cada nivel recupere a partir de los folset propagados, aceptando la cascada. Se
+mantiene el análisis de esta sección como registro de por qué se había introducido, pero la tabla
+de verificación de arriba ya no describe el comportamiento vigente: sobre `cout << ) ;` el
+reconocedor reporta **dos** errores, no uno — el `56` de `expresion_simple` y el `57` de `factor`
+sobre el mismo `)`—, que es exactamente la cascada que esta sección buscaba evitar y que la
+cátedra pide aceptar. Medido sobre la suite completa, revertirla en los dos procedimientos que la
+llevaban cuesta **11 mensajes extra en 10 casos, todos `Error 57`**, sin perder ningún error real
+ni cambiar ninguno por otro.
 
 ---
 
@@ -584,6 +606,16 @@ le alcanza con la condición del propio `while`.
   versión con test-en-el-while y sin él una vez integrado `N2`).
 - **DECISIÓN DE DISEÑO — la guarda de `expresion_simple` tiene tres salidas, no dos.**
 
+  > **Revertido por devolución, puntos 5 y 6 — el procedimiento ya no tiene ni guarda ni rama del
+  > medio.** El análisis que sigue queda como registro de por qué se habían introducido; el código
+  > vigente es el del bullet *Estructura final* de más abajo. Los dos puntos de la devolución son
+  > un único cambio y no se pueden aplicar por separado: el `return` de la regla 9 es lo que hacía
+  > inofensiva a la rama `else`, y la rama `else` es lo que hace destructivo quitar el `return`.
+  > Medido sobre los 87 casos de la suite, quitar solo el `return` rompe **9 casos**, y no por
+  > mensajes de más: sobre `cout << ) ;` el `scanner()` incondicional del `else` se come el `)` y
+  > el `Falta ;` posterior sale como `Falta <<`, y en dos casos **desaparecen** errores reales
+  > (un `21: Falta )` y un `43`).
+
   La regla 9 (`T5`) alcanza para todos los demás procedimientos con test inicial: si el test
   resincronizó en el folset heredado, se retorna sin correr el cuerpo. `expresion_simple` es la
   única donde no alcanza, y por dos razones distintas que conviene no mezclar: **es dueña de su
@@ -676,6 +708,53 @@ le alcanza con la condición del propio `while`.
   (`if(lookahead_in(FIRST)) scanner();` en vez de un `match` incondicional), sin necesidad de
   ordenar guardas, porque con cabeza obligatoria no hay ambigüedad que ordenar. No entran en este
   PR; se instrumentan en sus tickets `N`.
+
+- **Estructura final de `expresion_simple` — devolución, puntos 5 y 6.** El código vigente:
+
+  ```c
+  test(F_EXPRESION_SIMPLE, (folset | F_RESTO_EXPRESION_SIMPLE), 56);
+
+  if (lookahead_in(F_OPERADOR_OPCIONAL))
+  	scanner();
+
+  termino(folset | F_RESTO_EXPRESION_SIMPLE);
+
+  while (lookahead_in(F_RESTO_EXPRESION_SIMPLE))
+  {
+  	scanner();
+  	termino(folset | F_RESTO_EXPRESION_SIMPLE);
+  }
+  ```
+
+  Es la traducción directa de `[ + | - ] <término> { <resto expresión simple> <término> }`: la
+  cabeza opcional guardada por la regla 1, el término obligatorio llamado sin guardar, y el ciclo.
+  Sin guarda ni rama del medio, el cuerpo queda en la misma forma que el de `proposicion_compuesta`
+  —guardián opcional seguido de llamada obligatoria— y ya no hay nada que ordenar.
+
+  **Por qué la rama del medio se puede borrar sin perder la reconfiguración por `||`.** El ciclo de
+  reconfiguración sigue siendo suyo: el argumento de *Quién es dueño del ciclo* no cambió, y `COR`
+  sigue en el `c2` del test inicial. Lo que cambió es que la rama del medio era **redundante con la
+  primera iteración del `while`**: ambas hacen `scanner()` y `termino(folset |
+  F_RESTO_EXPRESION_SIMPLE)` sobre el mismo lookahead. Borrada la rama, el `||` sobre el que frenó
+  el test lo consume el `while`, y el resto de la expresión se reconoce igual. Lo único que se
+  agrega en el camino es el `57` que reporta el test de `factor` al pasar por la llamada
+  incondicional a `termino()`, sobre ese mismo `||`: dos mensajes para un operando izquierdo
+  faltante, redundantes pero no falsos.
+
+  **Sobre el fundamento del punto 6.** La devolución afirma que *"en ambas ramas hacen `scanner()`
+  y luego invocan a `termino(...)`"* y que *"si el lookahead pertenece al first de término pero no
+  es `+` o `-`, están consumiendo un símbolo que debería procesar `termino(...)`"*. Las dos
+  afirmaciones son falsas sobre el código que había: el `scanner()` de la rama `then` estaba
+  anidado bajo `if(lookahead_in(F_OPERADOR_OPCIONAL))`, y un lookahead en `FIRST(término)` entraba
+  por esa rama —`F_EXPRESION_SIMPLE = + | - | F_TERMINO`—, donde ese `scanner()` no dispara. El
+  consumo indebido que describen no ocurría por ahí. **El cambio pedido es correcto igual, por otro
+  motivo**: la rama `else` era redundante con el `while`, y —sobre todo— es la que bloqueaba el
+  punto 5. El consumo indebido aparece recién *después* de aplicar el punto 5 sin el 6.
+
+  **Impacto medido** sobre los 87 casos de la suite, con los dos puntos aplicados: 10 casos cambian,
+  **+11 mensajes, todos `Error 57`**, sin pérdidas, sin mensajes falsos y sin cambios de orden. Dos
+  los aporta el punto 6 —los `||` huérfanos de `14_expresion_simple_or_huerfano`— y nueve el punto
+  5, uno por cada caso donde el test frenaba en el folset heredado y la guarda cortaba.
 
 - **Verificación de la guarda.** Válidos, que deben dar cero errores hoy:
   `tests/entrega1/validos/04_expresion_simple_signo_unario.c` y
@@ -952,6 +1031,13 @@ Instrumentación de `proposicion_compuesta(set folset)`, `lista_proposiciones(se
   cuarta fila de la tabla de la regla 9, la única que pide retornar. Los otros seis casos de llave
   de apertura faltante (con declaraciones, con proposición, dentro de `while`, dentro de `if`, con
   basura, y con ambas llaves ausentes) no cambian.
+
+  **Guarda revertida en devolución, punto 5.** Sin ella, sobre `void main()` sin cuerpo: el test
+  inicial reporta `49` y resincroniza en el `CEOF` heredado; el consumo condicional de la `{` no
+  dispara (regla 8); `match(CLLA_CIE, 25)` falla sin consumir y agrega un `25`. Medido: `49, 25`
+  contra `49` solo con la guarda — un error más, y es el esperado por el esquema de teoría, no
+  ruido. Es el único caso de los 87 de la suite que cambia; lo fija `17_falta_llave_apertura_eof`,
+  reescrito para reflejar esta salida.
 
   El test intermedio en sí no necesita guarda propia: lo que le sigue son dos guardianes ya
   condicionales. Lo que necesitaba guarda era el test inicial, y el intermedio solo hizo visible
@@ -1464,8 +1550,8 @@ Creación de los lotes de prueba para la guarda de `expresion_simple` (`N1`):
   - `05_expresion_simple_folset_solapado.c`: el signo unario cuando el folset heredado contiene `+` y `-`, es decir como operando de `!`. Fija el árbol correcto; no discrimina por conteo de errores hasta entrega 2.
 - **Inválidos (`tests/entrega1/pendientes/invalidos/14_expresion_simple_*.c` y sus `.esperado`):**
   - `14_expresion_simple_signo_sin_operando.c` (`a = + + b;`, `a = - - b;`, `a = !-;`, `fop3(-, b);`): signo consumido y término faltante. Cuatro instancias del `Error 57`. Es la regresión de la llamada incondicional a `termino()`: si esa llamada se condiciona, las cuatro sentencias se aceptan sin reportar nada.
-  - `14_expresion_simple_or_huerfano.c` (`if(a < || c)`, `a = || b;`): falta el operando izquierdo de `||`. Dos instancias del `Error 56`, nunca un `Error 57` encima, y `|| c` y `|| b` tienen que quedar analizados.
-  - `14_expresion_simple_salida_folset.c` (`cout << ) ;`, `fop4( , b);`): el test frena en un token del folset heredado y la guarda retorna. Dos instancias del `Error 56` sin cascada, y la lista de expresiones sigue reconociendo `b`.
+  - `14_expresion_simple_or_huerfano.c` (`if(a < || c)`, `a = || b;`): falta el operando izquierdo de `||`. Dos instancias del `Error 56`, y `|| c` y `|| b` tienen que quedar analizados. **Actualizado por la devolución (puntos 5 y 6):** cada `56` lleva ahora un `57` encima, porque la llamada incondicional a `termino()` pasa por `factor` antes de que el `while` consuma el `||`. Lo que el caso sigue fijando es que `COR` esté en el `c2` del test inicial: sin él la resincronización se lleva puesta la expresión entera.
+  - `14_expresion_simple_salida_folset.c` (`cout << ) ;`, `fop4( , b);`): el test frena en un token del folset heredado. **Actualizado por la devolución (puntos 5 y 6):** ya no hay guarda que retorne, así que cada `56` lleva un `57` de `factor` sobre el mismo token — la cascada aceptada—, y la lista de expresiones sigue reconociendo `b`. Pasa a ser el caso de regresión del punto 6: fija que el `)` **no se consuma**, porque con el `if/else` anterior el `Falta ;` posterior salía como `Falta <<`.
   - `14_expresion_simple_signo_en_termino.c` (`a = b - -c;`, `a = b || -c;`, `a = b * -c;`): el signo unario solo es legal en la cabeza de `<expresión simple>`; los operandos de las repeticiones son `<término>` y `<factor>`, y ninguno de los dos FIRST contiene `+` ni `-`. Tres instancias del `Error 57`.
 - **Ubicación en pendientes:** los inválidos permanecen en `pendientes/invalidos/` hasta que la instrumentación de `factor()` (`N2`) esté integrada en `develop`, incluido el cambio de `default: error(...)` a `default: return` en su `switch`. Hasta entonces cada archivo reporta de más.
 
@@ -1572,6 +1658,11 @@ Medición, errores reportados antes → después:
 
 Ningún caso válido cambia de salida: el test pasa en silencio cuando el lookahead está en `c1`.
 
+Las tres filas que dependen de la guarda de la regla 9 quedaron además desactualizadas por el punto
+5 de la devolución, que la eliminó: `void main()` sin cuerpo pasó de un mensaje a dos (`49` y `25`)
+y `14_expresion_simple_salida_folset` sumó el `57` de `factor`. Los `.esperado` vigentes son la
+referencia; esta tabla es el registro de la medición original.
+
 **Elección de `ne`.** El `41` de `definicion_funcion` y el `52` de `proposicion_compuesta` son los
 mismos códigos que ya usan `especificador_tipo` y `proposicion` en sus tests iniciales, así que la
 juntura habla el mismo idioma que el procedimiento al que iba a entrar. Para `llamada_funcion` no
@@ -1607,12 +1698,15 @@ a = 5 + ; b = * 3;
 - El `;` que sigue al `+` aparece **dentro** de la expresión simple, con su test inicial ya pasado
   (el `5` lo satisfizo), así que el flujo baja hasta `factor` y reporta `57`.
 - El `*` que sigue al `=` aparece **al comienzo** de la expresión simple de la derecha, así que lo
-  intercepta el test inicial de `expresion_simple` y reporta `56`; `factor` nunca corre, por la
-  regla 9.
+  intercepta el test inicial de `expresion_simple` y reporta `56`. `factor` corre igual —la llamada
+  a `termino()` es incondicional— pero no reporta: el test descartó el `*` y resincronizó en el `3`,
+  que está en su `c1`, así que `factor` encuentra un factor válido. Un solo mensaje, y **no por la
+  regla 9**: esta explicación decía que `factor` no corría gracias a la guarda, lo cual dejó de ser
+  cierto al revertirla (devolución, punto 5). El caso no cambió de salida porque nunca dependió de
+  ella.
 
 Mismo símbolo inesperado, distinto punto de detección, según en qué lugar de la producción caiga.
-Es la contracara buscada de la regla 9 —un error, un reporte— y no un caso donde el esquema no
-alcance. El mismo fenómeno explica que `int a;` seguido de `* a = 5;` reporte `51` (test final de
+Es la contracara buscada —un error, un reporte— y no un caso donde el esquema no alcance. El mismo fenómeno explica que `int a;` seguido de `* a = 5;` reporte `51` (test final de
 `declaracion`) y no `52` (test inicial de `proposicion`): el test de salida del no terminal
 anterior intercepta antes que el de entrada del siguiente. Mientras haya tests finales, ese es el
 diagnóstico que corresponde.
