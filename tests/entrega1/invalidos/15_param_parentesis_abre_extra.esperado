@@ -1,1 +1,8 @@
-	 Error 41: Simbolo inesperado o falta especificador de tipo
+	 Error 21: Falta )
+	 Error 49: Simbolo inesperado o falta simb. al comienzo de proposicion compuesta
+	 Error 56: Simbolo inesperado o falta simb. al comienzo de expresion simple
+	 Error 57: Simbolo inesperado o falta simb. al comienzo de factor
+	 Error 21: Falta )
+	 Error 23: Falta ;
+	 Error 25: Falta }
+	 Error 43: Simbolo inesperado o falta simb. al comienzo de especif. de declaracion
