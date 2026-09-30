@@ -32,7 +32,7 @@ void unidad_traduccion(set folset)
 
 void declaraciones(set folset)
 {
-	especificador_tipo(folset | CIDENT | F_ESPECIFICADOR_DECLARACION);
+	retorno_especificador_tipo retorno_especificador_tipo = especificador_tipo(folset | CIDENT | F_ESPECIFICADOR_DECLARACION);
 
 	match(CIDENT, 17);
 
@@ -40,7 +40,7 @@ void declaraciones(set folset)
 }
 
 
-void especificador_tipo(set folset)
+retorno_especificador_tipo especificador_tipo(set folset)
 {
 	test(F_ESPECIFICADOR_TIPO, folset, 41);
 
@@ -118,7 +118,7 @@ void lista_declaraciones_param(set folset)
 
 void declaracion_parametro(set folset)
 {
-	especificador_tipo(folset | CAMPER | CIDENT | CCOR_ABR | CCOR_CIE);
+	retorno_especificador_tipo retorno_especificador_tipo = especificador_tipo(folset | CAMPER | CIDENT | CCOR_ABR | CCOR_CIE);
 
 	if(lookahead_in(CAMPER))
 		scanner();
@@ -253,7 +253,7 @@ void lista_declaraciones(set folset)
 
 void declaracion(set folset)
 {
-	especificador_tipo(folset | F_LISTA_DECLARACIONES_INIT | CPYCOMA);
+	retorno_especificador_tipo retorno_especificador_tipo = especificador_tipo(folset | F_LISTA_DECLARACIONES_INIT | CPYCOMA);
 
 	lista_declaraciones_init(folset | CPYCOMA);
 
