@@ -1,11 +1,11 @@
 #include "util.h"
 /*
 ======================================================================
-						DISE�O Y CONSTRUCCI�N DE COMPILADORES
+						DISEÑO Y CONSTRUCCIÓN DE COMPILADORES
 
-					PROGRAMAS FUENTES ENTREGADOS POR LA C�TEDRA
+					PROGRAMAS FUENTES ENTREGADOS POR LA CÁTEDRA
 
-						ADMINISTRADOR DE TABLA DE S�MBOLOS
+						ADMINISTRADOR DE TABLA DE SÍMBOLOS
 ======================================================================
 */
 
@@ -21,7 +21,7 @@
 #include "error.h"
 #include "ts.h"
 
-// ============ FUNCI�N DE INICIALIZACI�N DE TABLAS =================
+// ============ FUNCIÓN DE INICIALIZACIÓN DE TABLAS =================
 
 void inic_tablas()
 {
@@ -31,7 +31,7 @@ void inic_tablas()
 
 	//  TODOS LOS TOPES ESTAN INICIALIZADOS EN LA DECLARACION
 
-	for(i=0; i<TAM_TS; i++) {		// inicializo Tabla de S�mbolos
+	for(i=0; i<TAM_TS; i++) {		// inicializo Tabla de Símbolos
 		ts[i].ptr_sinon = NIL;
 		ts[i].ets = NULL;
 	}
@@ -128,11 +128,11 @@ void pushTB() {						// asumo que apunto al 1er ident del nuevo bloque
 }
 
 
-void pop_nivel() {					// El bloque a eliminar est� al tope de TS y TB
+void pop_nivel() {					// El bloque a eliminar está al tope de TS y TB
 	int h;
 	while(topeTS >= tb[topeTB]) {
 		h = hash(ts[topeTS].ets->nbre);
-		th[h] = ts[topeTS].ptr_sinon;  	// modifico la TH seg�n los sin�nimos
+		th[h] = ts[topeTS].ptr_sinon;  	// modifico la TH según los sinónimos
 		popTS();        						// elimino un identificador del bloque que abandono
 	}
 	popTB();      								// elimino el bloque que abandono
@@ -144,9 +144,9 @@ int get_nivel() {
 }
 
 
-// ================ FUNCIONES DE LA TABLA DE S�MBOLOS ===============
+// ================ FUNCIONES DE LA TABLA DE SÍMBOLOS ===============
 
-int insertarTS() {					// la inf. del identif. est� en inf_id que es global
+int insertarTS() {					// la inf. del identif. está en inf_id que es global
 	int i, h;
 	h = hash(inf_id->nbre);
 	if(th[h] != NIL)
@@ -159,7 +159,7 @@ int insertarTS() {					// la inf. del identif. est� en inf_id que es global
 	// inserto un nuevo identificador
 	th[h] = pushTS(th[h], inf_id);
 
-	// pido m�s memoria para el nuevo identificador
+	// pido más memoria para el nuevo identificador
 	inf_id = NULL;
 	inf_id = (entrada_TS *) calloc(1, sizeof(entrada_TS));
 	if(inf_id == NULL) {
@@ -170,8 +170,8 @@ int insertarTS() {					// la inf. del identif. est� en inf_id que es global
 }
 
 
-int en_tabla(char *st) {			//busca un identificador en tabla de s�mbolos,
-	int h;								//retorna su posici�n o NIL (si no lo encuentra)
+int en_tabla(char *st) {			//busca un identificador en tabla de símbolos,
+	int h;								//retorna su posición o NIL (si no lo encuentra)
 	h = th[hash(st)];
 	while(h != NIL) {
 		if(strcmp(ts[h].ets->nbre, st) == 0)
@@ -182,7 +182,7 @@ int en_tabla(char *st) {			//busca un identificador en tabla de s�mbolos,
 }
 
 
-int Tipo_Ident(char *st) {			//busca un identificador en tabla de s�mbolos,
+int Tipo_Ident(char *st) {			//busca un identificador en tabla de símbolos,
 	int h;                     	//retorna su tipo o NIL (si no lo encuentra)
 	h = th[hash(st)];
 	while(h != NIL) {
@@ -194,7 +194,7 @@ int Tipo_Ident(char *st) {			//busca un identificador en tabla de s�mbolos,
 }
 
 
-int Clase_Ident(char *st) {		//busca un identificador en tabla de s�mbolos,
+int Clase_Ident(char *st) {		//busca un identificador en tabla de símbolos,
 	int h;								//retorna su clase o NIL (si no lo encuentra)
 	h = th[hash(st)];
 	while(h != NIL) {
@@ -207,11 +207,11 @@ int Clase_Ident(char *st) {		//busca un identificador en tabla de s�mbolos,
 
 
 int en_nivel_actual(char *id) {	//busca un identificador en el bloque actual
-	int h;                  		//retorna su posici�n o NIL (si no lo encuentra)
+	int h;                  		//retorna su posición o NIL (si no lo encuentra)
 	h = th[hash(id)];
 	while(h >= tb[topeTB]) {		// busco el identificador dentro del bloque
 		if(!strcmp(ts[h].ets->nbre, id))
-			return h;     				// lo encontro, devuelvo la posici�n h
+			return h;     				// lo encontro, devuelvo la posición h
 		h = ts[h].ptr_sinon;
 	}
 	return NIL;          			// NO lo encontro ==> ident no declarado
@@ -242,5 +242,5 @@ int pushTS(int s, entrada_TS *ptr) {
 		ts[topeTS].ptr_sinon = s;
 		ts[topeTS].ets = ptr;
 	}
-	return topeTS;   					// retorno la posici�n donde insert�
+	return topeTS;   					// retorno la posición donde insertó
 }
