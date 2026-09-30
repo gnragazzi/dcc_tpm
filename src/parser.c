@@ -4,6 +4,7 @@
 int main(int argc, char *argv[])
 {
 	init_parser(argc, argv);
+	inic_tablas();
 
 	unidad_traduccion(CEOF);
 
