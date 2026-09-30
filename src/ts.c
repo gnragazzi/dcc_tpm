@@ -1,10 +1,11 @@
-/* 
+#include "util.h"
+/*
 ======================================================================
-						DISEÑO Y CONSTRUCCIÓN DE COMPILADORES
+						DISEï¿½O Y CONSTRUCCIï¿½N DE COMPILADORES
 
-					PROGRAMAS FUENTES ENTREGADOS POR LA CÁTEDRA
+					PROGRAMAS FUENTES ENTREGADOS POR LA Cï¿½TEDRA
 
-						ADMINISTRADOR DE TABLA DE SÍMBOLOS
+						ADMINISTRADOR DE TABLA DE Sï¿½MBOLOS
 ======================================================================
 */
 
@@ -20,7 +21,7 @@
 #include "error.h"
 #include "ts.h"
 
-// ============ FUNCIÓN DE INICIALIZACIÓN DE TABLAS =================
+// ============ FUNCIï¿½N DE INICIALIZACIï¿½N DE TABLAS =================
 
 void inic_tablas()
 {
@@ -30,7 +31,7 @@ void inic_tablas()
 
 	//  TODOS LOS TOPES ESTAN INICIALIZADOS EN LA DECLARACION
 
-	for(i=0; i<TAM_TS; i++) {		// inicializo Tabla de Símbolos
+	for(i=0; i<TAM_TS; i++) {		// inicializo Tabla de Sï¿½mbolos
 		ts[i].ptr_sinon = NIL;
 		ts[i].ets = NULL;
 	}
@@ -46,41 +47,41 @@ void inic_tablas()
 	inf_id = (entrada_TS *) calloc(1, sizeof(entrada_TS));
 
 	// inicializo la entrada para el tipo base VOID
-	strcpy(inf_id->nbre, "void");
+	strcpy(inf_id->nbre, T_VOID);
 	inf_id->clase = CLASTYPE;
 	inf_id->ptr_tipo = NIL;
 	inf_id->cant_byte = 0; 
 	insertarTS();
 
 	// inicializo la entrada para el tipo base CHAR
-	strcpy(inf_id->nbre, "char");
+	strcpy(inf_id->nbre, T_CHAR);
 	inf_id->clase = CLASTYPE;
 	inf_id->ptr_tipo = NIL;
 	inf_id->cant_byte = 1; 
 	insertarTS();
 
 	// inicializo la entrada para el tipo base INT
-	strcpy(inf_id->nbre, "int");
+	strcpy(inf_id->nbre, T_INT);
 	inf_id->clase = CLASTYPE;
 	inf_id->ptr_tipo = NIL;
 	inf_id->cant_byte = sizeof(int); 
 	insertarTS();
 
 	// inicializo la entrada para el tipo base FLOAT
-	strcpy(inf_id->nbre, "float");
+	strcpy(inf_id->nbre, T_FLOAT);
 	inf_id->clase = CLASTYPE;
 	inf_id->ptr_tipo = NIL;
 	inf_id->cant_byte = sizeof(float);
 	insertarTS();
 
 	// inicializo la entrada para el tipo estructurado ARREGLO
-	strcpy(inf_id->nbre, "TIPOARREGLO");
+	strcpy(inf_id->nbre, T_ARREGLO);
 	inf_id->clase = CLASTYPE;
 	inf_id->ptr_tipo = NIL;
 	insertarTS();
 
 	// inicializo la entrada para el tipo base erroneo TIPOERROR
-	strcpy(inf_id->nbre, "TIPOERROR");
+	strcpy(inf_id->nbre, T_ERROR);
 	inf_id->clase = CLASTYPE;
 	inf_id->ptr_tipo = NIL;
 	insertarTS();
@@ -127,11 +128,11 @@ void pushTB() {						// asumo que apunto al 1er ident del nuevo bloque
 }
 
 
-void pop_nivel() {					// El bloque a eliminar está al tope de TS y TB
+void pop_nivel() {					// El bloque a eliminar estï¿½ al tope de TS y TB
 	int h;
 	while(topeTS >= tb[topeTB]) {
 		h = hash(ts[topeTS].ets->nbre);
-		th[h] = ts[topeTS].ptr_sinon;  	// modifico la TH según los sinónimos
+		th[h] = ts[topeTS].ptr_sinon;  	// modifico la TH segï¿½n los sinï¿½nimos
 		popTS();        						// elimino un identificador del bloque que abandono
 	}
 	popTB();      								// elimino el bloque que abandono
@@ -143,9 +144,9 @@ int get_nivel() {
 }
 
 
-// ================ FUNCIONES DE LA TABLA DE SÍMBOLOS ===============
+// ================ FUNCIONES DE LA TABLA DE Sï¿½MBOLOS ===============
 
-int insertarTS() {					// la inf. del identif. está en inf_id que es global
+int insertarTS() {					// la inf. del identif. estï¿½ en inf_id que es global
 	int i, h;
 	h = hash(inf_id->nbre);
 	if(th[h] != NIL)
@@ -158,7 +159,7 @@ int insertarTS() {					// la inf. del identif. está en inf_id que es global
 	// inserto un nuevo identificador
 	th[h] = pushTS(th[h], inf_id);
 
-	// pido más memoria para el nuevo identificador
+	// pido mï¿½s memoria para el nuevo identificador
 	inf_id = NULL;
 	inf_id = (entrada_TS *) calloc(1, sizeof(entrada_TS));
 	if(inf_id == NULL) {
@@ -169,8 +170,8 @@ int insertarTS() {					// la inf. del identif. está en inf_id que es global
 }
 
 
-int en_tabla(char *st) {			//busca un identificador en tabla de símbolos,
-	int h;								//retorna su posición o NIL (si no lo encuentra)
+int en_tabla(char *st) {			//busca un identificador en tabla de sï¿½mbolos,
+	int h;								//retorna su posiciï¿½n o NIL (si no lo encuentra)
 	h = th[hash(st)];
 	while(h != NIL) {
 		if(strcmp(ts[h].ets->nbre, st) == 0)
@@ -181,7 +182,7 @@ int en_tabla(char *st) {			//busca un identificador en tabla de símbolos,
 }
 
 
-int Tipo_Ident(char *st) {			//busca un identificador en tabla de símbolos,
+int Tipo_Ident(char *st) {			//busca un identificador en tabla de sï¿½mbolos,
 	int h;                     	//retorna su tipo o NIL (si no lo encuentra)
 	h = th[hash(st)];
 	while(h != NIL) {
@@ -193,7 +194,7 @@ int Tipo_Ident(char *st) {			//busca un identificador en tabla de símbolos,
 }
 
 
-int Clase_Ident(char *st) {		//busca un identificador en tabla de símbolos,
+int Clase_Ident(char *st) {		//busca un identificador en tabla de sï¿½mbolos,
 	int h;								//retorna su clase o NIL (si no lo encuentra)
 	h = th[hash(st)];
 	while(h != NIL) {
@@ -206,11 +207,11 @@ int Clase_Ident(char *st) {		//busca un identificador en tabla de símbolos,
 
 
 int en_nivel_actual(char *id) {	//busca un identificador en el bloque actual
-	int h;                  		//retorna su posición o NIL (si no lo encuentra)
+	int h;                  		//retorna su posiciï¿½n o NIL (si no lo encuentra)
 	h = th[hash(id)];
 	while(h >= tb[topeTB]) {		// busco el identificador dentro del bloque
 		if(!strcmp(ts[h].ets->nbre, id))
-			return h;     				// lo encontro, devuelvo la posición h
+			return h;     				// lo encontro, devuelvo la posiciï¿½n h
 		h = ts[h].ptr_sinon;
 	}
 	return NIL;          			// NO lo encontro ==> ident no declarado
@@ -241,5 +242,5 @@ int pushTS(int s, entrada_TS *ptr) {
 		ts[topeTS].ptr_sinon = s;
 		ts[topeTS].ets = ptr;
 	}
-	return topeTS;   					// retorno la posición donde insertó
+	return topeTS;   					// retorno la posiciï¿½n donde insertï¿½
 }

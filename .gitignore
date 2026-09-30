@@ -3,3 +3,4 @@ src/ucc
 src/ucc.exe
 .idea/
 *.zip
+cmake-build-debug/

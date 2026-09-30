@@ -90,3 +90,27 @@ void test(set c1, set c2, int ne)
 			scanner();
 	}
 }
+
+enum boolean esTipoBase(enum tipo tipo) {return tipo > 0;}
+
+enum tipo resolverTipo(char *nombre){
+	if(strcmp(T_VOID, nombre) == 0)
+		return VOID;
+	if(strcmp(T_CHAR, nombre) == 0)
+		return CHAR;
+	if(strcmp(T_INT, nombre) == 0)
+		return INT;
+	if(strcmp(T_FLOAT, nombre) == 0)
+		return FLOAT;
+	if(strcmp(T_ARREGLO, nombre) == 0)
+		return ARREGLO;
+	else
+		return ERROR;
+}
+
+enum boolean param1_es_coercionable_a_param2(enum tipo param1, enum tipo param2){
+	if(param1>0 && param1 <= param2)
+		return TRUE;
+
+	return FALSE;
+}
