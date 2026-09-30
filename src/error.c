@@ -74,9 +74,9 @@ void error_print(int ne)
 		case 60: printf("\t Error %d: Simbolo inesperado despues de variable\n", ne); break;
 		case 61: printf("\t Error %d: Simbolo inesperado despues de llamada a funcion\n", ne); break;
 		case 62: printf("\t Error %d: Simbolo inesperado o falta simb. al comienzo de constante\n", ne); break;
-		case 63: printf("\t Error %d: Simbolo inesperado despues de constante\n", ne); break;
+		case 63: printf("\t Error %d: Simbolo inesperado despues de constante,\n", ne); break;
 		case 64: printf("\t Error %d: Falta , \n", ne); break;
-		case 65: printf("\t Error %d: Falta *, /, &&, +, -, ||, = u operador de relacion \n", ne); break;
+		case 65: printf("\t Error %d: Falta *, /, &&, +, -, || o operador de relacion \n", ne); break;
 		case 66: printf("\t Error %d: Falta = \n", ne); break;
 		case 67: printf("\t Error %d: Simbolo inesperado o falta simb. en lista de inicializadores\n", ne); break;
 		case 68: printf("\t Error %d: Simbolo inesperado despues de proposicion\n", ne); break;
@@ -117,7 +117,7 @@ void error_print(int ne)
 
 
 void error_handler(int ne)
-{	
+{
 int i;
 hubo_error++;
 if(last_call){
