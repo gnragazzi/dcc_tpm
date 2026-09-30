@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <malloc.h>
 #include "util.h"
 #include "codigos.h"
 #include "error.h"
@@ -91,9 +92,48 @@ void test(set c1, set c2, int ne)
 	}
 }
 
-enum boolean esTipoBase(enum tipo tipo) {return tipo > 0;}
+void iniciar_lista_parametros(Lista_Parametros *lista) {
+	lista->primer_parametro = NULL;
+	lista->ultimo_parametro = NULL;
+	lista->cantidad = 0;
+}
 
-enum tipo resolverTipo(char *nombre){
+void agregar_parametro(Lista_Parametros *lista, enum tipo tipo_dato, enum tipo_pasaje tipo_pasaje, enum tipo tipo_base) {
+	Parametro *nuevo_parametro = (Parametro *) malloc(sizeof(Parametro));
+
+	nuevo_parametro->tipo_dato = tipo_dato;
+	nuevo_parametro->tipo_pasaje = tipo_pasaje;
+	if (tipo_dato == ARREGLO) {
+		nuevo_parametro->tipo_base = tipo_base;
+	}
+	nuevo_parametro->siguiente = NULL;
+
+	if (lista->cantidad == 0) {
+		lista->primer_parametro = lista->ultimo_parametro = nuevo_parametro;
+	}else {
+		lista->ultimo_parametro->siguiente = nuevo_parametro;
+	}
+
+	lista->cantidad = lista->cantidad + 1;
+
+	return;
+}
+
+void limpiar_lista(Lista_Parametros *lista) {
+	if (lista->cantidad == 0)
+		return;
+
+	Parametro *proximo = lista->primer_parametro;
+	while (proximo != NULL) {
+		Parametro *aux = proximo->siguiente;
+		free(proximo);
+		proximo = aux;
+	}
+}
+
+enum boolean es_tipo_base(enum tipo tipo) {return tipo > 0;}
+
+enum tipo resolver_tipo(char *nombre){
 	if(strcmp(T_VOID, nombre) == 0)
 		return VOID;
 	if(strcmp(T_CHAR, nombre) == 0)
