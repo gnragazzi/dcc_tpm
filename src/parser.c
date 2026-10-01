@@ -32,7 +32,7 @@ void unidad_traduccion(set folset)
 
 void declaraciones(set folset)
 {
-	retorno_especificador_tipo retorno_especificador_tipo = especificador_tipo(folset | CIDENT | F_ESPECIFICADOR_DECLARACION);
+	retorno_especificador_tipo especificador_tipo_1 = especificador_tipo(folset | CIDENT | F_ESPECIFICADOR_DECLARACION);
 
 	match(CIDENT, 17);
 
@@ -118,7 +118,7 @@ void lista_declaraciones_param(set folset)
 
 void declaracion_parametro(set folset)
 {
-	retorno_especificador_tipo retorno_especificador_tipo = especificador_tipo(folset | CAMPER | CIDENT | CCOR_ABR | CCOR_CIE);
+	retorno_especificador_tipo especificador_tipo_1 = especificador_tipo(folset | CAMPER | CIDENT | CCOR_ABR | CCOR_CIE);
 
 	if(lookahead_in(CAMPER))
 		scanner();
@@ -196,7 +196,7 @@ void declarador_init(set folset)
 			{
 				match(CASIGNAC, 66);
 				match(CLLA_ABR, 24);
-				retorno_lista_inicializadores retorno_lista_inicializadores = lista_inicializadores(CLLA_CIE | folset);
+				retorno_lista_inicializadores lista_inicializadores_1 = lista_inicializadores(CLLA_CIE | folset);
 				match(CLLA_CIE, 25);
 			}
 			break;
@@ -233,7 +233,7 @@ void proposicion_compuesta(set folset)
 		lista_declaraciones(folset | F_LISTA_PROPOSICIONES | CLLA_CIE);
 
 	if(lookahead_in(F_LISTA_PROPOSICIONES)) {
-		retorno_lista_proposiciones retorno_lista_proposiciones = lista_proposiciones(folset | CLLA_CIE);
+		retorno_lista_proposiciones lista_proposiciones_1 = lista_proposiciones(folset | CLLA_CIE);
 	}
 
 	match(CLLA_CIE, 25);
@@ -254,7 +254,7 @@ void lista_declaraciones(set folset)
 
 void declaracion(set folset)
 {
-	retorno_especificador_tipo retorno_especificador_tipo = especificador_tipo(folset | F_LISTA_DECLARACIONES_INIT | CPYCOMA);
+	retorno_especificador_tipo especificador_tipo_1 = especificador_tipo(folset | F_LISTA_DECLARACIONES_INIT | CPYCOMA);
 
 	lista_declaraciones_init(folset | CPYCOMA);
 
