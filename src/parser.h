@@ -39,10 +39,27 @@ typedef struct {} retorno_proposicion_seleccion;
 typedef struct {} retorno_proposicion_iteracion;
 typedef struct {} retorno_proposicion_e_s;
 typedef struct {} retorno_proposicion_retorno;
-typedef struct {} retorno_expresion;
-typedef struct {} retorno_expresion_simple;
-typedef struct {} retorno_termino;
-typedef struct {} retorno_factor;
+
+typedef struct {
+    enum tipo tipo;
+    enum boolean es_clase_variable;
+} retorno_expresion;
+
+typedef struct {
+    enum tipo tipo;
+    enum boolean es_clase_variable;
+} retorno_expresion_simple;
+
+typedef struct {
+    enum tipo tipo;
+    enum boolean es_clase_variable;
+} retorno_termino;
+
+typedef struct {
+    enum tipo tipo;
+    enum boolean es_clase_variable;
+} retorno_factor;
+
 typedef struct {} retorno_variable;
 typedef struct {} retorno_llamada_funcion;
 typedef struct {} retorno_lista_expresiones;
@@ -73,10 +90,10 @@ void proposicion_seleccion(set folset);
 void proposicion_iteracion(set folset);
 void proposicion_e_s(set folset);
 void proposicion_retorno(set folset);
-void expresion(set folset);
-void expresion_simple(set folset);
-void termino(set folset);
-void factor(set folset);
+retorno_expresion expresion(set folset);
+retorno_expresion_simple expresion_simple(set folset);
+retorno_termino termino(set folset);
+retorno_factor factor(set folset);
 void variable(set folset);
 void llamada_funcion(set folset);
 void lista_expresiones(set folset);

@@ -322,7 +322,7 @@ void proposicion_iteracion(set folset)
 
 	match(CPAR_ABR, 20);
 
-	expresion(folset | CPAR_CIE | F_PROPOSICION);
+	retorno_expresion expresion_1 = expresion(folset | CPAR_CIE | F_PROPOSICION);
 
 	match(CPAR_CIE, 21);
 
@@ -336,7 +336,7 @@ void proposicion_seleccion(set folset)
 
 	match(CPAR_ABR, 20);
 
-	expresion(folset | CPAR_CIE | F_PROPOSICION | F_ELSE_OPCIONAL);
+	retorno_expresion expresion_1 = expresion(folset | CPAR_CIE | F_PROPOSICION | F_ELSE_OPCIONAL);
 
 	match(CPAR_CIE, 21);
 
@@ -376,12 +376,12 @@ void proposicion_e_s(set folset)
 
 			match(CSHL, 31);
 
-			expresion(folset | F_RESTO_PROP_OUT | F_EXPRESION | CPYCOMA);
+			retorno_expresion expresion_1 = expresion(folset | F_RESTO_PROP_OUT | F_EXPRESION | CPYCOMA);
 
 			while(lookahead_in(F_RESTO_PROP_OUT | F_EXPRESION))
 			{
 				match(CSHL, 31);
-				expresion(folset | F_RESTO_PROP_OUT | F_EXPRESION | CPYCOMA);
+				retorno_expresion expresion_2 = expresion(folset | F_RESTO_PROP_OUT | F_EXPRESION | CPYCOMA);
 			}
 
 			match(CPYCOMA, 23);
@@ -401,7 +401,7 @@ void proposicion_retorno(set folset)
 {
 	scanner();
 
-	expresion(folset | CPYCOMA);
+	retorno_expresion expresion_1 = expresion(folset | CPYCOMA);
 
 	match(CPYCOMA, 23);
 
@@ -411,8 +411,9 @@ void proposicion_retorno(set folset)
 
 void proposicion_expresion(set folset)
 {
-	if(lookahead_in(F_EXPRESION))
-		expresion(folset | CPYCOMA);
+	if(lookahead_in(F_EXPRESION)) {
+		retorno_expresion expresion_1 = expresion(folset | CPYCOMA);
+	}
 
 	match(CPYCOMA, 23);
 
@@ -420,9 +421,9 @@ void proposicion_expresion(set folset)
 }
 
 
-void expresion(set folset)
+retorno_expresion expresion(set folset)
 {
-	expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
+	retorno_expresion_simple expresion_simple_1 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
 
 	while(lookahead_in(F_RESTO_EXPRESION))
 	{
@@ -430,7 +431,7 @@ void expresion(set folset)
 		{
 			case CASIGNAC:
 				scanner();
-				expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
+				retorno_expresion_simple expresion_simple_2 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
 				break;
 
 			case CDISTINTO:
@@ -440,41 +441,41 @@ void expresion(set folset)
 			case CMAYOR:
 			case CMAIG:
 				scanner();
-				expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
+				retorno_expresion_simple expresion_simple_3 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
 				break;
 		}
 	}
 }
 
 
-void expresion_simple(set folset) {
+retorno_expresion_simple expresion_simple(set folset) {
 	test(F_EXPRESION_SIMPLE, (folset | F_RESTO_EXPRESION_SIMPLE), 56);
 
 	if (lookahead_in(F_OPERADOR_OPCIONAL))
 		scanner();
 
-	termino(folset | F_RESTO_EXPRESION_SIMPLE);
+	retorno_termino termino_1 = termino(folset | F_RESTO_EXPRESION_SIMPLE);
 
 	while (lookahead_in(F_RESTO_EXPRESION_SIMPLE)) {
 		scanner();
-		termino(folset | F_RESTO_EXPRESION_SIMPLE);
+		retorno_termino termino_n = termino(folset | F_RESTO_EXPRESION_SIMPLE);
 	}
 }
 
 
-void termino(set folset)
+retorno_termino termino(set folset)
 {
-	factor(folset | F_RESTO_TERMINO | F_FACTOR);
+	retorno_factor factor_1 = factor(folset | F_RESTO_TERMINO | F_FACTOR);
 
 	while(lookahead_in(F_RESTO_TERMINO))
 	{
 		scanner();
-		factor(folset | F_RESTO_TERMINO | F_FACTOR);
+		retorno_factor factor_n = factor(folset | F_RESTO_TERMINO | F_FACTOR);
 	}
 }
 
 
-void factor(set folset)
+retorno_factor factor(set folset)
 {
 	test(F_FACTOR, folset, 57);
 
@@ -503,13 +504,13 @@ void factor(set folset)
 
 		case CPAR_ABR:
 			scanner();
-			expresion(folset | CPAR_CIE);
+			retorno_expresion expresion_1 = expresion(folset | CPAR_CIE);
 			match(CPAR_CIE, 21);
 			break;
 
 		case CNEG:
 			scanner();
-			expresion(folset);
+			retorno_expresion expresion_2 = expresion(folset);
 			break;
 	}
 
@@ -530,7 +531,7 @@ void variable(set folset)
 	if(lookahead_in(CCOR_ABR))
 	{
 		scanner();
-		expresion(folset | CCOR_CIE);
+		retorno_expresion expresion_1 = expresion(folset | CCOR_CIE);
 		match(CCOR_CIE, 22);
 	}
 
@@ -555,12 +556,12 @@ void llamada_funcion(set folset)
 
 void lista_expresiones(set folset)
 {
-	expresion(folset | CCOMA | F_EXPRESION);
+	retorno_expresion expresion_1 = expresion(folset | CCOMA | F_EXPRESION);
 
 	while(lookahead_in(CCOMA | F_EXPRESION))
 	{
 		match(CCOMA, 64);
-		expresion(folset | CCOMA | F_EXPRESION);
+		retorno_expresion expresion_n = expresion(folset | CCOMA | F_EXPRESION);
 	}
 }
 
