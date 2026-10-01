@@ -196,7 +196,7 @@ void declarador_init(set folset)
 			{
 				match(CASIGNAC, 66);
 				match(CLLA_ABR, 24);
-				lista_inicializadores(CLLA_CIE | folset);
+				retorno_lista_inicializadores retorno_lista_inicializadores = lista_inicializadores(CLLA_CIE | folset);
 				match(CLLA_CIE, 25);
 			}
 			break;
@@ -206,7 +206,7 @@ void declarador_init(set folset)
 }
 
 
-void lista_inicializadores(set folset)
+retorno_lista_inicializadores lista_inicializadores(set folset)
 {
 	constante(folset | CCOMA | F_CONSTANTE);
 

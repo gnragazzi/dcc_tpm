@@ -20,7 +20,12 @@ typedef struct {} retorno_lista_declaraciones_param;
 typedef struct {} retorno_declaracion_parametro;
 typedef struct {} retorno_declarador_init;
 typedef struct {} retorno_lista_declaraciones_init;
-typedef struct {} retorno_lista_inicializadores;
+
+typedef struct {
+    int cantidad_inicializadores;
+    enum tipo tipo_inicializadores;
+} retorno_lista_inicializadores;
+
 typedef struct {} retorno_lista_proposiciones;
 typedef struct {} retorno_lista_declaraciones;
 typedef struct {} retorno_declaracion;
@@ -54,7 +59,7 @@ void lista_declaraciones_param(set folset);
 void declaracion_parametro(set folset);
 void declarador_init(set folset);
 void lista_declaraciones_init(set folset);
-void lista_inicializadores(set folset);
+retorno_lista_inicializadores lista_inicializadores(set folset);
 void lista_proposiciones(set folset);
 void lista_declaraciones(set folset);
 void declaracion(set folset);
