@@ -176,7 +176,7 @@ void declarador_init(set folset)
 	{
 		case CASIGNAC:
 			scanner();
-			constante(folset);
+			retorno_constante constante_1 = constante(folset);
 			break;
 
 		/* ] { } son puntos de reconfiguracion de esta alternativa: se entra por
@@ -208,7 +208,7 @@ void declarador_init(set folset)
 
 retorno_lista_inicializadores lista_inicializadores(set folset)
 {
-	constante(folset | CCOMA | F_CONSTANTE);
+	retorno_constante constante_1 = constante(folset | CCOMA | F_CONSTANTE);
 
 	while(lookahead_in(CCOMA | F_CONSTANTE))
 	{
@@ -217,7 +217,7 @@ retorno_lista_inicializadores lista_inicializadores(set folset)
 		else
 			error_handler(64);
 
-		constante(folset | CCOMA | F_CONSTANTE);
+		retorno_constante constante_n = constante(folset | CCOMA | F_CONSTANTE);
 	}
 }
 
@@ -359,12 +359,12 @@ void proposicion_e_s(set folset)
 
 			match(CSHR, 30);
 
-			variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA);
+			retorno_variable variable_1 = variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA);
 
 			while(lookahead_in(F_RESTO_PROP_IN | F_VARIABLE))
 			{
 				match(CSHR, 30);
-				variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA);
+				retorno_variable variable_n = variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA);
 			}
 
 			match(CPYCOMA, 23);
@@ -483,10 +483,12 @@ retorno_factor factor(set folset)
 	{
 		case CIDENT:
 			/***************** Re-hacer *****************/
-			if(sbol->lexema[0] == 'f')
-				llamada_funcion(folset);
-			else
-				variable(folset);
+			if(sbol->lexema[0] == 'f') {
+				retorno_llamada_funcion llamada_funcion_1 = llamada_funcion(folset);
+			}
+			else {
+				retorno_variable variable_1 = variable(folset);
+			}
 			/********************************************/
 			/* El alumno debera evaluar con consulta a TS
 			si bifurca a variable o llamada a funcion */
@@ -495,7 +497,7 @@ retorno_factor factor(set folset)
 		case CCONS_ENT:
 		case CCONS_FLO:
 		case CCONS_CAR:
-			constante(folset);
+			retorno_constante constante_1 = constante(folset);
 			break;
 
 		case CCONS_STR:
@@ -518,7 +520,7 @@ retorno_factor factor(set folset)
 }
 
 
-void variable(set folset)
+retorno_variable variable(set folset)
 {
 	test(F_VARIABLE, folset | CCOR_ABR, 59);
 
@@ -539,7 +541,7 @@ void variable(set folset)
 }
 
 
-void llamada_funcion(set folset)
+retorno_llamada_funcion llamada_funcion(set folset)
 {
 	match(CIDENT, 17);
 
@@ -566,7 +568,7 @@ void lista_expresiones(set folset)
 }
 
 
-void constante(set folset)
+retorno_constante constante(set folset)
 {
 	test(F_CONSTANTE, folset, 62);
 

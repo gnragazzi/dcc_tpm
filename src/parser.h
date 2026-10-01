@@ -60,10 +60,19 @@ typedef struct {
     enum boolean es_clase_variable;
 } retorno_factor;
 
-typedef struct {} retorno_variable;
-typedef struct {} retorno_llamada_funcion;
+typedef struct {
+    enum tipo tipo;
+} retorno_variable;
+
+typedef struct {
+    enum tipo tipo;
+} retorno_llamada_funcion;
+
 typedef struct {} retorno_lista_expresiones;
-typedef struct {} retorno_constante;
+
+typedef struct {
+    enum tipo tipo;
+} retorno_constante;
 
 int last_call=0;
 
@@ -94,7 +103,7 @@ retorno_expresion expresion(set folset);
 retorno_expresion_simple expresion_simple(set folset);
 retorno_termino termino(set folset);
 retorno_factor factor(set folset);
-void variable(set folset);
-void llamada_funcion(set folset);
+retorno_variable variable(set folset);
+retorno_llamada_funcion llamada_funcion(set folset);
 void lista_expresiones(set folset);
-void constante(set folset);
+retorno_constante constante(set folset);
