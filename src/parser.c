@@ -232,8 +232,9 @@ void proposicion_compuesta(set folset)
 	if(lookahead_in(F_LISTA_DECLARACIONES))
 		lista_declaraciones(folset | F_LISTA_PROPOSICIONES | CLLA_CIE);
 
-	if(lookahead_in(F_LISTA_PROPOSICIONES))
-		lista_proposiciones(folset | CLLA_CIE);
+	if(lookahead_in(F_LISTA_PROPOSICIONES)) {
+		retorno_lista_proposiciones retorno_lista_proposiciones = lista_proposiciones(folset | CLLA_CIE);
+	}
 
 	match(CLLA_CIE, 25);
 	test(folset, NADA, 50);
@@ -263,7 +264,7 @@ void declaracion(set folset)
 }
 
 
-void lista_proposiciones(set folset)
+retorno_lista_proposiciones lista_proposiciones(set folset)
 {
 	proposicion(folset | F_PROPOSICION);
 
