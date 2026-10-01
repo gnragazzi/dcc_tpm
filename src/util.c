@@ -98,20 +98,21 @@ void iniciar_lista_parametros(Lista_Parametros *lista) {
 	lista->cantidad = 0;
 }
 
-void agregar_parametro(Lista_Parametros *lista, enum tipo tipo_dato, enum tipo_pasaje tipo_pasaje, enum tipo tipo_base) {
+void agregar_parametro(Lista_Parametros *lista, enum tipo tipo_dato, enum tipo tipo_base, enum boolean es_clase_variable) {
 	Parametro *nuevo_parametro = (Parametro *) malloc(sizeof(Parametro));
 
 	nuevo_parametro->tipo_dato = tipo_dato;
-	nuevo_parametro->tipo_pasaje = tipo_pasaje;
 	if (tipo_dato == ARREGLO) {
 		nuevo_parametro->tipo_base = tipo_base;
 	}
+	nuevo_parametro->es_clase_variable = es_clase_variable;
 	nuevo_parametro->siguiente = NULL;
 
 	if (lista->cantidad == 0) {
 		lista->primer_parametro = lista->ultimo_parametro = nuevo_parametro;
 	}else {
 		lista->ultimo_parametro->siguiente = nuevo_parametro;
+        lista->ultimo_parametro = nuevo_parametro;
 	}
 
 	lista->cantidad = lista->cantidad + 1;
