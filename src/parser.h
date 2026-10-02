@@ -41,13 +41,38 @@ typedef struct {
 } retorno_especificador_tipo;
 
 typedef struct {
+    enum tipo tipo_retorno;
+    enum boolean *tiene_retorno;
+} parametros_lista_proposiciones;
+
+typedef struct {
+    enum tipo tipo_retorno;
+    enum boolean *tiene_retorno;
+} parametros_proposicion;
+
+typedef struct {
+    enum tipo tipo_retorno;
+    enum boolean *tiene_retorno;
+} parametros_proposicion_compuesta;
+
+typedef struct {
+    enum tipo tipo_retorno;
+    enum boolean *tiene_retorno;
+} parametros_proposicion_seleccion;
+
+typedef struct {
+    enum tipo tipo_retorno;
+    enum boolean *tiene_retorno;
+} parametros_proposicion_iteracion;
+
+typedef struct {
+    enum tipo tipo_retorno;
+} parametros_proposicion_retorno;
+
+typedef struct {
     int cantidad_inicializadores;
     enum tipo tipo_inicializadores;
 } retorno_lista_inicializadores;
-
-typedef struct {
-    enum boolean tiene_retorno;
-} retorno_lista_proposiciones;
 
 typedef struct {
     enum tipo tipo;
@@ -100,16 +125,16 @@ void declaracion_parametro(set folset, parametros_declaracion_parametro params);
 void declarador_init(set folset, parametros_declarador_init params);
 void lista_declaraciones_init(set folset, parametros_lista_declaraciones_init params);
 retorno_lista_inicializadores lista_inicializadores(set folset);
-retorno_lista_proposiciones lista_proposiciones(set folset);
+void lista_proposiciones(set folset, parametros_lista_proposiciones params);
 void lista_declaraciones(set folset);
 void declaracion(set folset);
-void proposicion(set folset);
+void proposicion(set folset, parametros_proposicion params);
 void proposicion_expresion(set folset);
-void proposicion_compuesta(set folset);
-void proposicion_seleccion(set folset);
-void proposicion_iteracion(set folset);
+void proposicion_compuesta(set folset, parametros_proposicion_compuesta params);
+void proposicion_seleccion(set folset, parametros_proposicion_seleccion params);
+void proposicion_iteracion(set folset, parametros_proposicion_iteracion params);
 void proposicion_e_s(set folset);
-void proposicion_retorno(set folset);
+void proposicion_retorno(set folset, parametros_proposicion_retorno params);
 retorno_expresion expresion(set folset);
 retorno_expresion_simple expresion_simple(set folset);
 retorno_termino termino(set folset);
