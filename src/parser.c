@@ -88,7 +88,9 @@ void especificador_declaracion(set folset, parametros_especificador_declaracion 
 		case CCOR_ABR:
 		case CCOMA:
 		case CPYCOMA:
-			declaracion_variable(folset);
+			parametros_declaracion_variable parametros_declaracion_variable;
+
+			declaracion_variable(folset, parametros_declaracion_variable);
 			break;
 	}
 }
@@ -155,31 +157,43 @@ void declaracion_parametro(set folset, parametros_declaracion_parametro params)
 }
 
 
-void lista_declaraciones_init(set folset)
+void lista_declaraciones_init(set folset, parametros_lista_declaraciones_init params)
 {
+	enum tipo tipo_declaracion = params.tipo_declaracion;
+
+	parametros_declarador_init parametros_declarador_init;
+	parametros_declarador_init.tipo_declaracion = tipo_declaracion;
+
 	test(F_LISTA_DECLARACIONES_INIT, folset, 46);
 
 	match(CIDENT, 17);
 
-	declarador_init(folset | CCOMA | F_LISTA_DECLARACIONES_INIT);
+	declarador_init(folset | CCOMA | F_LISTA_DECLARACIONES_INIT, parametros_declarador_init);
 
 	while(lookahead_in(CCOMA | F_LISTA_DECLARACIONES_INIT))
 	{
 		match(CCOMA, 64);
 		match(CIDENT, 17);
-		declarador_init(folset | CCOMA | F_LISTA_DECLARACIONES_INIT);
+		declarador_init(folset | CCOMA | F_LISTA_DECLARACIONES_INIT, parametros_declarador_init);
 	}
 }
 
 
-void declaracion_variable(set folset)
+void declaracion_variable(set folset, parametros_declaracion_variable params)
 {
-	declarador_init(folset | CCOMA | F_LISTA_DECLARACIONES_INIT | CPYCOMA);
+	enum tipo tipo_declaracion = params.tipo_declaracion;
+	parametros_declarador_init parametros_declarador_init;
+	parametros_lista_declaraciones_init parametros_lista_declaraciones_init;
+
+	parametros_lista_declaraciones_init.tipo_declaracion = parametros_declarador_init.tipo_declaracion = tipo_declaracion;
+
+
+	declarador_init(folset | CCOMA | F_LISTA_DECLARACIONES_INIT | CPYCOMA, parametros_declarador_init);
 
 	if(lookahead_in(CCOMA | F_LISTA_DECLARACIONES_INIT))
 	{
 		match(CCOMA, 64);
-		lista_declaraciones_init(folset | CPYCOMA);
+		lista_declaraciones_init(folset | CPYCOMA, parametros_lista_declaraciones_init);
 	}
 
 	match(CPYCOMA, 23);
@@ -188,7 +202,7 @@ void declaracion_variable(set folset)
 }
 
 
-void declarador_init(set folset)
+void declarador_init(set folset, parametros_declarador_init params)
 {
 	test(F_DECLARADOR_INIT | folset, CCOR_CIE | CLLA_ABR | CLLA_CIE, 47);
 
@@ -274,9 +288,13 @@ void lista_declaraciones(set folset)
 
 void declaracion(set folset)
 {
+	parametros_lista_declaraciones_init parametros_lista_declaraciones_init;
+
 	retorno_especificador_tipo especificador_tipo_1 = especificador_tipo(folset | F_LISTA_DECLARACIONES_INIT | CPYCOMA);
 
-	lista_declaraciones_init(folset | CPYCOMA);
+	parametros_lista_declaraciones_init.tipo_declaracion = especificador_tipo_1.tipo;
+
+	lista_declaraciones_init(folset | CPYCOMA, parametros_lista_declaraciones_init);
 
 	match(CPYCOMA, 23);
 
