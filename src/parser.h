@@ -12,6 +12,19 @@ typedef struct {
 } parametros_especificador_declaracion;
 
 typedef struct {
+    enum tipo tipo_retorno;
+    int posicion_tabla_simbolos;
+} parametros_definicion_funcion;
+
+typedef struct {
+    int posicion_tabla_simbolos;
+} parametros_lista_declaraciones_param;
+
+typedef struct {
+    int posicion_tabla_simbolos;
+} parametros_declaracion_parametro;
+
+typedef struct {
     enum tipo tipo;
 } retorno_especificador_tipo;
 
@@ -68,10 +81,10 @@ void unidad_traduccion(set folset);
 void declaraciones(set folset);
 retorno_especificador_tipo especificador_tipo(set folset);
 void especificador_declaracion(set folset, parametros_especificador_declaracion params);
-void definicion_funcion(set folset);
+void definicion_funcion(set folset, parametros_definicion_funcion params);
 void declaracion_variable(set folset);
-void lista_declaraciones_param(set folset);
-void declaracion_parametro(set folset);
+void lista_declaraciones_param(set folset, parametros_lista_declaraciones_param params);
+void declaracion_parametro(set folset, parametros_declaracion_parametro params);
 void declarador_init(set folset);
 void lista_declaraciones_init(set folset);
 retorno_lista_inicializadores lista_inicializadores(set folset);

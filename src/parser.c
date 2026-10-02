@@ -36,8 +36,9 @@ void declaraciones(set folset)
 
 	match(CIDENT, 17);
 
-	parametros_especificador_declaracion params;
-	especificador_declaracion(folset, params);
+	parametros_especificador_declaracion parametros_especificador_declaracion;
+
+	especificador_declaracion(folset, parametros_especificador_declaracion);
 }
 
 
@@ -78,7 +79,9 @@ void especificador_declaracion(set folset, parametros_especificador_declaracion 
 	switch(lookahead())
 	{
 		case CPAR_ABR:
-			definicion_funcion(folset);
+			parametros_definicion_funcion parametros_definicion_funcion;
+
+			definicion_funcion(folset, parametros_definicion_funcion);
 			break;
 
 		case CASIGNAC:
@@ -91,12 +94,19 @@ void especificador_declaracion(set folset, parametros_especificador_declaracion 
 }
 
 
-void definicion_funcion(set folset)
+void definicion_funcion(set folset, parametros_definicion_funcion params)
 {
+	enum tipo tipo_retorno = params.tipo_retorno;
+	int posicion_tabla_simbolos = params.posicion_tabla_simbolos;
+
 	match(CPAR_ABR, 20);
 
-	if(lookahead_in(F_LISTA_DECLARACIONES_PARAM))
-		lista_declaraciones_param(folset | CPAR_CIE | F_PROPOSICION_COMPUESTA);
+	if(lookahead_in(F_LISTA_DECLARACIONES_PARAM)) {
+		parametros_lista_declaraciones_param parametros_lista_declaraciones_param;
+		parametros_lista_declaraciones_param.posicion_tabla_simbolos = posicion_tabla_simbolos;
+
+		lista_declaraciones_param(folset | CPAR_CIE | F_PROPOSICION_COMPUESTA, parametros_lista_declaraciones_param);
+	}
 
 	match(CPAR_CIE, 21);
 
@@ -104,9 +114,14 @@ void definicion_funcion(set folset)
 }
 
 
-void lista_declaraciones_param(set folset)
+void lista_declaraciones_param(set folset, parametros_lista_declaraciones_param params)
 {
-	declaracion_parametro(folset | CCOMA | F_DECLARACION_PARAMETRO);
+	int posicion_tabla_simbolos = params.posicion_tabla_simbolos;
+
+	parametros_declaracion_parametro parametros_declaracion_parametro;
+	parametros_declaracion_parametro.posicion_tabla_simbolos = posicion_tabla_simbolos;
+
+	declaracion_parametro(folset | CCOMA | F_DECLARACION_PARAMETRO, parametros_declaracion_parametro);
 
 	while(lookahead_in(CCOMA | F_DECLARACION_PARAMETRO))
 	{
@@ -115,13 +130,14 @@ void lista_declaraciones_param(set folset)
 		else
 			error_handler(64);
 
-		declaracion_parametro(folset | CCOMA | F_DECLARACION_PARAMETRO);
+		declaracion_parametro(folset | CCOMA | F_DECLARACION_PARAMETRO, parametros_declaracion_parametro);
 	}
 }
 
 
-void declaracion_parametro(set folset)
+void declaracion_parametro(set folset, parametros_declaracion_parametro params)
 {
+	int posicion_tabla_simbolos = params.posicion_tabla_simbolos;
 	retorno_especificador_tipo especificador_tipo_1 = especificador_tipo(folset | CAMPER | CIDENT | CCOR_ABR | CCOR_CIE);
 
 	if(lookahead_in(CAMPER))
