@@ -173,7 +173,7 @@ void lanzar_error_si_corresponde(enum tipo a){
 }
 
 enum tipo resolver_operador(enum tipo tipo_1, enum tipo tipo_2){
-    if(es_tipo_base(tipo_1) && es_tipo_base(tipo_1)){
+    if(es_tipo_base(tipo_1) && es_tipo_base(tipo_2)){
         return mayor(tipo_1, tipo_2);
     }
 
