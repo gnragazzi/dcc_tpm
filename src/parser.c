@@ -22,11 +22,14 @@ int main(int argc, char *argv[])
 
 void unidad_traduccion(set folset)
 {
+	pushTB();
 	test((F_UNIDAD_TRADUCCION | folset), NADA, 40);
 
 	while(lookahead_in(F_UNIDAD_TRADUCCION)) {
 		declaraciones(folset | F_UNIDAD_TRADUCCION);
 	}
+
+	pop_nivel();
 }
 
 
@@ -100,6 +103,8 @@ void definicion_funcion(set folset, parametros_definicion_funcion params)
 {
 	enum tipo tipo_retorno = params.tipo_retorno;
 	enum boolean tiene_retorno = FALSE;
+
+	pushTB();
 
 	int posicion_tabla_simbolos = params.posicion_tabla_simbolos;
 	parametros_proposicion_compuesta parametros_proposicion_compuesta;
@@ -285,6 +290,7 @@ void proposicion_compuesta(set folset, parametros_proposicion_compuesta params)
 
 	match(CLLA_CIE, 25);
 	test(folset, NADA, 50);
+	pop_nivel();
 }
 
 
@@ -341,6 +347,8 @@ void proposicion(set folset, parametros_proposicion params) {
 	switch(lookahead())
 	{
 		case CLLA_ABR:
+			pushTB();
+
 			parametros_proposicion_compuesta parametros_proposicion_compuesta;
 			parametros_proposicion_compuesta.tipo_retorno = tipo_retorno;
 			parametros_proposicion_compuesta.tiene_retorno = tiene_retorno;
