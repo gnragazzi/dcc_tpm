@@ -14,8 +14,8 @@ enum tipo_pasaje {VALOR, REFERENCIA};
 
 typedef struct parametro {
     enum tipo tipo_dato;
-    enum tipo_pasaje tipo_pasaje;
     enum tipo tipo_base;
+    enum boolean es_clase_variable;
     struct parametro  *siguiente;
 } Parametro;
 
@@ -27,7 +27,7 @@ typedef struct {
 
 void iniciar_lista_parametros(Lista_Parametros *lista);
 
-void agregar_parametro(Lista_Parametros *lista, enum tipo tipo_dato, enum tipo_pasaje tipo_pasaje, enum tipo tipo_base);
+void agregar_parametro(Lista_Parametros *lista, enum tipo tipo_dato, enum tipo tipo_base, enum boolean es_clase_variable);
 
 void limpiar_lista(Lista_Parametros *lista);
 
