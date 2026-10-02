@@ -547,8 +547,9 @@ retorno_llamada_funcion llamada_funcion(set folset)
 
 	match(CPAR_ABR, 20);
 
-	if(lookahead_in(F_LISTA_EXPRESIONES))
+	if(lookahead_in(F_LISTA_EXPRESIONES)){
 		retorno_lista_expresiones lista_expresiones_1 = lista_expresiones(folset | CPAR_CIE);
+	}
 
 	match(CPAR_CIE, 21);
 

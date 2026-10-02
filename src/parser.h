@@ -6,20 +6,9 @@
 #include "error.h"
 #include "ts.h"
 
-typedef struct {} retorno_unidad_traduccion;
-typedef struct {} retorno_declaraciones;
-
 typedef struct {
     enum tipo tipo;
 } retorno_especificador_tipo;
-
-typedef struct {} retorno_especificador_declaracion;
-typedef struct {} retorno_definicion_funcion;
-typedef struct {} retorno_declaracion_variable;
-typedef struct {} retorno_lista_declaraciones_param;
-typedef struct {} retorno_declaracion_parametro;
-typedef struct {} retorno_declarador_init;
-typedef struct {} retorno_lista_declaraciones_init;
 
 typedef struct {
     int cantidad_inicializadores;
@@ -29,16 +18,6 @@ typedef struct {
 typedef struct {
     enum boolean tiene_retorno;
 } retorno_lista_proposiciones;
-
-typedef struct {} retorno_lista_declaraciones;
-typedef struct {} retorno_declaracion;
-typedef struct {} retorno_proposicion;
-typedef struct {} retorno_proposicion_expresion;
-typedef struct {} retorno_proposicion_compuesta;
-typedef struct {} retorno_proposicion_seleccion;
-typedef struct {} retorno_proposicion_iteracion;
-typedef struct {} retorno_proposicion_e_s;
-typedef struct {} retorno_proposicion_retorno;
 
 typedef struct {
     enum tipo tipo;
@@ -69,7 +48,7 @@ typedef struct {
 } retorno_llamada_funcion;
 
 typedef struct {
-    Lista_parametros lista;
+    Lista_Parametros lista;
 } retorno_lista_expresiones;
 
 typedef struct {

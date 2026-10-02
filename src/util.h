@@ -15,7 +15,7 @@ enum tipo_pasaje {VALOR, REFERENCIA};
 typedef struct parametro {
     enum tipo tipo_dato;
     enum tipo tipo_base;
-    enum bool es_clase_variable;
+    enum boolean es_clase_variable;
     struct parametro  *siguiente;
 } Parametro;
 
