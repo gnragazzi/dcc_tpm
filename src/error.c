@@ -107,7 +107,7 @@ void error_print(int ne)
 		case 93: printf("\t Error %d: Si el pasaje es por REFERENCIA, el parametro real debe ser una variable\n", ne); break;									
 		case 94: printf("\t Error %d: La constante string solo puede aparecer en las proposiciones de E/S\n", ne); break;											
 		case 95: printf("\t Error %d: Las proposiciones de E/S solo aceptan variables y/o expresiones de tipo char, int y float\n", ne); break;			
-		case 96: printf("\t Error %d: Los operandos de los operadores logicos o relacionales solo pueden ser de tipo char, int o float\n", ne); break;	
+		case 96: printf("\t Error %d: Los operandos de los operadores logicos, relacionales o aritméticos solo pueden ser de tipo char, int o float\n", ne); break;
 		case 97: printf("\t Error %d: Las condiciones de las prop. de seleccion e iteracion solo pueden ser de tipo char, int y float\n", ne); break;	
 		case 98: printf("\t Error %d: Si el parametro formal es un arreglo, en el parametro real solo debe haber un identificador\n", ne); break;		
 		case 99: printf("\t Error %d: El identificador debe ser una funcion o un procedimiento\n", ne); break;														

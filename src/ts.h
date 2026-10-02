@@ -1,14 +1,14 @@
 /*
 ======================================================================
-	DISE袿 Y CONSTRUCCI覰 DE COMPILADORES
-	PROGRAMAS FUENTES ENTREGADOS POR LA C罷EDRA
-        HEADER PARA EL ADMINISTRADOR DE TABLA DE S蚆BOLOS
+	DISE脩O Y CONSTRUCCI脫N DE COMPILADORES
+	PROGRAMAS FUENTES ENTREGADOS POR LA C脕TEDRA
+        HEADER PARA EL ADMINISTRADOR DE TABLA DE S脥MBOLOS
 ======================================================================
 */
 
 /*
 =====================================================================
-	 Definiciones de constantes usadas por la tabla de s韒bolos
+	 Definiciones de constantes usadas por la tabla de s铆mbolos
 =====================================================================
 */
 
@@ -18,55 +18,55 @@
 # define TAM_BLOQ   30
 # define BASE_TS    -1
 # define BASE_TB    -1
-# define NIL        -1         // indica que no apunto a ning鷑 tipo
+# define NIL        -1         // indica que no apunto a ning煤n tipo
 
 
-// ========== Definici髇 de las clases de identificadores ==========
+// ========== Definici贸n de las clases de identificadores ==========
 
 			// CLASES CORRESPONDIENTES A:
 
 #define CLASTYPE   1    // identificador de tipo
 #define CLASVAR    2    // identificador de variable
-#define CLASFUNC   3    // identificador de funci髇
-#define CLASPAR    4    // identificador de par醡etro formal
+#define CLASFUNC   3    // identificador de funci贸n
+#define CLASPAR    4    // identificador de par谩metro formal
 
 /*
 
 =====================================================================
- Definiciones de tipos del administrador de tabla de s韒bolos
+ Definiciones de tipos del administrador de tabla de s铆mbolos
 =====================================================================
 */
 
 /*   LAS SIGUIENTES ESTRUCTURAS FORMAN PARTE DEL DESCRIPTOR
-     DE UNA ENTRADA EN LA TABLA DE S蚆BOLOS         */
+     DE UNA ENTRADA EN LA TABLA DE S脥MBOLOS         */
 
 // ------------------------- TIPO_INF_RES --------------------------
-// Estructura que forma la lista con informaci髇 resumida de par醡etros
+// Estructura que forma la lista con informaci贸n resumida de par谩metros
 
  typedef struct inf_res {
-	int ptero_tipo;					// tipo del par醡etro
+	int ptero_tipo;					// tipo del par谩metro
 	char tipo_pje;						// tipo de pasaje: valor o referencia
-	int ptero_tipo_base;				// descriptor para cuando el par醡etro es de tipo arreglo
-	struct inf_res  *ptr_sig;		// siguiente par醡etro
+	int ptero_tipo_base;				// descriptor para cuando el par谩metro es de tipo arreglo
+	struct inf_res  *ptr_sig;		// siguiente par谩metro
 } tipo_inf_res;
 
 // ---------------------------- STC_TS -----------------------------
-// Estructura propia de: variables (an髇imas), subrutinas y par醡etros
+// Estructura propia de: variables (an贸nimas), subrutinas y par谩metros
 
 typedef struct {
-	int nivel;  						// nivel lexicogr醘ico del objeto computacional
-	int despl; 							// desplazamiento dentro del registro de activaci髇 usado solamente
-											// para identificadores de clase "variable" y  "par醡etro"
+	int nivel;  						// nivel lexicogr谩fico del objeto computacional
+	int despl; 							// desplazamiento dentro del registro de activaci贸n usado solamente
+											// para identificadores de clase "variable" y  "par谩metro"
 	union {
-		struct {							// si es un identificador de par醡etro
-		char tipo_pje;					// tipo de pasaje de este par醡etro
-		int ptero_tipo_base;			// descriptor para cuando el par醡etro es de tipo arreglo
+		struct {							// si es un identificador de par谩metro
+		char tipo_pje;					// tipo de pasaje de este par谩metro
+		int ptero_tipo_base;			// descriptor para cuando el par谩metro es de tipo arreglo
 		} param;
 		
-		struct { 								// si es un identificador de funci髇
-			int dir_cod;  						// direcci髇 del c骴igo
-			int cant_par;  					// cantidad de par醡etros
-			tipo_inf_res *ptr_inf_res;		// puntero a la lista que mantiene informaci髇 de los par醡etros
+		struct { 								// si es un identificador de funci贸n
+			int dir_cod;  						// direcci贸n del c贸digo
+			int cant_par;  					// cantidad de par谩metros
+			tipo_inf_res *ptr_inf_res;		// puntero a la lista que mantiene informaci贸n de los par谩metros
 		} sub;
 	
 		struct {									// si es una variable de tipo arreglo
@@ -74,38 +74,38 @@ typedef struct {
 			int cant_elem;						// cantidad de elementos
 		} arr;					
 
-	} part_var;  						// fin de la uni髇 de la parte variante
+	} part_var;  						// fin de la uni贸n de la parte variante
 
 } stc_TS;
 
 
-/* LA SIGUIENTE ESTRUCTURA FORMA UNA ENTRADA EN LA TABLA DE S蚆BOLOS*/
+/* LA SIGUIENTE ESTRUCTURA FORMA UNA ENTRADA EN LA TABLA DE S脥MBOLOS*/
 
 // -------------------------- ENTRADA_TS ---------------------------
-//          Estructura de una entrada en la tabla de s韒bolos
+//          Estructura de una entrada en la tabla de s铆mbolos
 
 typedef struct {
 
 	char nbre[TAM_ID];	// nombre del identificador
 
-	int clase;				// clase de objeto computacional: vble., funci髇, par醡., tipo.
+	int clase;				// clase de objeto computacional: vble., funci贸n, par谩m., tipo.
 
-	int ptr_tipo;      	// puntero al tipo del identificador, apunta a la tabla de s韒bolos
-								// tambi閚 sirve para indicar el tipo del valor retornado por una funci髇
+	int ptr_tipo;      	// puntero al tipo del identificador, apunta a la tabla de s铆mbolos
+								// tambi茅n sirve para indicar el tipo del valor retornado por una funci贸n
 
 	int cant_byte;     	// cantidad de bytes del objeto computacional
 
-	stc_TS desc;      	// descriptor de variable, funci髇 o par醡etro
+	stc_TS desc;      	// descriptor de variable, funci贸n o par谩metro
 
 } entrada_TS;
 
 
 // ---------------------------- TIPO_TS ----------------------------
-//          Estructura que define el tipo de la tabla de s韒bolos
+//          Estructura que define el tipo de la tabla de s铆mbolos
 
 typedef struct {
 
-	int ptr_sinon;			// puntero que encadena los sin髇imos
+	int ptr_sinon;			// puntero que encadena los sin贸nimos
 	entrada_TS  *ets;		// entrada_TS particular
 
 } tipo_TS;
@@ -113,27 +113,27 @@ typedef struct {
 
 /*
 =====================================================================
-						Definici髇 de variables globales
+						Definici贸n de variables globales
 =====================================================================
 */
 
 //extern entrada_TS  *inf_id;
-//extern tipo_TS  ts[TAM_TS];		// Tabla de S韒bolos
+//extern tipo_TS  ts[TAM_TS];		// Tabla de S铆mbolos
 
 
 entrada_TS  *inf_id;		// Puntero a la estructura que contiene la
-								// informaci髇 de un identificador, la cual es
-								// completada previamente a una inserci髇 en TS
+								// informaci贸n de un identificador, la cual es
+								// completada previamente a una inserci贸n en TS
 
 int       th[TAM_HASH];   // Tabla de Hash
-tipo_TS   ts[TAM_TS];     // Tabla de S韒bolos
+tipo_TS   ts[TAM_TS];     // Tabla de S铆mbolos
 int       tb[TAM_BLOQ];   // Tabla de Bloques
 int  topeTS;
 int  topeTB;
 
 /* 
 =====================================================================
-		Funciones para la administraci髇 de la Tabla de S韒bolos 
+		Funciones para la administraci贸n de la Tabla de S铆mbolos 
 =====================================================================
 */
 

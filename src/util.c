@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <malloc.h>
 #include "util.h"
 #include "codigos.h"
 #include "error.h"
@@ -89,4 +90,95 @@ void test(set c1, set c2, int ne)
 		while(!lookahead_in(conjunto_sincronizacion))
 			scanner();
 	}
+}
+
+void iniciar_lista_parametros(Lista_Parametros *lista) {
+	lista->primer_parametro = NULL;
+	lista->ultimo_parametro = NULL;
+	lista->cantidad = 0;
+}
+
+void agregar_parametro(Lista_Parametros *lista, enum tipo tipo_dato, enum tipo_pasaje tipo_pasaje, enum tipo tipo_base) {
+	Parametro *nuevo_parametro = (Parametro *) malloc(sizeof(Parametro));
+
+	nuevo_parametro->tipo_dato = tipo_dato;
+	nuevo_parametro->tipo_pasaje = tipo_pasaje;
+	if (tipo_dato == ARREGLO) {
+		nuevo_parametro->tipo_base = tipo_base;
+	}
+	nuevo_parametro->siguiente = NULL;
+
+	if (lista->cantidad == 0) {
+		lista->primer_parametro = lista->ultimo_parametro = nuevo_parametro;
+	}else {
+		lista->ultimo_parametro->siguiente = nuevo_parametro;
+	}
+
+	lista->cantidad = lista->cantidad + 1;
+
+	return;
+}
+
+void limpiar_lista(Lista_Parametros *lista) {
+	if (lista->cantidad == 0)
+		return;
+
+	Parametro *proximo = lista->primer_parametro;
+	while (proximo != NULL) {
+		Parametro *aux = proximo->siguiente;
+		free(proximo);
+		proximo = aux;
+	}
+}
+
+enum boolean es_tipo_base(enum tipo tipo) {return tipo > 0;}
+
+enum tipo resolver_tipo(char *nombre){
+	if(strcmp(T_VOID, nombre) == 0)
+		return VOID;
+	if(strcmp(T_CHAR, nombre) == 0)
+		return CHAR;
+	if(strcmp(T_INT, nombre) == 0)
+		return INT;
+	if(strcmp(T_FLOAT, nombre) == 0)
+		return FLOAT;
+	if(strcmp(T_ARREGLO, nombre) == 0)
+		return ARREGLO;
+	else
+		return ERROR;
+}
+
+enum boolean param1_es_coercionable_a_param2(enum tipo param1, enum tipo param2){
+	if(param1>0 && param1 <= param2)
+		return TRUE;
+
+	return FALSE;
+}
+
+enum tipo mayor(enum tipo a, enum tipo b){
+    if (a > b)
+        return a;
+
+    return b;
+}
+
+void lanzar_error_si_corresponde(enum tipo a){
+    if(a == ARREGLO || a == VOID){
+        error_handler(96);
+    }
+    if( a == STRING){
+        error_handler(94);
+    }
+
+}
+
+enum tipo resolver_operador(enum tipo tipo_1, enum tipo tipo_2){
+    if(es_tipo_base(tipo_1) && es_tipo_base(tipo_2)){
+        return mayor(tipo_1, tipo_2);
+    }
+
+    lanzar_error_si_corresponde(tipo_1);
+    lanzar_error_si_corresponde(tipo_2);
+
+    return ERROR;
 }
