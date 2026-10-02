@@ -7,6 +7,11 @@
 #include "ts.h"
 
 typedef struct {
+    char *lexema_identificador;
+    enum tipo tipo_declaracion;
+} parametros_especificador_declaracion;
+
+typedef struct {
     enum tipo tipo;
 } retorno_especificador_tipo;
 
@@ -62,7 +67,7 @@ int last_call=0;
 void unidad_traduccion(set folset);
 void declaraciones(set folset);
 retorno_especificador_tipo especificador_tipo(set folset);
-void especificador_declaracion(set folset);
+void especificador_declaracion(set folset, parametros_especificador_declaracion params);
 void definicion_funcion(set folset);
 void declaracion_variable(set folset);
 void lista_declaraciones_param(set folset);

@@ -36,7 +36,8 @@ void declaraciones(set folset)
 
 	match(CIDENT, 17);
 
-	especificador_declaracion(folset);
+	parametros_especificador_declaracion params;
+	especificador_declaracion(folset, params);
 }
 
 
@@ -67,8 +68,11 @@ retorno_especificador_tipo especificador_tipo(set folset)
 }
 
 
-void especificador_declaracion(set folset)
+void especificador_declaracion(set folset, parametros_especificador_declaracion params)
 {
+	char *lexema_identificador = params.lexema_identificador;
+	enum tipo tipo_declaracion = params.tipo_declaracion;
+
 	test(F_ESPECIFICADOR_DECLARACION, folset, 43);
 
 	switch(lookahead())
