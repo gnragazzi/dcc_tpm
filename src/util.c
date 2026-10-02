@@ -155,3 +155,31 @@ enum boolean param1_es_coercionable_a_param2(enum tipo param1, enum tipo param2)
 
 	return FALSE;
 }
+
+enum tipo mayor(enum tipo a, enum tipo b){
+    if (a > b)
+        return a;
+
+    return b;
+}
+
+void lanzar_error_si_corresponde(enum tipo a){
+    if(a == ARREGLO || a == VOID){
+        error_handler(96);
+    }
+    if( a == STRING){
+        error_handler(94);
+    }
+
+}
+
+enum tipo resolver_operador(enum tipo tipo_1, enum tipo tipo_2){
+    if(es_tipo_base(tipo_1) && es_tipo_base(tipo_2)){
+        return mayor(tipo_1, tipo_2);
+    }
+
+    lanzar_error_si_corresponde(tipo_1);
+    lanzar_error_si_corresponde(tipo_2);
+
+    return ERROR;
+}
