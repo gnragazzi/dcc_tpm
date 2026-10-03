@@ -26,7 +26,6 @@ Linea 25 -
 Linea 26 -  if(dato != 0)
 Linea 27 -  {
 Linea 28 -  cout << Letra:  << letra <<  Valor:  << dato << \n;
-	 Error 71: Identificador no declarado
 Linea 29 -  }
 Linea 30 - }
 Linea 31 - 
@@ -34,10 +33,8 @@ Linea 32 - float fdiv(float x, float y)
 Linea 33 - {
 Linea 34 -  float res;
 Linea 35 -  if(y > 0.0)
-	 Error 71: Identificador no declarado
 Linea 36 -  {
 Linea 37 -  res = x / y;
-	 Error 71: Identificador no declarado
 Linea 38 -  }
 Linea 39 -  else
 Linea 40 -  {
@@ -54,13 +51,11 @@ Linea 50 -  sum = 0;
 Linea 51 -  paso = +1;
 Linea 52 - 
 Linea 53 -  while(i < n && !(i == 5))
-	 Error 71: Identificador no declarado
 Linea 54 -  {
 Linea 55 -  if(i <= 2)
 Linea 56 -  {
 Linea 57 -  sum = sum + arr[i] * 1 / paso;
-	 Error 71: Identificador no declarado
-	 Error 78: La variable no es de tipo arreglo
+	 Error 96: Los operandos de los operadores logicos, relacionales o aritméticos solo pueden ser de tipo char, int o float
 Linea 58 -  }
 Linea 59 -  else
 Linea 60 -  {
@@ -71,7 +66,6 @@ Linea 64 -  ;
 Linea 65 -  }
 Linea 66 - 
 Linea 67 -  total = sum;
-	 Error 71: Identificador no declarado
 Linea 68 -  return sum;
 Linea 69 - }
 Linea 70 - 
@@ -94,6 +88,7 @@ Linea 86 -  cin >> cant >> base;
 Linea 87 -  cin >> a >> b >> c;
 Linea 88 - 
 Linea 89 -  res = fcalc(cant, base, pares);
+	 Error 81: No se permite la asignacion de arreglos como un todo
 Linea 90 -  ratio = fdiv(tasa, 1.25);
 Linea 91 - 
 Linea 92 -  {
