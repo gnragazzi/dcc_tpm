@@ -63,7 +63,7 @@ enum boolean param1_es_coercionable_a_param2(enum tipo param1, enum tipo param2)
 
 void lanzar_error_si_corresponde(enum tipo a);
 
-enum tipo resolver_operador(enum tipo tipo_1, enum tipo tipo_2);
+enum tipo resolver_tipo_operador(enum tipo tipo_1, enum tipo tipo_2);
 
 entrada_TS *nueva_entrada();
 
