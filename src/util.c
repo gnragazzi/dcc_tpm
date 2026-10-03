@@ -205,3 +205,7 @@ enum tipo resolver_tipo_operador(enum tipo tipo_1, enum tipo tipo_2){
 entrada_TS *nueva_entrada() {
 	return inf_id;
 }
+
+// enum boolean identificador_es_funcion(char *nombre) {
+// 	[en_tabla(nombre)];
+// }

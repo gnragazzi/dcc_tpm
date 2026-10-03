@@ -42,6 +42,14 @@ typedef struct {
 } parametros_lista_declaraciones_init;
 
 typedef struct {
+    int indice_en_TS;
+}parametros_variable;
+
+typedef struct {
+    int indice_en_TS;
+} parametros_llamada_funcion;
+
+typedef struct {
     enum tipo tipo;
 } retorno_especificador_tipo;
 
@@ -144,8 +152,8 @@ retorno_expresion expresion(set folset);
 retorno_expresion_simple expresion_simple(set folset);
 retorno_termino termino(set folset);
 retorno_factor factor(set folset);
-retorno_variable variable(set folset);
-retorno_llamada_funcion llamada_funcion(set folset);
+retorno_variable variable(set folset, parametros_variable);
+retorno_llamada_funcion llamada_funcion(set folset, parametros_llamada_funcion);
 retorno_lista_expresiones lista_expresiones(set folset);
 retorno_constante constante(set folset);
 
