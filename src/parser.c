@@ -639,14 +639,11 @@ retorno_expresion expresion(set folset)
 {
 	retorno_expresion retorno_expresion;
 	retorno_expresion_simple expresion_simple_1 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
+	enum boolean se_lanzo_error_arreglo_como_todo = TRUE;
 
 	enum tipo tipo_izquierda_asignacion = retorno_expresion.tipo = expresion_simple_1.tipo;
 	enum boolean clase_izquierda_asignacion_es_variable =
 			retorno_expresion.es_clase_variable = expresion_simple_1.es_clase_variable;
-
-	if (expresion_simple_1.tipo == ARREGLO) {
-		error_handler(81);
-	}
 
 	while(lookahead_in(F_RESTO_EXPRESION))
 	{
@@ -655,6 +652,9 @@ retorno_expresion expresion(set folset)
 			case CASIGNAC: {
 				if (!clase_izquierda_asignacion_es_variable) {
 					error_handler(82);
+				}else if (tipo_izquierda_asignacion == ARREGLO){
+					error_handler(81);
+					se_lanzo_error_arreglo_como_todo = TRUE;
 				}
 				scanner();
 				retorno_expresion_simple expresion_simple_2 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
@@ -662,9 +662,8 @@ retorno_expresion expresion(set folset)
 				tipo_izquierda_asignacion = expresion_simple_2.tipo;
 
 				if (expresion_simple_2.tipo == ARREGLO) {
-					error_handler(81);
+					se_lanzo_error_arreglo_como_todo = FALSE;
 				}
-
 				break;
 			}
 			case CDISTINTO:
@@ -682,6 +681,10 @@ retorno_expresion expresion(set folset)
 				break;
 			}
 		}
+	}
+
+	if (!se_lanzo_error_arreglo_como_todo) {
+		error_handler(81);
 	}
 
 	return retorno_expresion;
@@ -812,7 +815,7 @@ retorno_factor factor(set folset)
 			match(CPAR_CIE, 21);
 			break;
 
-		case CNEG:
+		case CNEG: {
 			scanner();
 			retorno_expresion expresion_2 = expresion(folset);
 			lanzar_error_si_corresponde(expresion_2.tipo);
@@ -820,6 +823,11 @@ retorno_factor factor(set folset)
 			retorno_factor.es_clase_variable = FALSE;
 
 			break;
+		}
+		default: {
+			retorno_factor.es_clase_variable = FALSE;
+			retorno_factor.tipo = ERROR;
+		}
 	}
 
 	test(folset, 0, 58);
@@ -837,8 +845,14 @@ retorno_variable variable(set folset, parametros_variable params) {
 		if (params.indice_en_TS != NIL && retorno_variable.tipo != ARREGLO)
 			error_handler(78);
 		else if (params.indice_en_TS != NIL) {
-			retorno_variable.tipo = resolver_tipo(
-				ts[ts[params.indice_en_TS].ets->desc.part_var.arr.ptero_tipo_base].ets->nbre);
+			entrada_TS *entrada_ts = ts[params.indice_en_TS].ets;
+			enum boolean es_parametro = entrada_ts->clase == CLASPAR;
+
+			if (es_parametro) {
+				retorno_variable.tipo = resolver_tipo(ts[entrada_ts->desc.part_var.param.ptero_tipo_base].ets->nbre);
+			} else {
+				retorno_variable.tipo = resolver_tipo(ts[entrada_ts->desc.part_var.arr.ptero_tipo_base].ets->nbre);
+			}
 		}
 
 		scanner();
