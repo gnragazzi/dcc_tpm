@@ -47,6 +47,8 @@ enum boolean es_tipo_base(enum tipo tipo);
 
 enum tipo resolver_tipo(char *nombre);
 
+int resolver_tipo_en_TS(enum tipo tipo);
+
 enum boolean param1_es_coercionable_a_param2(enum tipo param1, enum tipo param2);
 
 void lanzar_error_si_corresponde(enum tipo a);

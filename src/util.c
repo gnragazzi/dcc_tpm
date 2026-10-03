@@ -5,6 +5,7 @@
 #include "util.h"
 #include "codigos.h"
 #include "error.h"
+#include "ts.h"
 
 
 void scanner()
@@ -147,6 +148,23 @@ enum tipo resolver_tipo(char *nombre){
 		return ARREGLO;
 	else
 		return ERROR;
+}
+
+int resolver_tipo_en_TS(enum tipo tipo){
+	switch (tipo) {
+		case VOID:
+			return en_tabla(T_VOID);
+		case CHAR:
+			return en_tabla(T_CHAR);
+		case INT:
+			return en_tabla(T_INT);
+		case FLOAT:
+			return en_tabla(T_FLOAT);
+		case ARREGLO:
+			return en_tabla(T_ARREGLO);
+		case ERROR:
+			return en_tabla(T_ERROR);
+	}
 }
 
 enum boolean param1_es_coercionable_a_param2(enum tipo param1, enum tipo param2){

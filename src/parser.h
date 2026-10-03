@@ -7,7 +7,7 @@
 #include "ts.h"
 
 typedef struct {
-    char *lexema_identificador;
+    char *identificador;
     enum tipo tipo_declaracion;
 } parametros_especificador_declaracion;
 
@@ -26,10 +26,12 @@ typedef struct {
 
 typedef struct {
     enum tipo tipo_declaracion;
+    char *identificador;
 } parametros_declaracion_variable;
 
 typedef struct {
     enum tipo tipo_declaracion;
+    char * identificador;
 } parametros_declarador_init;
 
 typedef struct {
