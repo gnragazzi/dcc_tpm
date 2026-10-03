@@ -1,9 +1,13 @@
-# Expectativa: compilacion limpia, 0 errores semanticos #
-# Prueba: uso de una variable global dentro de main #
+# Expectativa: reconfiguracion por la } y arrastre a la definicion siguiente #
+# Prueba: igual al caso anterior pero con otra funcion despues, para fijar el alcance de #
+# la reconfiguracion cuando la } consumida es la del bloque. #
 
-int a, c;
+void main()
+{
+    int a
+}
 
-void main(){
-    int b, a = 1;
-    c = 2;
+void f()
+{
+    int b;
 }

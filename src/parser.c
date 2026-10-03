@@ -168,8 +168,14 @@ void lista_declaraciones_param(set folset, parametros_lista_declaraciones_param 
 
 void declaracion_parametro(set folset, parametros_declaracion_parametro params) {
 	int posicion_tabla_simbolos = params.posicion_tabla_simbolos;
-	retorno_especificador_tipo especificador_tipo_1 =
-			especificador_tipo(folset | CAMPER | CIDENT | CCOR_ABR | CCOR_CIE);
+	retorno_especificador_tipo especificador_tipo_1 = especificador_tipo(folset | CAMPER | CIDENT | CCOR_ABR | CCOR_CIE);
+	enum tipo parametro_tipo = especificador_tipo_1.tipo;
+
+	if (parametro_tipo == VOID) {
+		parametro_tipo = ERROR;
+		error_handler(73);
+	}
+
 	entrada_TS *nueva_variable = nueva_entrada();
 	char *identificador;
 	enum tipo_pasaje tipo_pasaje = VALOR;
@@ -201,7 +207,7 @@ void declaracion_parametro(set folset, parametros_declaracion_parametro params) 
 			strcpy(nueva_variable->nbre, identificador);
 			nueva_variable->clase = CLASPAR;
 			nueva_variable->ptr_tipo = resolver_tipo_en_TS(ARREGLO);
-			nueva_variable->desc.part_var.param.ptero_tipo_base = resolver_tipo_en_TS(especificador_tipo_1.tipo);
+			nueva_variable->desc.part_var.param.ptero_tipo_base = resolver_tipo_en_TS(parametro_tipo);
 			nueva_variable->desc.part_var.param.tipo_pje = VALOR;
 
 			insertarTS();
@@ -210,7 +216,7 @@ void declaracion_parametro(set folset, parametros_declaracion_parametro params) 
 		if (identificador != NULL) {
 			strcpy(nueva_variable->nbre, identificador);
 			nueva_variable->clase = CLASPAR;
-			nueva_variable->ptr_tipo = resolver_tipo_en_TS(especificador_tipo_1.tipo);
+			nueva_variable->ptr_tipo = resolver_tipo_en_TS(parametro_tipo);
 			nueva_variable->desc.part_var.param.tipo_pje = tipo_pasaje;
 
 			insertarTS();
@@ -260,8 +266,16 @@ void declaracion_variable(set folset, parametros_declaracion_variable params) {
 	parametros_declarador_init parametros_declarador_init;
 	parametros_lista_declaraciones_init parametros_lista_declaraciones_init;
 
+	enum tipo variable_tipo = params.tipo_declaracion;
+
+	if (variable_tipo == VOID) {
+		variable_tipo = ERROR;
+		error_handler(73);
+	}
+
+
 	parametros_lista_declaraciones_init.tipo_declaracion =
-			parametros_declarador_init.tipo_declaracion = params.tipo_declaracion;
+			parametros_declarador_init.tipo_declaracion = variable_tipo;
 
 	parametros_declarador_init.identificador = params.identificador;
 
@@ -385,7 +399,14 @@ void declaracion(set folset)
 
 	retorno_especificador_tipo especificador_tipo_1 = especificador_tipo(folset | F_LISTA_DECLARACIONES_INIT | CPYCOMA);
 
-	parametros_lista_declaraciones_init.tipo_declaracion = especificador_tipo_1.tipo;
+	enum tipo variable_tipo = especificador_tipo_1.tipo;
+
+	if (variable_tipo == VOID) {
+		variable_tipo = ERROR;
+		error_handler(73);
+	}
+
+	parametros_lista_declaraciones_init.tipo_declaracion = variable_tipo;
 
 	lista_declaraciones_init(folset | CPYCOMA, parametros_lista_declaraciones_init);
 

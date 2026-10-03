@@ -1,9 +1,18 @@
 #!/usr/bin/env bash
 # Corre localmente los mismos tests que .github/workflows/ci.yml.
-# Uso: ./scripts/test_local.sh
+# Uso: ./scripts/test_local.sh [-e N]
+#   -e N  corre solo los tests de tests/entregaN (por defecto, todas)
 set -euo pipefail
 
 trim_lineas() { sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' | sed '/^$/d'; }
+
+entrega_sel=""
+while getopts "e:" opt; do
+  case "$opt" in
+    e) entrega_sel="$OPTARG" ;;
+    *) echo "Uso: $0 [-e N]" >&2; exit 2 ;;
+  esac
+done
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SRC_DIR="$ROOT_DIR/src"
@@ -15,7 +24,17 @@ shopt -s nullglob
 fail=0
 casos=0
 
-for entrega_dir in tests/entrega*/; do
+if [ -n "$entrega_sel" ]; then
+  entregas=("tests/entrega$entrega_sel/")
+  if [ ! -d "${entregas[0]}" ]; then
+    echo "ERROR: no existe ${entregas[0]}" >&2
+    exit 2
+  fi
+else
+  entregas=(tests/entrega*/)
+fi
+
+for entrega_dir in "${entregas[@]}"; do
   entrega="$(basename "$entrega_dir")"
 
   for f in "${entrega_dir}validos/"*.c; do
