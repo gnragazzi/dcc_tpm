@@ -39,7 +39,8 @@ void declaraciones(set folset) {
 	parametros_especificador_declaracion.tipo_declaracion = especificador_tipo_1.tipo;
 
 	if (lookahead() & CIDENT) {
-		parametros_especificador_declaracion.identificador = token1.lexema;
+		parametros_especificador_declaracion.identificador = (char *) malloc(sizeof(char) * TAM_LEXEMA);
+		strcpy(parametros_especificador_declaracion.identificador, token1.lexema);
 		scanner();
 	} else {
 		parametros_especificador_declaracion.identificador = NULL;
@@ -89,19 +90,19 @@ void especificador_declaracion(set folset, parametros_especificador_declaracion 
 
 	switch(lookahead())
 	{
-		case CPAR_ABR:
-			entrada_TS entrada_nueva_funcion;
-			strcpy(entrada_nueva_funcion.nbre, params.identificador);
-			entrada_nueva_funcion.clase = CLASFUNC;
-			entrada_nueva_funcion.ptr_tipo = resolver_tipo_en_TS(params.tipo_declaracion);
+		case CPAR_ABR: {
+			entrada_TS *entrada_nueva_funcion = nueva_entrada();
+			strcpy(entrada_nueva_funcion->nbre, params.identificador);
+			entrada_nueva_funcion->clase = CLASFUNC;
+			entrada_nueva_funcion->ptr_tipo = resolver_tipo_en_TS(params.tipo_declaracion);
 
 			parametros_definicion_funcion parametros_definicion_funcion;
-			parametros_definicion_funcion.posicion_tabla_simbolos = insertarTS(entrada_nueva_funcion);
+			parametros_definicion_funcion.posicion_tabla_simbolos = insertarTS();
 			parametros_definicion_funcion.tipo_retorno = params.tipo_declaracion;
 
 			definicion_funcion(folset, parametros_definicion_funcion);
 			break;
-
+		}
 		case CASIGNAC:
 		case CCOR_ABR:
 		case CCOMA:
@@ -165,20 +166,55 @@ void lista_declaraciones_param(set folset, parametros_lista_declaraciones_param 
 }
 
 
-void declaracion_parametro(set folset, parametros_declaracion_parametro params)
-{
+void declaracion_parametro(set folset, parametros_declaracion_parametro params) {
 	int posicion_tabla_simbolos = params.posicion_tabla_simbolos;
-	retorno_especificador_tipo especificador_tipo_1 = especificador_tipo(folset | CAMPER | CIDENT | CCOR_ABR | CCOR_CIE);
+	retorno_especificador_tipo especificador_tipo_1 =
+			especificador_tipo(folset | CAMPER | CIDENT | CCOR_ABR | CCOR_CIE);
+	entrada_TS *nueva_variable = nueva_entrada();
+	char *identificador;
+	enum tipo_pasaje tipo_pasaje = VALOR;
 
-	if(lookahead_in(CAMPER))
+	if (lookahead_in(CAMPER)) {
+		tipo_pasaje = REFERENCIA;
 		scanner();
+	}
 
-	match(CIDENT, 17);
+	if (lookahead() & CIDENT) {
+		identificador = (char *) malloc(sizeof(char) * TAM_LEXEMA);
+		strcpy(identificador, token1.lexema);
+		scanner();
+	} else {
+		identificador = NULL;
+		error_handler(17);
+	}
 
-	if(lookahead_in(CCOR_ABR))
-	{
+
+	if (lookahead_in(CCOR_ABR)) {
 		scanner();
 		match(CCOR_CIE, 22);
+
+		if (tipo_pasaje == REFERENCIA) {
+			error_handler(92);
+		}
+
+		if (identificador != NULL) {
+			strcpy(nueva_variable->nbre, identificador);
+			nueva_variable->clase = CLASPAR;
+			nueva_variable->ptr_tipo = resolver_tipo_en_TS(ARREGLO);
+			nueva_variable->desc.part_var.param.ptero_tipo_base = resolver_tipo_en_TS(especificador_tipo_1.tipo);
+			nueva_variable->desc.part_var.param.tipo_pje = VALOR;
+
+			insertarTS();
+		}
+	} else {
+		if (identificador != NULL) {
+			strcpy(nueva_variable->nbre, identificador);
+			nueva_variable->clase = CLASPAR;
+			nueva_variable->ptr_tipo = resolver_tipo_en_TS(especificador_tipo_1.tipo);
+			nueva_variable->desc.part_var.param.tipo_pje = tipo_pasaje;
+
+			insertarTS();
+		}
 	}
 
 	test(folset, NADA, 45);
@@ -192,7 +228,8 @@ void lista_declaraciones_init(set folset, parametros_lista_declaraciones_init pa
 	test(F_LISTA_DECLARACIONES_INIT, folset, 46);
 
 	if (lookahead() & CIDENT) {
-		parametros_declarador_init.identificador = token1.lexema;
+		parametros_declarador_init.identificador = (char *) malloc(sizeof(char) * TAM_LEXEMA);
+		strcpy(parametros_declarador_init.identificador, token1.lexema);
 		scanner();
 	} else {
 		parametros_declarador_init.identificador = NULL;
@@ -205,7 +242,9 @@ void lista_declaraciones_init(set folset, parametros_lista_declaraciones_init pa
 		match(CCOMA, 64);
 
 		if (lookahead() & CIDENT) {
-			parametros_declarador_init.identificador = token1.lexema;
+			parametros_declarador_init.identificador = (char *) malloc(sizeof(char) * TAM_LEXEMA);
+			strcpy(parametros_declarador_init.identificador, token1.lexema);
+
 			scanner();
 		} else {
 			parametros_declarador_init.identificador = NULL;
@@ -241,14 +280,13 @@ void declaracion_variable(set folset, parametros_declaracion_variable params) {
 
 void declarador_init(set folset, parametros_declarador_init params) {
 	test(F_DECLARADOR_INIT | folset, CCOR_CIE | CLLA_ABR | CLLA_CIE, 47);
-	entrada_TS entrada_variable;
-	strcpy(entrada_variable.nbre, params.identificador);
-	entrada_variable.clase = CLASVAR;
+	entrada_TS *entrada_nueva_variable = nueva_entrada();
+	entrada_nueva_variable->clase = CLASVAR;
 
 	switch (lookahead()) {
 		case CASIGNAC:
 			scanner();
-			entrada_variable.ptr_tipo = resolver_tipo_en_TS(params.tipo_declaracion);
+			entrada_nueva_variable->ptr_tipo = resolver_tipo_en_TS(params.tipo_declaracion);
 			retorno_constante constante_1 = constante(folset);
 			break;
 
@@ -258,8 +296,8 @@ void declarador_init(set folset, parametros_declarador_init params) {
 		case CCOR_CIE:
 		case CLLA_ABR:
 		case CLLA_CIE:
-			entrada_variable.ptr_tipo = resolver_tipo_en_TS(ARREGLO);
-			entrada_variable.desc.part_var.arr.ptero_tipo_base = resolver_tipo_en_TS(params.tipo_declaracion);
+			entrada_nueva_variable->ptr_tipo = resolver_tipo_en_TS(ARREGLO);
+			entrada_nueva_variable->desc.part_var.arr.ptero_tipo_base = resolver_tipo_en_TS(params.tipo_declaracion);
 			match(CCOR_ABR, 35);
 
 			if (lookahead_in(CCONS_ENT))
@@ -275,11 +313,13 @@ void declarador_init(set folset, parametros_declarador_init params) {
 			}
 			break;
 		default:
-			entrada_variable.ptr_tipo = resolver_tipo_en_TS(params.tipo_declaracion);
+			entrada_nueva_variable->ptr_tipo = resolver_tipo_en_TS(params.tipo_declaracion);
 	}
 
-	if (params.identificador != NULL)
-		insertarTS(entrada_variable);
+	if (params.identificador != NULL) {
+		strcpy(entrada_nueva_variable->nbre, params.identificador);
+		insertarTS();
+	}
 
 	test(folset, NADA, 48);
 }
@@ -664,17 +704,19 @@ retorno_variable variable(set folset) {
 	test(F_VARIABLE, folset | CCOR_ABR, 59);
 
 	if (lookahead() & CIDENT) {
-		identificador = token1.lexema;
+		identificador = (char *) malloc(sizeof(char) * TAM_LEXEMA);
+
+		strcpy(identificador, token1.lexema);
 		scanner();
 		indice_en_TS = en_tabla(identificador);
 
 		if (indice_en_TS == NIL) {
 			error_handler(71);
-			entrada_TS variable_no_existente;
-			strcpy(variable_no_existente.nbre, identificador);
-			variable_no_existente.clase = CLASVAR;
-			variable_no_existente.ptr_tipo = resolver_tipo_en_TS(ERROR);
-			indice_en_TS = insertarTS(variable_no_existente);
+			entrada_TS *variable_no_existente = nueva_entrada();
+			strcpy(variable_no_existente->nbre, identificador);
+			variable_no_existente->clase = CLASVAR;
+			variable_no_existente->ptr_tipo = resolver_tipo_en_TS(ERROR);
+			indice_en_TS = insertarTS();
 		}
 		retorno_variable.tipo = resolver_tipo(ts[ts[indice_en_TS].ets->ptr_tipo].ets->nbre);
 	} else {
@@ -704,17 +746,20 @@ retorno_llamada_funcion llamada_funcion(set folset)
 	retorno_llamada_funcion retorno_llamada_funcion;
 
 	if (lookahead() & CIDENT) {
-		char *identificador = token1.lexema;
+		char *identificador = (char *) malloc(sizeof(char) * TAM_LEXEMA);
+
+		strcpy(identificador, token1.lexema);
+
 		scanner();
 		indice_en_TS = en_tabla(identificador);
 
 		if (indice_en_TS == NIL) {
 			error_handler(71);
-			entrada_TS funcion_no_existente;
-			strcpy(funcion_no_existente.nbre, identificador);
-			funcion_no_existente.clase = CLASFUNC;
-			funcion_no_existente.ptr_tipo = resolver_tipo_en_TS(ERROR);
-			indice_en_TS = insertarTS(funcion_no_existente);
+			entrada_TS *funcion_no_existente = nueva_entrada();
+			strcpy(funcion_no_existente->nbre, identificador);
+			funcion_no_existente->clase = CLASFUNC;
+			funcion_no_existente->ptr_tipo = resolver_tipo_en_TS(ERROR);
+			indice_en_TS = insertarTS();
 		}
 		entrada_ts = ts[indice_en_TS].ets;
 		retorno_llamada_funcion.tipo = resolver_tipo(ts[ts[indice_en_TS].ets->ptr_tipo].ets->nbre);

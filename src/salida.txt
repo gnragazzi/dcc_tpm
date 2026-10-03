@@ -1,0 +1,124 @@
+Linea 1 - 
+Linea 2 - 
+Linea 3 - 
+Linea 4 - int glob = 10;
+Linea 5 - float tasa = 2.5;
+Linea 6 - char marca = 'Z';
+Linea 7 - int a, b, c;
+Linea 8 - int p1, p2, p3, p4;
+Linea 9 - int base;
+Linea 10 - int uno[1] = {42};
+Linea 11 - int duo[2] = {10, 20};
+Linea 12 - int pares[3] = {2, 4, 6};
+Linea 13 - float pesos[5];
+Linea 14 - int primos[] = {3, 5, 7};
+Linea 15 - 
+Linea 16 - void finit()
+Linea 17 - {
+Linea 18 - }
+Linea 19 - 
+Linea 20 - void fshow(char letra)
+Linea 21 - {
+Linea 22 -  int dato;
+Linea 23 -  cout << Ingrese dato: \n;
+Linea 24 -  cin >> dato;
+Linea 25 - 
+Linea 26 -  if(dato != 0)
+Linea 27 -  {
+Linea 28 -  cout << Letra:  << letra <<  Valor:  << dato << \n;
+	 Error 71: Identificador no declarado
+Linea 29 -  }
+Linea 30 - }
+Linea 31 - 
+Linea 32 - float fdiv(float x, float y)
+Linea 33 - {
+Linea 34 -  float res;
+Linea 35 -  if(y > 0.0)
+	 Error 71: Identificador no declarado
+Linea 36 -  {
+Linea 37 -  res = x / y;
+	 Error 71: Identificador no declarado
+Linea 38 -  }
+Linea 39 -  else
+Linea 40 -  {
+Linea 41 -  res = 0.0;
+Linea 42 -  }
+Linea 43 -  return res;
+Linea 44 - }
+Linea 45 - 
+Linea 46 - int fcalc(int n, int & total, int arr[])
+Linea 47 - {
+Linea 48 -  int i, sum, paso;
+Linea 49 -  i = 0;
+Linea 50 -  sum = 0;
+Linea 51 -  paso = +1;
+Linea 52 - 
+Linea 53 -  while(i < n && !(i == 5))
+	 Error 71: Identificador no declarado
+Linea 54 -  {
+Linea 55 -  if(i <= 2)
+Linea 56 -  {
+Linea 57 -  sum = sum + arr[i] * 1 / paso;
+	 Error 71: Identificador no declarado
+	 Error 78: La variable no es de tipo arreglo
+Linea 58 -  }
+Linea 59 -  else
+Linea 60 -  {
+Linea 61 -  sum = sum + (i * 2) - paso;
+Linea 62 -  }
+Linea 63 -  i = i + paso;
+Linea 64 -  ;
+Linea 65 -  }
+Linea 66 - 
+Linea 67 -  total = sum;
+	 Error 71: Identificador no declarado
+Linea 68 -  return sum;
+Linea 69 - }
+Linea 70 - 
+Linea 71 - void main()
+Linea 72 - {
+Linea 73 -  int cant, res;
+Linea 74 -  float val, ratio;
+Linea 75 -  char opt;
+Linea 76 - 
+Linea 77 -  cant = 3;
+Linea 78 -  base = 10;
+Linea 79 -  opt = 'X';
+Linea 80 -  val = -2.5;
+Linea 81 - 
+Linea 82 -  finit();
+Linea 83 - 
+Linea 84 -  cout << Iniciando ejecucion realista\n;
+Linea 85 - 
+Linea 86 -  cin >> cant >> base;
+Linea 87 -  cin >> a >> b >> c;
+Linea 88 - 
+Linea 89 -  res = fcalc(cant, base, pares);
+Linea 90 -  ratio = fdiv(tasa, 1.25);
+Linea 91 - 
+Linea 92 -  {
+Linea 93 -  int temp;
+Linea 94 -  temp = res + base;
+Linea 95 - 
+Linea 96 -  if(temp >= 20 || temp == 10 || temp <= 5)
+Linea 97 -  {
+Linea 98 -  cout << Resultado favorable:  << temp << \n;
+Linea 99 -  }
+Linea 100 -  else
+Linea 101 -  {
+Linea 102 -  cout << Resultado menor:  << temp << \n;
+Linea 103 -  }
+Linea 104 -  }
+Linea 105 - 
+Linea 106 -  {
+Linea 107 -  int local;
+Linea 108 -  }
+Linea 109 - 
+Linea 110 -  a = b = c = 0;
+Linea 111 - 
+Linea 112 -  while(cant > 0)
+Linea 113 -  cant = cant - 1;
+Linea 114 - 
+Linea 115 -  fshow(opt);
+Linea 116 -  cout << Fin de programa con ratio:  << ratio << \n;
+Linea 117 - }

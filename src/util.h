@@ -1,5 +1,10 @@
+#ifndef UTIL_H
+#define UTIL_H
+
 #include "var_globales.h"
 #include <stdio.h>
+
+#include "ts.h"
 
 #define T_VOID "void"
 #define T_CHAR "char"
@@ -8,22 +13,24 @@
 #define T_ARREGLO "TIPOARREGLO"
 #define T_ERROR "TIPOERROR"
 
-enum boolean {FALSE, TRUE};
-enum tipo {STRING = -3, ERROR = -2, VOID = -1, ARREGLO = 0, CHAR, INT, FLOAT};
-enum tipo_pasaje {VALOR, REFERENCIA};
+enum boolean { FALSE, TRUE };
+
+enum tipo { STRING = -3, ERROR = -2, VOID = -1, ARREGLO = 0, CHAR, INT, FLOAT };
+
+enum tipo_pasaje { VALOR, REFERENCIA };
 
 typedef struct parametro {
     enum tipo tipo_dato;
     enum tipo tipo_base;
     enum boolean es_clase_variable;
-    struct parametro  *siguiente;
+    struct parametro *siguiente;
 } Parametro;
 
 typedef struct {
     Parametro *primer_parametro;
     Parametro *ultimo_parametro;
     int cantidad;
-}Lista_Parametros;
+} Lista_Parametros;
 
 void iniciar_lista_parametros(Lista_Parametros *lista);
 
@@ -35,10 +42,13 @@ token *sbol;
 extern FILE *yyin;
 
 void scanner();
+
 void init_parser(int, char **);
 
 void match(set, int);
+
 set lookahead();
+
 set lookahead_in(set);
 
 void test(set, set, int);
@@ -54,3 +64,7 @@ enum boolean param1_es_coercionable_a_param2(enum tipo param1, enum tipo param2)
 void lanzar_error_si_corresponde(enum tipo a);
 
 enum tipo resolver_operador(enum tipo tipo_1, enum tipo tipo_2);
+
+entrada_TS *nueva_entrada();
+
+#endif

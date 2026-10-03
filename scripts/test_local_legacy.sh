@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # Corre localmente los mismos tests que .github/workflows/ci.yml.
-# Uso: ./scripts/test_local.sh
+# Uso: ./scripts/test_local_legacy.sh
 set -euo pipefail
-
-trim_lineas() { sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' | sed '/^$/d'; }
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SRC_DIR="$ROOT_DIR/src"
@@ -49,8 +47,8 @@ for entrega_dir in tests/entrega*/; do
       continue
     fi
 
-    got="$(echo "$out" | grep -E "Error [0-9]+:" | trim_lineas || true)"
-    want="$(trim_lineas < "$esperado")"
+    got="$(echo "$out" | grep -E "Error [0-9]+:" || true)"
+    want="$(cat "$esperado")"
     if [ "$got" != "$want" ]; then
       echo "ERROR: [$entrega/invalidos] $f: la secuencia de errores no coincide con $esperado"
       diff <(echo "$want") <(echo "$got") || true

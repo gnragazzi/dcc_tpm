@@ -1,3 +1,6 @@
+#ifndef PARSER_H
+#define PARSER_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -145,3 +148,6 @@ retorno_variable variable(set folset);
 retorno_llamada_funcion llamada_funcion(set folset);
 retorno_lista_expresiones lista_expresiones(set folset);
 retorno_constante constante(set folset);
+
+
+#endif

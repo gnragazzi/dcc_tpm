@@ -1,3 +1,6 @@
+#ifndef VAR_GLOBALES_H
+#define VAR_GLOBALES_H
+
 #define TAM_LEXEMA 200
 
 typedef long long set;
@@ -15,3 +18,6 @@ int nro_linea;
 token token1;
 
 extern int yylex(void);
+
+
+#endif

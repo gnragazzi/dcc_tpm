@@ -201,3 +201,7 @@ enum tipo resolver_operador(enum tipo tipo_1, enum tipo tipo_2){
 
     return ERROR;
 }
+
+entrada_TS *nueva_entrada() {
+	return inf_id;
+}

@@ -4,5 +4,6 @@
 int a[] = {1,2,3};
 
 void main(){
-    int b = a[4] + 1; // no chequeamos (en análisis semántico) que el índice esté entre 0 y n-1
+    int b = 1;
+    a[0] = b; 
 }
