@@ -1,9 +1,5 @@
-void main(){
-    char caracter;
-    int entero;
-    float flotante;
-
-    flotante = caracter;
-    flotante = entero;
-    entero = caracter;
+void main()
+{
+    int x;
+    cin >> 5;
 }

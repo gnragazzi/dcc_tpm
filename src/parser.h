@@ -43,6 +43,7 @@ typedef struct {
 
 typedef struct {
     int indice_en_TS;
+    enum boolean origen_proposicion_entrada;
 }parametros_variable;
 
 typedef struct {

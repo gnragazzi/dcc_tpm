@@ -566,10 +566,10 @@ void proposicion_e_s(set folset)
 	{
 		case CIN:
 			parametros_variable parametros_variable;
+			parametros_variable.origen_proposicion_entrada = TRUE;
 			scanner();
 
 			match(CSHR, 30);
-
 			retorno_variable variable_1 = variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA, parametros_variable);
 
 			while(lookahead_in(F_RESTO_PROP_IN | F_VARIABLE))
@@ -753,36 +753,51 @@ retorno_factor factor(set folset)
 	test(F_FACTOR, folset, 57);
 	retorno_factor retorno_factor;
 
-	switch(lookahead())
-	{
+	switch (lookahead()) {
 		case CIDENT: {
 			char *identificador = (char *) malloc(sizeof(char) * TAM_LEXEMA);
 			strcpy(identificador, token1.lexema);
-			scanner();
+			enum boolean es_funcion = FALSE;
+			enum boolean identificador_esta_en_TS;
 
 			int indice_en_TS = en_tabla(identificador);
 
-			if (indice_en_TS == NIL) {
+			if (indice_en_TS != NIL) {
+				es_funcion = ts[indice_en_TS].ets->clase == CLASFUNC;
+				identificador_esta_en_TS = TRUE;
+			} else {
 				error_handler(71);
 				entrada_TS *variable_no_existente = nueva_entrada();
 				strcpy(variable_no_existente->nbre, identificador);
-				variable_no_existente->clase = CLASVAR;
+				variable_no_existente->clase = -1;
 				variable_no_existente->ptr_tipo = resolver_tipo_en_TS(ERROR);
 				indice_en_TS = insertarTS();
+				identificador_esta_en_TS = FALSE;
 			}
 			free(identificador);
 
-			if(lookahead_in(CPAR_ABR)) {
+			scanner();
+			if (es_funcion || (!identificador_esta_en_TS && lookahead_in(CPAR_ABR))) {
 				parametros_llamada_funcion parametros_llamada_funcion;
 				parametros_llamada_funcion.indice_en_TS = indice_en_TS;
+
+				if (!identificador_esta_en_TS) {
+					entrada_TS *entrada = ts[indice_en_TS].ets;
+					entrada->clase = CLASFUNC;
+				}
 
 				retorno_llamada_funcion llamada_funcion_1 = llamada_funcion(folset, parametros_llamada_funcion);
 				retorno_factor.tipo = llamada_funcion_1.tipo;
 				retorno_factor.es_clase_variable = FALSE;
-			}
-			else {
+			} else {
 				parametros_variable parametros_variable;
 				parametros_variable.indice_en_TS = indice_en_TS;
+				parametros_variable.origen_proposicion_entrada = FALSE;
+
+				if (!identificador_esta_en_TS) {
+					entrada_TS *entrada = ts[indice_en_TS].ets;
+					entrada->clase = CLASVAR;
+				}
 
 				retorno_variable variable_1 = variable(folset, parametros_variable);
 				retorno_factor.tipo = variable_1.tipo;
@@ -838,8 +853,34 @@ retorno_factor factor(set folset)
 retorno_variable variable(set folset, parametros_variable params) {
 	retorno_variable retorno_variable;
 
-	// test(F_VARIABLE, folset | CCOR_ABR, 59);
-	retorno_variable.tipo = resolver_tipo(ts[ts[params.indice_en_TS].ets->ptr_tipo].ets->nbre);
+	if (params.origen_proposicion_entrada) {
+		test(F_VARIABLE, folset | CCOR_ABR, 59);
+
+		if (lookahead() & CIDENT) {
+			char *identificador = (char *) malloc(sizeof(char) * TAM_LEXEMA);
+
+			strcpy(identificador, token1.lexema);
+			scanner();
+			params.indice_en_TS = en_tabla(identificador);
+
+			if (params.indice_en_TS == NIL) {
+				error_handler(71);
+				entrada_TS *variable_no_existente = nueva_entrada();
+				strcpy(variable_no_existente->nbre, identificador);
+				variable_no_existente->clase = CLASVAR;
+				variable_no_existente->ptr_tipo = resolver_tipo_en_TS(ERROR);
+				params.indice_en_TS = insertarTS();
+			}
+			free(identificador);
+		} else {
+			error_handler(17);
+			params.indice_en_TS = NIL;
+			retorno_variable.tipo = ERROR;
+		}
+	}
+
+	if (params.indice_en_TS != NIL)
+		retorno_variable.tipo = resolver_tipo(ts[ts[params.indice_en_TS].ets->ptr_tipo].ets->nbre);
 
 	if (lookahead_in(CCOR_ABR)) {
 		if (params.indice_en_TS != NIL && retorno_variable.tipo != ARREGLO)
