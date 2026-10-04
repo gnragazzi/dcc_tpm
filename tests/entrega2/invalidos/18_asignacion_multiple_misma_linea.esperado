@@ -1,3 +1,4 @@
 	 Error 81: No se permite la asignacion de arreglos como un todo
+Error 83: Los tipos de ambos lados de la asignacion deben ser estructuralmente equivalentes
 	 Error 82: En el lado izquierdo de una asignacion debe haber una variable
 	 Error 82: En el lado izquierdo de una asignacion debe haber una variable
