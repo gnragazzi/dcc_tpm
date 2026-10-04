@@ -1,5 +1,5 @@
-void main()
-{
-    int x;
-    cin >> 5;
+void main(){
+    int a;
+
+    a = b + 1;
 }

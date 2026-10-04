@@ -659,6 +659,11 @@ retorno_expresion expresion(set folset)
 				scanner();
 				retorno_expresion_simple expresion_simple_2 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
 				clase_izquierda_asignacion_es_variable = expresion_simple_2.es_clase_variable;
+
+				if (!param1_es_coercionable_a_param2(expresion_simple_2.tipo, tipo_izquierda_asignacion)) {
+					error_handler(83);
+				}
+
 				tipo_izquierda_asignacion = expresion_simple_2.tipo;
 
 				if (expresion_simple_2.tipo == ARREGLO) {
@@ -706,10 +711,10 @@ retorno_expresion_simple expresion_simple(set folset) {
 
 	if (hubo_operador_previo && termino_1.tipo == STRING) {
 		error_handler(94);
-		retorno_expresion_simple.tipo = ERROR;
+		termino_1.tipo = ERROR;
 	}
 
-	retorno_expresion_simple.tipo = !hubo_operador_previo && es_tipo_base(termino_1.tipo) || termino_1.tipo == ARREGLO? termino_1.tipo : ERROR;
+	retorno_expresion_simple.tipo = (termino_1.tipo == ARREGLO && hubo_operador_previo) ? ERROR : termino_1.tipo;
 	retorno_expresion_simple.es_clase_variable = !hubo_operador_previo && termino_1.es_clase_variable;
 
 
