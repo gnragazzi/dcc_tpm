@@ -62,4 +62,6 @@ entrada_TS *nueva_entrada();
 
 void insertar_parametro_en_funcion(int posicion_tabla_simbolos, Parametro_en_TS parametro_en_ts);
 
+void chequear_igualdad_parametro_actual_vs_parametro_TS(Parametro_actual parametro_actual, tipo_inf_res *parametro_formal);
+
 #endif

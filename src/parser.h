@@ -94,21 +94,25 @@ typedef struct {
 
 typedef struct {
     enum tipo tipo;
+    enum tipo tipo_base;
     enum boolean es_clase_variable;
 } retorno_expresion;
 
 typedef struct {
     enum tipo tipo;
+    enum tipo tipo_base;
     enum boolean es_clase_variable;
 } retorno_expresion_simple;
 
 typedef struct {
     enum tipo tipo;
+    enum tipo tipo_base;
     enum boolean es_clase_variable;
 } retorno_termino;
 
 typedef struct {
     enum tipo tipo;
+    enum tipo tipo_base;
     enum boolean es_clase_variable;
 } retorno_factor;
 
