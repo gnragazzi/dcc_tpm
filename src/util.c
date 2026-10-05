@@ -93,46 +93,6 @@ void test(set c1, set c2, int ne)
 	}
 }
 
-void iniciar_lista_parametros(Lista_Parametros *lista) {
-	lista->primer_parametro = NULL;
-	lista->ultimo_parametro = NULL;
-	lista->cantidad = 0;
-}
-
-void agregar_parametro(Lista_Parametros *lista, enum tipo tipo_dato, enum tipo tipo_base, enum boolean es_clase_variable) {
-	Parametro *nuevo_parametro = (Parametro *) malloc(sizeof(Parametro));
-
-	nuevo_parametro->tipo_dato = tipo_dato;
-	if (tipo_dato == ARREGLO) {
-		nuevo_parametro->tipo_base = tipo_base;
-	}
-	nuevo_parametro->es_clase_variable = es_clase_variable;
-	nuevo_parametro->siguiente = NULL;
-
-	if (lista->cantidad == 0) {
-		lista->primer_parametro = lista->ultimo_parametro = nuevo_parametro;
-	}else {
-		lista->ultimo_parametro->siguiente = nuevo_parametro;
-        lista->ultimo_parametro = nuevo_parametro;
-	}
-
-	lista->cantidad = lista->cantidad + 1;
-
-	return;
-}
-
-void limpiar_lista(Lista_Parametros *lista) {
-	if (lista->cantidad == 0)
-		return;
-
-	Parametro *proximo = lista->primer_parametro;
-	while (proximo != NULL) {
-		Parametro *aux = proximo->siguiente;
-		free(proximo);
-		proximo = aux;
-	}
-}
-
 enum boolean es_tipo_base(enum tipo tipo) {return tipo > 0;}
 
 enum tipo resolver_tipo(char *nombre){
@@ -206,6 +166,28 @@ entrada_TS *nueva_entrada() {
 	return inf_id;
 }
 
-// enum boolean identificador_es_funcion(char *nombre) {
-// 	[en_tabla(nombre)];
-// }
+void insertar_parametro_en_funcion(int posicion_tabla_simbolos, Parametro_en_TS parametro_en_ts) {
+	entrada_TS *entrada_funcion = ts[posicion_tabla_simbolos].ets;
+	tipo_inf_res *nuevo_parametro = (tipo_inf_res *) malloc(sizeof(tipo_inf_res));
+
+	nuevo_parametro->ptero_tipo = parametro_en_ts.puntero_tipo_dato;
+	nuevo_parametro->tipo_pje = parametro_en_ts.tipo_pasaje;
+	nuevo_parametro->ptero_tipo_base = parametro_en_ts.puntero_tipo_base;
+	nuevo_parametro->ptr_sig = NULL;
+
+	int cantidad_parametros = entrada_funcion->desc.part_var.sub.cant_par;
+
+	if (cantidad_parametros == 0) {
+		entrada_funcion->desc.part_var.sub.ptr_inf_res = nuevo_parametro;
+	}else {
+		tipo_inf_res *ultimo_parametro = entrada_funcion->desc.part_var.sub.ptr_inf_res;
+
+		for (int i = 1; i < cantidad_parametros; i++) {
+			ultimo_parametro = ultimo_parametro->ptr_sig;
+		}
+
+		ultimo_parametro->ptr_sig = nuevo_parametro;
+	}
+
+	entrada_funcion->desc.part_var.sub.cant_par++;
+}

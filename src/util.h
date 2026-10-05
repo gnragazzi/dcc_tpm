@@ -19,24 +19,17 @@ enum tipo { STRING = -3, ERROR = -2, VOID = -1, ARREGLO = 0, CHAR, INT, FLOAT };
 
 enum tipo_pasaje { VALOR, REFERENCIA };
 
-typedef struct parametro {
+typedef struct parametro_en_ts {
+    int puntero_tipo_dato;
+    enum tipo_pasaje tipo_pasaje;
+    int puntero_tipo_base;
+} Parametro_en_TS;
+
+typedef struct parametro_actual {
     enum tipo tipo_dato;
     enum tipo tipo_base;
     enum boolean es_clase_variable;
-    struct parametro *siguiente;
-} Parametro;
-
-typedef struct {
-    Parametro *primer_parametro;
-    Parametro *ultimo_parametro;
-    int cantidad;
-} Lista_Parametros;
-
-void iniciar_lista_parametros(Lista_Parametros *lista);
-
-void agregar_parametro(Lista_Parametros *lista, enum tipo tipo_dato, enum tipo tipo_base, enum boolean es_clase_variable);
-
-void limpiar_lista(Lista_Parametros *lista);
+} Parametro_actual;
 
 token *sbol;
 extern FILE *yyin;
@@ -66,5 +59,7 @@ void lanzar_error_si_corresponde(enum tipo a);
 enum tipo resolver_tipo_operador(enum tipo tipo_1, enum tipo tipo_2);
 
 entrada_TS *nueva_entrada();
+
+void insertar_parametro_en_funcion(int posicion_tabla_simbolos, Parametro_en_TS parametro_en_ts);
 
 #endif

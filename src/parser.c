@@ -121,6 +121,9 @@ void especificador_declaracion(set folset, parametros_especificador_declaracion 
 				entrada_nueva_funcion->clase = CLASFUNC;
 				entrada_nueva_funcion->ptr_tipo = resolver_tipo_en_TS(params.tipo_declaracion);
 
+				entrada_nueva_funcion->desc.part_var.sub.cant_par = 0;
+				entrada_nueva_funcion->desc.part_var.sub.ptr_inf_res = NULL;
+
 				parametros_definicion_funcion.posicion_tabla_simbolos = insertarTS();
 			}
 
@@ -221,6 +224,7 @@ void declaracion_parametro(set folset, parametros_declaracion_parametro params) 
 		error_handler(17);
 	}
 
+	Parametro_en_TS parametro_en_ts;
 
 	if (lookahead_in(CCOR_ABR)) {
 		scanner();
@@ -233,22 +237,27 @@ void declaracion_parametro(set folset, parametros_declaracion_parametro params) 
 		if (identificador != NULL) {
 			strcpy(nueva_variable->nbre, identificador);
 			nueva_variable->clase = CLASPAR;
-			nueva_variable->ptr_tipo = resolver_tipo_en_TS(ARREGLO);
-			nueva_variable->desc.part_var.param.ptero_tipo_base = resolver_tipo_en_TS(parametro_tipo);
-			nueva_variable->desc.part_var.param.tipo_pje = VALOR;
+			parametro_en_ts.puntero_tipo_dato = nueva_variable->ptr_tipo = resolver_tipo_en_TS(ARREGLO);
+			parametro_en_ts.puntero_tipo_base = nueva_variable->desc.part_var.param.ptero_tipo_base = resolver_tipo_en_TS(parametro_tipo);
+			parametro_en_ts.tipo_pasaje = nueva_variable->desc.part_var.param.tipo_pje = VALOR;
 
 			insertarTS();
 		}
+
 	} else {
 		if (identificador != NULL) {
 			strcpy(nueva_variable->nbre, identificador);
 			nueva_variable->clase = CLASPAR;
-			nueva_variable->ptr_tipo = resolver_tipo_en_TS(parametro_tipo);
-			nueva_variable->desc.part_var.param.tipo_pje = tipo_pasaje;
+			parametro_en_ts.puntero_tipo_dato = nueva_variable->ptr_tipo = resolver_tipo_en_TS(parametro_tipo);
+			parametro_en_ts.tipo_pasaje = nueva_variable->desc.part_var.param.tipo_pje = tipo_pasaje;
+			parametro_en_ts.puntero_tipo_base = NIL;
 
 			insertarTS();
 		}
+
 	}
+
+	insertar_parametro_en_funcion(params.posicion_tabla_simbolos, parametro_en_ts);
 
 	test(folset, NADA, 45);
 
@@ -990,7 +999,14 @@ retorno_llamada_funcion llamada_funcion(set folset, parametros_llamada_funcion p
 	scanner();
 
 	if (lookahead_in(F_LISTA_EXPRESIONES)) {
-		retorno_lista_expresiones lista_expresiones_1 = lista_expresiones(folset | CPAR_CIE);
+		parametros_lista_expresiones parametros_lista_expresiones;
+		parametros_lista_expresiones.indice_en_TS = params.indice_en_TS;
+
+		lista_expresiones(folset | CPAR_CIE, parametros_lista_expresiones);
+	}else {
+		enum tipo tipo_declarado = resolver_tipo(ts[entrada_ts->ptr_tipo].ets->nbre);
+		if (tipo_declarado != ERROR && entrada_ts->desc.part_var.sub.cant_par > 0)
+			error_handler(90);
 	}
 
 	match(CPAR_CIE, 21);
@@ -1000,10 +1016,24 @@ retorno_llamada_funcion llamada_funcion(set folset, parametros_llamada_funcion p
 }
 
 
-retorno_lista_expresiones lista_expresiones(set folset) {
+void lista_expresiones(set folset, parametros_lista_expresiones params) {
+	entrada_TS *entrada_funcion = ts[params.indice_en_TS].ets;
+	enum tipo tipo_declarado = resolver_tipo(ts[entrada_funcion->ptr_tipo].ets->nbre);
+	int cantidad_parametros_declarados = entrada_funcion->desc.part_var.sub.cant_par;
+	int contador_parametros_actuales = 0;
+	tipo_inf_res *siguiente_parametro_lista_funcion = entrada_funcion->desc.part_var.sub.ptr_inf_res;
+	enum boolean corresponde_chequear_parametro = cantidad_parametros_declarados > contador_parametros_actuales;
+
 	retorno_expresion expresion_1 = expresion(folset | CCOMA | F_EXPRESION);
+	contador_parametros_actuales++;
+
 	if (expresion_1.tipo == STRING)
 		error_handler(94);
+
+	if (tipo_declarado != ERROR && corresponde_chequear_parametro) {
+		Parametro_actual parametro_actual;
+
+	}
 
 	while (lookahead_in(CCOMA | F_EXPRESION)) {
 		match(CCOMA, 64);
@@ -1011,7 +1041,17 @@ retorno_lista_expresiones lista_expresiones(set folset) {
 
 		if (expresion_n.tipo == STRING)
 			error_handler(94);
+
+		corresponde_chequear_parametro = cantidad_parametros_declarados > contador_parametros_actuales;
+		contador_parametros_actuales++;
+
+		if (tipo_declarado != ERROR && corresponde_chequear_parametro) {
+
+		}
 	}
+
+	if (tipo_declarado != ERROR && cantidad_parametros_declarados != contador_parametros_actuales)
+		error_handler(90);
 }
 
 
