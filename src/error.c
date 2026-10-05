@@ -99,13 +99,13 @@ void error_print(int ne)
 		case 85: printf("\t Error %d: El tipo de la funcion main() debe ser void\n", ne); break;																			
 		case 86: printf("\t Error %d: La funcion main() no lleva argumento\n", ne); break;																					
 		case 87: printf("\t Error %d: El tipo del valor de retorno no coincide con el tipo de la funcion\n", ne); break;											
-		case 88: printf("\t Error %d: Falta return\n", ne); break;																													
-		case 89: printf("\t Error %d: Un procedimiento no lleva una sentencia de retorno\n", ne); break;																
+		case 88: printf("\t Error %d: Falta return\n", ne); break;
+		case 89: printf("\t Error %d: Un procedimiento no lleva una sentencia de retorno\n", ne); break;
 		case 90: printf("\t Error %d: La CANTIDAD de parametros actuales no coincide con la cantidad de parametros formales\n", ne); break;					
 		case 91: printf("\t Error %d: El TIPO de los parametros actuales no coincide con el de los parametros formales\n", ne); break;						
 		case 92: printf("\t Error %d: No se permite <tipo> & <id_arreglo> [] en la definicion de un parametro\n", ne); break;									
 		case 93: printf("\t Error %d: Si el pasaje es por REFERENCIA, el parametro real debe ser una variable\n", ne); break;									
-		case 94: printf("\t Error %d: La constante string solo puede aparecer en las proposiciones de E/S\n", ne); break;											
+		case 94: printf("\t Error %d: La constante string solo puede aparecer en las proposiciones de E/S\n", ne); break;
 		case 95: printf("\t Error %d: Las proposiciones de E/S solo aceptan variables y/o expresiones de tipo char, int y float\n", ne); break;			
 		case 96: printf("\t Error %d: Los operandos de los operadores logicos, relacionales o aritméticos solo pueden ser de tipo char, int o float\n", ne); break;
 		case 97: printf("\t Error %d: Las condiciones de las prop. de seleccion e iteracion solo pueden ser de tipo char, int y float\n", ne); break;	

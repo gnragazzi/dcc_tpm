@@ -3,6 +3,7 @@
 
 int fun(){
     a = 1;
+    return 1;
 }
 
 void main(){

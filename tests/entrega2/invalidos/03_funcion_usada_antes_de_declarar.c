@@ -7,5 +7,7 @@ void main(){
 }
 
 int fun(){
+    int b = 2;
     a = 1;
+    return b;
 }

@@ -1,5 +1,4 @@
-void main(){
-    int a;
-
-    a = b + 1;
+void main()
+{
+    int a
 }
