@@ -758,10 +758,13 @@ retorno_expresion expresion(set folset)
 			case CMAYOR:
 			case CMAIG: {
 				scanner();
+
 				retorno_expresion_simple expresion_simple_3 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
 				clase_izquierda_asignacion_es_variable = FALSE;
 				tipo_izquierda_asignacion = expresion_simple_3.tipo;
-				retorno_expresion.tipo = resolver_tipo_operador(retorno_expresion.tipo, expresion_simple_3.tipo);
+
+				enum tipo tipo_coercion_operando =resolver_tipo_operador(retorno_expresion.tipo, expresion_simple_3.tipo);
+				retorno_expresion.tipo = tipo_coercion_operando != ERROR ? INT : ERROR;
 
 				break;
 			}
@@ -802,11 +805,14 @@ retorno_expresion_simple expresion_simple(set folset) {
 
 	while (lookahead_in(F_RESTO_EXPRESION_SIMPLE)) {
 		retorno_expresion_simple.es_clase_variable = FALSE;
+		enum boolean es_operador_logico_or = token1.codigo == COR;
 
 		scanner();
 		retorno_termino termino_n = termino(folset | F_RESTO_EXPRESION_SIMPLE);
 
-		retorno_expresion_simple.tipo = resolver_tipo_operador(retorno_expresion_simple.tipo, termino_n.tipo);
+		enum tipo tipo_coercion_operando = resolver_tipo_operador(retorno_expresion_simple.tipo, termino_n.tipo);
+
+		retorno_expresion_simple.tipo = es_operador_logico_or && tipo_coercion_operando != ERROR? INT : tipo_coercion_operando;
 		retorno_expresion_simple.tipo_base = ERROR;
 	}
 
@@ -827,10 +833,14 @@ retorno_termino termino(set folset)
 	while(lookahead_in(F_RESTO_TERMINO))
 	{
 		retorno_termino.es_clase_variable = FALSE;
+		enum boolean es_operador_logico_and = token1.codigo == CAND;
+
 		scanner();
 		retorno_factor factor_n = factor(folset | F_RESTO_TERMINO | F_FACTOR);
 
-		retorno_termino.tipo = resolver_tipo_operador(retorno_termino.tipo, factor_n.tipo);
+		enum tipo tipo_coercion_operando = resolver_tipo_operador(retorno_termino.tipo, factor_n.tipo);
+
+		retorno_termino.tipo = es_operador_logico_and && tipo_coercion_operando != ERROR? INT : tipo_coercion_operando;
 		retorno_termino.tipo_base = ERROR;
 	}
 
