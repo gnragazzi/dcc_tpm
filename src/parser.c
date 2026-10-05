@@ -363,6 +363,10 @@ void declarador_init(set folset, parametros_declarador_init params) {
 			if (lookahead_in(CCONS_ENT)) {
 				valor_constante_entera = atoi(token1.lexema);
 				scanner();
+
+				if (valor_constante_entera == 0) {
+					error_handler(75);
+				}
 			}
 
 			match(CCOR_CIE, 22);
