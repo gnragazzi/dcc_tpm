@@ -926,7 +926,7 @@ retorno_factor factor(set folset)
 			scanner();
 			retorno_expresion expresion_2 = expresion(folset);
 			lanzar_error_si_corresponde(expresion_2.tipo);
-			retorno_factor.tipo = es_tipo_base(expresion_2.tipo) ? expresion_2.tipo : ERROR;
+			retorno_factor.tipo = es_tipo_base(expresion_2.tipo) ? INT : ERROR;
 			retorno_factor.es_clase_variable = FALSE;
 
 			break;
