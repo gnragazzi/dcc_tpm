@@ -193,21 +193,32 @@ void insertar_parametro_en_funcion(int posicion_tabla_simbolos, Parametro_en_TS 
 }
 
 void chequear_igualdad_parametro_actual_vs_parametro_TS(Parametro_actual parametro_actual, tipo_inf_res *parametro_formal) {
-	enum tipo tipo_base_parametro_formal = resolver_tipo(ts[parametro_formal->ptero_tipo].ets->nbre);
-	enum tipo tipo_base_base_parametro_formal = tipo_base_parametro_formal == ARREGLO ? resolver_tipo(ts[parametro_formal->ptero_tipo_base].ets->nbre) : ERROR;
+	enum tipo tipo_formal = resolver_tipo(ts[parametro_formal->ptero_tipo].ets->nbre);
 
 	if (parametro_formal->tipo_pje == REFERENCIA && !parametro_actual.es_clase_variable) {
 		error_handler(93);
+		return;
 	}
-	if (parametro_actual.tipo_dato == ARREGLO && parametro_formal->tipo_pje != VALOR) {
-		error_handler(92);
+
+	if (tipo_formal == ARREGLO) {
+		if (parametro_actual.tipo_dato != ARREGLO) {
+			error_handler(98);
+		} else if (parametro_actual.tipo_base != resolver_tipo(ts[parametro_formal->ptero_tipo_base].ets->nbre)) {
+			error_handler(91);
+		}
+		return;
 	}
-	if (tipo_base_parametro_formal == ARREGLO && parametro_actual.tipo_dato != ARREGLO) {
-		error_handler(98);
-	} if (parametro_actual.tipo_dato == ARREGLO && !param1_es_coercionable_a_param2(parametro_actual.tipo_base, tipo_base_base_parametro_formal)) {
+
+	if (parametro_actual.tipo_dato == ARREGLO) {
 		error_handler(91);
+		return;
 	}
-	if (parametro_actual.tipo_dato != ARREGLO && tipo_base_parametro_formal != ARREGLO && !param1_es_coercionable_a_param2(parametro_actual.tipo_dato, tipo_base_parametro_formal)) {
+
+	enum boolean tipos_compatibles = parametro_formal->tipo_pje == REFERENCIA
+		? parametro_actual.tipo_dato == tipo_formal
+		: param1_es_coercionable_a_param2(parametro_actual.tipo_dato, tipo_formal);
+
+	if (!tipos_compatibles) {
 		error_handler(91);
 	}
 }
