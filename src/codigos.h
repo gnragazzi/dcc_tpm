@@ -1,3 +1,6 @@
+#ifndef CODIGOS_H
+#define CODIGOS_H
+
 /***********************************************************
            CODIGOS PARA UTILIZAR EN EL SCANNER
 ***********************************************************/
@@ -48,3 +51,6 @@
 
 #define CEOF			(UNO << 40)
 #define SEGUIR			(UNO << 41)
+
+
+#endif

@@ -1,3 +1,6 @@
+#ifndef TS_H
+#define TS_H
+
 /*
 ======================================================================
 	DISEÑO Y CONSTRUCCIÓN DE COMPILADORES
@@ -154,3 +157,6 @@ void popTB();
 void pushTB();
 void pop_nivel();
 int get_nivel();
+
+
+#endif

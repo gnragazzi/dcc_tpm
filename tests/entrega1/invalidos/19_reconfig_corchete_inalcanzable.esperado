@@ -1,7 +1,9 @@
 	 Error 23: Falta ;
 	 Error 63: Simbolo inesperado despues de constante,
+     Error 82: En el lado izquierdo de una asignacion debe haber una variable
 	 Error 56: Simbolo inesperado o falta simb. al comienzo de expresion simple
 	 Error 57: Simbolo inesperado o falta simb. al comienzo de factor
+Error 83: Los tipos de ambos lados de la asignacion deben ser estructuralmente equivalentes	 
 	 Error 23: Falta ;
 	 Error 63: Simbolo inesperado despues de constante,
 	 Error 23: Falta ;

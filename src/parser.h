@@ -1,3 +1,6 @@
+#ifndef PARSER_H
+#define PARSER_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,7 +10,7 @@
 #include "ts.h"
 
 typedef struct {
-    char *lexema_identificador;
+    char *identificador;
     enum tipo tipo_declaracion;
 } parametros_especificador_declaracion;
 
@@ -26,15 +29,30 @@ typedef struct {
 
 typedef struct {
     enum tipo tipo_declaracion;
+    char *identificador;
 } parametros_declaracion_variable;
 
 typedef struct {
     enum tipo tipo_declaracion;
+    char * identificador;
 } parametros_declarador_init;
 
 typedef struct {
     enum tipo tipo_declaracion;
 } parametros_lista_declaraciones_init;
+
+typedef struct {
+    int indice_en_TS;
+    enum boolean origen_proposicion_entrada;
+}parametros_variable;
+
+typedef struct {
+    int indice_en_TS;
+} parametros_llamada_funcion;
+
+typedef struct {
+    int indice_en_TS;
+} parametros_lista_expresiones;
 
 typedef struct {
     enum tipo tipo;
@@ -76,35 +94,36 @@ typedef struct {
 
 typedef struct {
     enum tipo tipo;
+    enum tipo tipo_base;
     enum boolean es_clase_variable;
 } retorno_expresion;
 
 typedef struct {
     enum tipo tipo;
+    enum tipo tipo_base;
     enum boolean es_clase_variable;
 } retorno_expresion_simple;
 
 typedef struct {
     enum tipo tipo;
+    enum tipo tipo_base;
     enum boolean es_clase_variable;
 } retorno_termino;
 
 typedef struct {
     enum tipo tipo;
+    enum tipo tipo_base;
     enum boolean es_clase_variable;
 } retorno_factor;
 
 typedef struct {
     enum tipo tipo;
+    enum tipo tipo_base;
 } retorno_variable;
 
 typedef struct {
     enum tipo tipo;
 } retorno_llamada_funcion;
-
-typedef struct {
-    Lista_Parametros lista;
-} retorno_lista_expresiones;
 
 typedef struct {
     enum tipo tipo;
@@ -139,7 +158,10 @@ retorno_expresion expresion(set folset);
 retorno_expresion_simple expresion_simple(set folset);
 retorno_termino termino(set folset);
 retorno_factor factor(set folset);
-retorno_variable variable(set folset);
-retorno_llamada_funcion llamada_funcion(set folset);
-retorno_lista_expresiones lista_expresiones(set folset);
+retorno_variable variable(set folset, parametros_variable);
+retorno_llamada_funcion llamada_funcion(set folset, parametros_llamada_funcion);
+void lista_expresiones(set folset, parametros_lista_expresiones);
 retorno_constante constante(set folset);
+
+
+#endif
