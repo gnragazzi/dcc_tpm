@@ -1,2 +1,4 @@
 	 Error 59: Simbolo inesperado o falta simb. al comienzo de variable
 	 Error 17: Falta identificador
+	 Error 95: Las proposiciones de E/S solo aceptan variables y/o expresiones de tipo char, int y float
+

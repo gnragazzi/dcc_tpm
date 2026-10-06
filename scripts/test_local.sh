@@ -1,7 +1,18 @@
 #!/usr/bin/env bash
 # Corre localmente los mismos tests que .github/workflows/ci.yml.
-# Uso: ./scripts/test_local.sh
+# Uso: ./scripts/test_local.sh [-e N]
+#   -e N  corre solo los tests de tests/entregaN (por defecto, todas)
 set -euo pipefail
+
+trim_lineas() { sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//' | sed '/^$/d'; }
+
+entrega_sel=""
+while getopts "e:" opt; do
+  case "$opt" in
+    e) entrega_sel="$OPTARG" ;;
+    *) echo "Uso: $0 [-e N]" >&2; exit 2 ;;
+  esac
+done
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SRC_DIR="$ROOT_DIR/src"
@@ -13,13 +24,23 @@ shopt -s nullglob
 fail=0
 casos=0
 
-for entrega_dir in tests/entrega*/; do
+if [ -n "$entrega_sel" ]; then
+  entregas=("tests/entrega$entrega_sel/")
+  if [ ! -d "${entregas[0]}" ]; then
+    echo "ERROR: no existe ${entregas[0]}" >&2
+    exit 2
+  fi
+else
+  entregas=(tests/entrega*/)
+fi
+
+for entrega_dir in "${entregas[@]}"; do
   entrega="$(basename "$entrega_dir")"
 
   for f in "${entrega_dir}validos/"*.c; do
     casos=$((casos + 1))
-    out="$(timeout 5 ./src/ucc -c "$f" 2>&1)"
-    status=$?
+    status=0
+    out="$(timeout 5 ./src/ucc -c "$f" 2>&1)" || status=$?
     if [ $status -ne 0 ]; then
       echo "ERROR: [$entrega/validos] $f: ucc terminó con status $status (crash o timeout)"
       fail=$((fail + 1))
@@ -39,16 +60,16 @@ for entrega_dir in tests/entrega*/; do
       continue
     fi
 
-    out="$(timeout 5 ./src/ucc -c "$f" 2>&1)"
-    status=$?
+    status=0
+    out="$(timeout 5 ./src/ucc -c "$f" 2>&1)" || status=$?
     if [ $status -ne 0 ]; then
       echo "ERROR: [$entrega/invalidos] $f: ucc terminó con status $status (crash o timeout, no se pudo evaluar la recuperación antipánico)"
       fail=$((fail + 1))
       continue
     fi
 
-    got="$(echo "$out" | grep -E "Error [0-9]+:" || true)"
-    want="$(cat "$esperado")"
+    got="$(echo "$out" | grep -E "Error [0-9]+:" | trim_lineas || true)"
+    want="$(trim_lineas < "$esperado")"
     if [ "$got" != "$want" ]; then
       echo "ERROR: [$entrega/invalidos] $f: la secuencia de errores no coincide con $esperado"
       diff <(echo "$want") <(echo "$got") || true

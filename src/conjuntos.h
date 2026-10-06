@@ -1,3 +1,6 @@
+#ifndef CONJUNTOS_H
+#define CONJUNTOS_H
+
 #include "codigos.h"
 
 /* BORRAR CUANDO YA ESTÉN IMPLEMENTADOS LOS FIRST!!!!!!! */
@@ -56,3 +59,6 @@
 #define F_ARREGLO_OPCIONAL (CCOR_ABR)
 #define F_LIMITE_OPCIONAL (F_CONSTANTE)
 #define F_LISTA_OPCIONAL (CASIGNAC)
+
+
+#endif

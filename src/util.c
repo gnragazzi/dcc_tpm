@@ -1,9 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <malloc.h>
 #include "util.h"
 #include "codigos.h"
 #include "error.h"
+#include "ts.h"
 
 
 void scanner()
@@ -88,5 +90,135 @@ void test(set c1, set c2, int ne)
 		set conjunto_sincronizacion = c1 | c2;
 		while(!lookahead_in(conjunto_sincronizacion))
 			scanner();
+	}
+}
+
+enum boolean es_tipo_base(enum tipo tipo) {return tipo > 0;}
+
+enum tipo resolver_tipo(char *nombre){
+	if(strcmp(T_VOID, nombre) == 0)
+		return VOID;
+	if(strcmp(T_CHAR, nombre) == 0)
+		return CHAR;
+	if(strcmp(T_INT, nombre) == 0)
+		return INT;
+	if(strcmp(T_FLOAT, nombre) == 0)
+		return FLOAT;
+	if(strcmp(T_ARREGLO, nombre) == 0)
+		return ARREGLO;
+	else
+		return ERROR;
+}
+
+int resolver_tipo_en_TS(enum tipo tipo){
+	switch (tipo) {
+		case VOID:
+			return en_tabla(T_VOID);
+		case CHAR:
+			return en_tabla(T_CHAR);
+		case INT:
+			return en_tabla(T_INT);
+		case FLOAT:
+			return en_tabla(T_FLOAT);
+		case ARREGLO:
+			return en_tabla(T_ARREGLO);
+		case ERROR:
+			return en_tabla(T_ERROR);
+	}
+}
+
+enum boolean param1_es_coercionable_a_param2(enum tipo param1, enum tipo param2){
+	if(param1>0 && param1 <= param2)
+		return TRUE;
+
+	return FALSE;
+}
+
+enum tipo mayor(enum tipo a, enum tipo b){
+    if (a > b)
+        return a;
+
+    return b;
+}
+
+void lanzar_error_si_corresponde(enum tipo a){
+    if(a == ARREGLO || a == VOID){
+        error_handler(96);
+    }
+    if( a == STRING){
+        error_handler(94);
+    }
+
+}
+
+enum tipo resolver_tipo_operador(enum tipo tipo_1, enum tipo tipo_2){
+    if(es_tipo_base(tipo_1) && es_tipo_base(tipo_2)){
+        return mayor(tipo_1, tipo_2);
+    }
+
+    lanzar_error_si_corresponde(tipo_1);
+    lanzar_error_si_corresponde(tipo_2);
+
+    return ERROR;
+}
+
+entrada_TS *nueva_entrada() {
+	return inf_id;
+}
+
+void insertar_parametro_en_funcion(int posicion_tabla_simbolos, Parametro_en_TS parametro_en_ts) {
+	entrada_TS *entrada_funcion = ts[posicion_tabla_simbolos].ets;
+	tipo_inf_res *nuevo_parametro = (tipo_inf_res *) malloc(sizeof(tipo_inf_res));
+
+	nuevo_parametro->ptero_tipo = parametro_en_ts.puntero_tipo_dato;
+	nuevo_parametro->tipo_pje = parametro_en_ts.tipo_pasaje;
+	nuevo_parametro->ptero_tipo_base = parametro_en_ts.puntero_tipo_base;
+	nuevo_parametro->ptr_sig = NULL;
+
+	int cantidad_parametros = entrada_funcion->desc.part_var.sub.cant_par;
+
+	if (cantidad_parametros == 0) {
+		entrada_funcion->desc.part_var.sub.ptr_inf_res = nuevo_parametro;
+	}else {
+		tipo_inf_res *ultimo_parametro = entrada_funcion->desc.part_var.sub.ptr_inf_res;
+
+		for (int i = 1; i < cantidad_parametros; i++) {
+			ultimo_parametro = ultimo_parametro->ptr_sig;
+		}
+
+		ultimo_parametro->ptr_sig = nuevo_parametro;
+	}
+
+	entrada_funcion->desc.part_var.sub.cant_par++;
+}
+
+void chequear_igualdad_parametro_actual_vs_parametro_TS(Parametro_actual parametro_actual, tipo_inf_res *parametro_formal) {
+	enum tipo tipo_formal = resolver_tipo(ts[parametro_formal->ptero_tipo].ets->nbre);
+
+	if (parametro_formal->tipo_pje == REFERENCIA && !parametro_actual.es_clase_variable) {
+		error_handler(93);
+		return;
+	}
+
+	if (tipo_formal == ARREGLO) {
+		if (parametro_actual.tipo_dato != ARREGLO) {
+			error_handler(98);
+		} else if (parametro_actual.tipo_base != resolver_tipo(ts[parametro_formal->ptero_tipo_base].ets->nbre)) {
+			error_handler(91);
+		}
+		return;
+	}
+
+	if (parametro_actual.tipo_dato == ARREGLO) {
+		error_handler(91);
+		return;
+	}
+
+	enum boolean tipos_compatibles = parametro_formal->tipo_pje == REFERENCIA
+		? parametro_actual.tipo_dato == tipo_formal
+		: param1_es_coercionable_a_param2(parametro_actual.tipo_dato, tipo_formal);
+
+	if (!tipos_compatibles) {
+		error_handler(91);
 	}
 }

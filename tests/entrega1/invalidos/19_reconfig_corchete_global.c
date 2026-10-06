@@ -7,3 +7,5 @@
 # ( ] { } ) de declarador_init #
 
 char a] = {1, 2};
+
+void main(){}

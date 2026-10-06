@@ -1,5 +1,7 @@
 	 Error 56: Simbolo inesperado o falta simb. al comienzo de expresion simple
 	 Error 57: Simbolo inesperado o falta simb. al comienzo de factor
+Error 95: Las proposiciones de E/S solo aceptan variables y/o expresiones de tipo char, int y float
+	 Error 90: La CANTIDAD de parametros actuales no coincide con la cantidad de parametros formales
 	 Error 21: Falta )
 	 Error 61: Simbolo inesperado despues de llamada a funcion
 	 Error 23: Falta ;

@@ -1,2 +1,3 @@
 	 Error 56: Simbolo inesperado o falta simb. al comienzo de expresion simple
 	 Error 57: Simbolo inesperado o falta simb. al comienzo de factor
+Error 97: Las condiciones de las prop. de seleccion e iteracion solo pueden ser de tipo char, int y float
