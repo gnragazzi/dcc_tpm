@@ -124,8 +124,6 @@ void especificador_declaracion(set folset, parametros_especificador_declaracion 
 				entrada_nueva_funcion->desc.part_var.sub.ptr_inf_res = NULL;
 
 				int posicion_insertada = insertarTS();
-				/* insertarTS devuelve 0 si el nombre ya estaba declarado en el nivel:
-				los parametros de la redeclaracion no se cuelgan de ninguna entrada */
 				if (posicion_insertada != 0)
 					parametros_definicion_funcion.posicion_tabla_simbolos = posicion_insertada;
 			}
