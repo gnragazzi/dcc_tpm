@@ -426,8 +426,7 @@ void proposicion_compuesta(set folset, parametros_proposicion_compuesta params)
 {
 	test(F_PROPOSICION_COMPUESTA, folset | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES | CLLA_CIE, 49);
 
-	if(lookahead_in(CLLA_ABR))
-		scanner();
+	match(CLLA_ABR, 24);
 
 	if(lookahead_in(F_LISTA_DECLARACIONES))
 		lista_declaraciones(folset | F_LISTA_PROPOSICIONES | CLLA_CIE);
