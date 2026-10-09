@@ -410,10 +410,7 @@ retorno_lista_inicializadores lista_inicializadores(set folset)
 
 	enum boolean hay_constante = lookahead_in(F_CONSTANTE) ? TRUE : FALSE;
 	retorno_constante constante_1 = constante(folset | CCOMA | F_CONSTANTE);
-	/* { } no aporta elementos; cualquier otra lista cuenta una posicion por cada
-	constante o hueco separado por comas ({,1,2} tiene 3) */
-	retorno_lista_inicializadores.cantidad_inicializadores =
-			hay_constante || lookahead_in(CCOMA | F_CONSTANTE) ? 1 : 0;
+	retorno_lista_inicializadores.cantidad_inicializadores = hay_constante || lookahead_in(CCOMA | F_CONSTANTE) ? 1 : 0;
 	retorno_lista_inicializadores.tipo_inicializadores = constante_1.tipo;
 
 	while(lookahead_in(CCOMA | F_CONSTANTE))
