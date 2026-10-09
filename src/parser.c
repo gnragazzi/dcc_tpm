@@ -124,8 +124,6 @@ void especificador_declaracion(set folset, parametros_especificador_declaracion 
 				entrada_nueva_funcion->desc.part_var.sub.ptr_inf_res = NULL;
 
 				int posicion_insertada = insertarTS();
-				/* insertarTS devuelve 0 si el nombre ya estaba declarado en el nivel:
-				los parametros de la redeclaracion no se cuelgan de ninguna entrada */
 				if (posicion_insertada != 0)
 					parametros_definicion_funcion.posicion_tabla_simbolos = posicion_insertada;
 			}
@@ -412,10 +410,7 @@ retorno_lista_inicializadores lista_inicializadores(set folset)
 
 	enum boolean hay_constante = lookahead_in(F_CONSTANTE) ? TRUE : FALSE;
 	retorno_constante constante_1 = constante(folset | CCOMA | F_CONSTANTE);
-	/* { } no aporta elementos; cualquier otra lista cuenta una posicion por cada
-	constante o hueco separado por comas ({,1,2} tiene 3) */
-	retorno_lista_inicializadores.cantidad_inicializadores =
-			hay_constante || lookahead_in(CCOMA | F_CONSTANTE) ? 1 : 0;
+	retorno_lista_inicializadores.cantidad_inicializadores = hay_constante || lookahead_in(CCOMA | F_CONSTANTE) ? 1 : 0;
 	retorno_lista_inicializadores.tipo_inicializadores = constante_1.tipo;
 
 	while(lookahead_in(CCOMA | F_CONSTANTE))
@@ -1036,8 +1031,6 @@ retorno_llamada_funcion llamada_funcion(set folset, parametros_llamada_funcion p
 	entrada_TS *entrada_ts = ts[params.indice_en_TS].ets;
 	retorno_llamada_funcion.tipo = resolver_tipo(ts[ts[params.indice_en_TS].ets->ptr_tipo].ets->nbre);
 
-	/* sin ( no hay lista de parametros actuales: lo que sigue (p. ej. el + de
-	fun + 1) pertenece a la expresion que contiene a la llamada */
 	enum boolean hay_par_abr = lookahead_in(CPAR_ABR) ? TRUE : FALSE;
 	match(CPAR_ABR, 20);
 
