@@ -1113,6 +1113,7 @@ void lista_expresiones(set folset, parametros_lista_expresiones params) {
 retorno_constante constante(set folset)
 {
 	retorno_constante retorno_constante;
+	retorno_constante.tipo = ERROR;
 	test(F_CONSTANTE, folset, 62);
 
 	switch(lookahead())
