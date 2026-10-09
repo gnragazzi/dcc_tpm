@@ -347,6 +347,10 @@ void declarador_init(set folset, parametros_declarador_init params) {
 			scanner();
 			entrada_nueva_variable->ptr_tipo = resolver_tipo_en_TS(params.tipo_declaracion);
 			retorno_constante constante_1 = constante(folset);
+
+			if (params.tipo_declaracion != ERROR && !param1_es_coercionable_a_param2(constante_1.tipo, params.tipo_declaracion)) {
+				error_handler(83);
+			}
 			break;
 
 		/*  { } son puntos de reconfiguracion de esta alternativa: se entra por
@@ -748,6 +752,10 @@ retorno_expresion expresion(set folset)
 				scanner();
 				retorno_expresion_simple expresion_simple_2 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
 				clase_izquierda_asignacion_es_variable = expresion_simple_2.es_clase_variable;
+
+				if (expresion_simple_2.tipo == STRING) {
+					error_handler(94);
+				}
 
 				if (!param1_es_coercionable_a_param2(expresion_simple_2.tipo, tipo_izquierda_asignacion)) {
 					error_handler(83);
