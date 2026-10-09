@@ -29,10 +29,9 @@ void unidad_traduccion(set folset)
 	}
 
 	int indice_TS_main = en_tabla("main");
-	tipo_TS ts_main = ts[indice_TS_main];
 	entrada_TS *entrada_ts_main;
 
-	if (indice_TS_main < 0 || (entrada_ts_main = ts_main.ets)->clase != CLASFUNC) {
+	if (indice_TS_main < 0 || (entrada_ts_main = ts[indice_TS_main].ets)->clase != CLASFUNC) {
 		error_handler(84);
 		pop_nivel();
 		return;
@@ -124,7 +123,11 @@ void especificador_declaracion(set folset, parametros_especificador_declaracion 
 				entrada_nueva_funcion->desc.part_var.sub.cant_par = 0;
 				entrada_nueva_funcion->desc.part_var.sub.ptr_inf_res = NULL;
 
-				parametros_definicion_funcion.posicion_tabla_simbolos = insertarTS();
+				int posicion_insertada = insertarTS();
+				/* insertarTS devuelve 0 si el nombre ya estaba declarado en el nivel:
+				los parametros de la redeclaracion no se cuelgan de ninguna entrada */
+				if (posicion_insertada != 0)
+					parametros_definicion_funcion.posicion_tabla_simbolos = posicion_insertada;
 			}
 
 			definicion_funcion(folset, parametros_definicion_funcion);
@@ -234,30 +237,27 @@ void declaracion_parametro(set folset, parametros_declaracion_parametro params) 
 			error_handler(92);
 		}
 
-		if (identificador != NULL) {
-			strcpy(nueva_variable->nbre, identificador);
-			nueva_variable->clase = CLASPAR;
-			parametro_en_ts.puntero_tipo_dato = nueva_variable->ptr_tipo = resolver_tipo_en_TS(ARREGLO);
-			parametro_en_ts.puntero_tipo_base = nueva_variable->desc.part_var.param.ptero_tipo_base = resolver_tipo_en_TS(parametro_tipo);
-			parametro_en_ts.tipo_pasaje = nueva_variable->desc.part_var.param.tipo_pje = VALOR;
-
-			insertarTS();
-		}
-
+		parametro_en_ts.puntero_tipo_dato = resolver_tipo_en_TS(ARREGLO);
+		parametro_en_ts.puntero_tipo_base = resolver_tipo_en_TS(parametro_tipo);
+		parametro_en_ts.tipo_pasaje = VALOR;
 	} else {
-		if (identificador != NULL) {
-			strcpy(nueva_variable->nbre, identificador);
-			nueva_variable->clase = CLASPAR;
-			parametro_en_ts.puntero_tipo_dato = nueva_variable->ptr_tipo = resolver_tipo_en_TS(parametro_tipo);
-			parametro_en_ts.tipo_pasaje = nueva_variable->desc.part_var.param.tipo_pje = tipo_pasaje;
-			parametro_en_ts.puntero_tipo_base = NIL;
-
-			insertarTS();
-		}
-
+		parametro_en_ts.puntero_tipo_dato = resolver_tipo_en_TS(parametro_tipo);
+		parametro_en_ts.puntero_tipo_base = NIL;
+		parametro_en_ts.tipo_pasaje = tipo_pasaje;
 	}
 
-	insertar_parametro_en_funcion(params.posicion_tabla_simbolos, parametro_en_ts);
+	if (identificador != NULL) {
+		strcpy(nueva_variable->nbre, identificador);
+		nueva_variable->clase = CLASPAR;
+		nueva_variable->ptr_tipo = parametro_en_ts.puntero_tipo_dato;
+		nueva_variable->desc.part_var.param.ptero_tipo_base = parametro_en_ts.puntero_tipo_base;
+		nueva_variable->desc.part_var.param.tipo_pje = parametro_en_ts.tipo_pasaje;
+
+		insertarTS();
+	}
+
+	if (params.posicion_tabla_simbolos != NIL)
+		insertar_parametro_en_funcion(params.posicion_tabla_simbolos, parametro_en_ts);
 
 	test(folset, NADA, 45);
 
