@@ -424,7 +424,7 @@ retorno_lista_inicializadores lista_inicializadores(set folset)
 
 void proposicion_compuesta(set folset, parametros_proposicion_compuesta params)
 {
-	test(F_PROPOSICION_COMPUESTA | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES | CLLA_CIE, folset, 49);
+	test(F_PROPOSICION_COMPUESTA, folset | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES | CLLA_CIE, 49);
 
 	match(CLLA_ABR, 24);
 
