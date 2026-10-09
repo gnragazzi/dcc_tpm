@@ -1026,9 +1026,12 @@ retorno_llamada_funcion llamada_funcion(set folset, parametros_llamada_funcion p
 	entrada_TS *entrada_ts = ts[params.indice_en_TS].ets;
 	retorno_llamada_funcion.tipo = resolver_tipo(ts[ts[params.indice_en_TS].ets->ptr_tipo].ets->nbre);
 
-	scanner();
+	/* sin ( no hay lista de parametros actuales: lo que sigue (p. ej. el + de
+	fun + 1) pertenece a la expresion que contiene a la llamada */
+	enum boolean hay_par_abr = lookahead_in(CPAR_ABR) ? TRUE : FALSE;
+	match(CPAR_ABR, 20);
 
-	if (lookahead_in(F_LISTA_EXPRESIONES)) {
+	if (hay_par_abr && lookahead_in(F_LISTA_EXPRESIONES)) {
 		parametros_lista_expresiones parametros_lista_expresiones;
 		parametros_lista_expresiones.indice_en_TS = params.indice_en_TS;
 
