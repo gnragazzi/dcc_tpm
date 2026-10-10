@@ -202,8 +202,6 @@ void chequear_igualdad_parametro_actual_vs_parametro_TS(Parametro_actual paramet
 
 	if (tipo_formal == ARREGLO) {
 		if (parametro_actual.tipo_dato != ARREGLO) {
-			/* una variable (a, b[1]) es un identificador del tipo equivocado; el 98
-			queda para cuando el actual no es un identificador */
 			error_handler(parametro_actual.es_clase_variable ? 91 : 98);
 		} else if (parametro_actual.tipo_base != resolver_tipo(ts[parametro_formal->ptero_tipo_base].ets->nbre)) {
 			error_handler(91);
