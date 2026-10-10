@@ -1,5 +1,5 @@
-# Expectativa: Error 98: Si el parametro formal es un arreglo, en el parametro real solo debe haber un identificador #
-# Prueba: elemento de arreglo como parametro actual de un formal arreglo #
+# Expectativa: Error 91: El TIPO de los parametros actuales no coincide con el de los parametros formales #
+# Prueba: elemento de arreglo como parametro actual de un formal arreglo: es una variable de tipo int, no un arreglo (devolucion 2da entrega, punto 7) #
 
 void f(int a[]){}
 
