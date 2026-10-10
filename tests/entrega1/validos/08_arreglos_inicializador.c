@@ -3,6 +3,6 @@
 float silo[6]={1,2,3,4};
 int olis[]={1,2,3,4};
 char losi[1];
-char liso[];
+char liso[]={'a','b'};
 
 void main(){}

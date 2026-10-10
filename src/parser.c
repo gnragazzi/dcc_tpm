@@ -369,19 +369,25 @@ void declarador_init(set folset, parametros_declarador_init params) {
 
 			match(CCOR_CIE, 22);
 
+			int cantidad_inicializadores = 0;
+
 			if (lookahead_in(CASIGNAC | CLLA_ABR | CLLA_CIE)) {
 				match(CASIGNAC, 66);
 				match(CLLA_ABR, 24);
 				retorno_lista_inicializadores lista_inicializadores_1 = lista_inicializadores(CLLA_CIE | folset);
 				match(CLLA_CIE, 25);
+				cantidad_inicializadores = lista_inicializadores_1.cantidad_inicializadores;
 
-				if (valor_constante_entera >= 0 && valor_constante_entera < lista_inicializadores_1.cantidad_inicializadores) {
+				if (valor_constante_entera >= 0 && valor_constante_entera < cantidad_inicializadores) {
 					error_handler(76);
 				}
-				  if (!param1_es_coercionable_a_param2(lista_inicializadores_1.tipo_inicializadores, params.tipo_declaracion)) {
+				if (cantidad_inicializadores > 0 && !param1_es_coercionable_a_param2(lista_inicializadores_1.tipo_inicializadores, params.tipo_declaracion)) {
 					error_handler(77);
 				}
+			}
 
+			if (valor_constante_entera < 0 && cantidad_inicializadores == 0) {
+				error_handler(75);
 			}
 			break;
 		}
@@ -402,8 +408,9 @@ retorno_lista_inicializadores lista_inicializadores(set folset)
 {
 	retorno_lista_inicializadores retorno_lista_inicializadores;
 
+	enum boolean hay_constante = lookahead_in(F_CONSTANTE) ? TRUE : FALSE;
 	retorno_constante constante_1 = constante(folset | CCOMA | F_CONSTANTE);
-	retorno_lista_inicializadores.cantidad_inicializadores = 1;
+	retorno_lista_inicializadores.cantidad_inicializadores = hay_constante || lookahead_in(CCOMA | F_CONSTANTE) ? 1 : 0;
 	retorno_lista_inicializadores.tipo_inicializadores = constante_1.tipo;
 
 	while(lookahead_in(CCOMA | F_CONSTANTE))
