@@ -29,10 +29,9 @@ void unidad_traduccion(set folset)
 	}
 
 	int indice_TS_main = en_tabla("main");
-	tipo_TS ts_main = ts[indice_TS_main];
 	entrada_TS *entrada_ts_main;
 
-	if (indice_TS_main < 0 || (entrada_ts_main = ts_main.ets)->clase != CLASFUNC) {
+	if (indice_TS_main < 0 || (entrada_ts_main = ts[indice_TS_main].ets)->clase != CLASFUNC) {
 		error_handler(84);
 		pop_nivel();
 		return;
@@ -124,7 +123,9 @@ void especificador_declaracion(set folset, parametros_especificador_declaracion 
 				entrada_nueva_funcion->desc.part_var.sub.cant_par = 0;
 				entrada_nueva_funcion->desc.part_var.sub.ptr_inf_res = NULL;
 
-				parametros_definicion_funcion.posicion_tabla_simbolos = insertarTS();
+				int posicion_insertada = insertarTS();
+				if (posicion_insertada != 0)
+					parametros_definicion_funcion.posicion_tabla_simbolos = posicion_insertada;
 			}
 
 			definicion_funcion(folset, parametros_definicion_funcion);
@@ -234,30 +235,27 @@ void declaracion_parametro(set folset, parametros_declaracion_parametro params) 
 			error_handler(92);
 		}
 
-		if (identificador != NULL) {
-			strcpy(nueva_variable->nbre, identificador);
-			nueva_variable->clase = CLASPAR;
-			parametro_en_ts.puntero_tipo_dato = nueva_variable->ptr_tipo = resolver_tipo_en_TS(ARREGLO);
-			parametro_en_ts.puntero_tipo_base = nueva_variable->desc.part_var.param.ptero_tipo_base = resolver_tipo_en_TS(parametro_tipo);
-			parametro_en_ts.tipo_pasaje = nueva_variable->desc.part_var.param.tipo_pje = VALOR;
-
-			insertarTS();
-		}
-
+		parametro_en_ts.puntero_tipo_dato = resolver_tipo_en_TS(ARREGLO);
+		parametro_en_ts.puntero_tipo_base = resolver_tipo_en_TS(parametro_tipo);
+		parametro_en_ts.tipo_pasaje = VALOR;
 	} else {
-		if (identificador != NULL) {
-			strcpy(nueva_variable->nbre, identificador);
-			nueva_variable->clase = CLASPAR;
-			parametro_en_ts.puntero_tipo_dato = nueva_variable->ptr_tipo = resolver_tipo_en_TS(parametro_tipo);
-			parametro_en_ts.tipo_pasaje = nueva_variable->desc.part_var.param.tipo_pje = tipo_pasaje;
-			parametro_en_ts.puntero_tipo_base = NIL;
-
-			insertarTS();
-		}
-
+		parametro_en_ts.puntero_tipo_dato = resolver_tipo_en_TS(parametro_tipo);
+		parametro_en_ts.puntero_tipo_base = NIL;
+		parametro_en_ts.tipo_pasaje = tipo_pasaje;
 	}
 
-	insertar_parametro_en_funcion(params.posicion_tabla_simbolos, parametro_en_ts);
+	if (identificador != NULL) {
+		strcpy(nueva_variable->nbre, identificador);
+		nueva_variable->clase = CLASPAR;
+		nueva_variable->ptr_tipo = parametro_en_ts.puntero_tipo_dato;
+		nueva_variable->desc.part_var.param.ptero_tipo_base = parametro_en_ts.puntero_tipo_base;
+		nueva_variable->desc.part_var.param.tipo_pje = parametro_en_ts.tipo_pasaje;
+
+		insertarTS();
+	}
+
+	if (params.posicion_tabla_simbolos != NIL)
+		insertar_parametro_en_funcion(params.posicion_tabla_simbolos, parametro_en_ts);
 
 	test(folset, NADA, 45);
 
@@ -347,6 +345,10 @@ void declarador_init(set folset, parametros_declarador_init params) {
 			scanner();
 			entrada_nueva_variable->ptr_tipo = resolver_tipo_en_TS(params.tipo_declaracion);
 			retorno_constante constante_1 = constante(folset);
+
+			if (params.tipo_declaracion != ERROR && !param1_es_coercionable_a_param2(constante_1.tipo, params.tipo_declaracion)) {
+				error_handler(83);
+			}
 			break;
 
 		/*  { } son puntos de reconfiguracion de esta alternativa: se entra por
@@ -371,19 +373,25 @@ void declarador_init(set folset, parametros_declarador_init params) {
 
 			match(CCOR_CIE, 22);
 
+			int cantidad_inicializadores = 0;
+
 			if (lookahead_in(CASIGNAC | CLLA_ABR | CLLA_CIE)) {
 				match(CASIGNAC, 66);
 				match(CLLA_ABR, 24);
 				retorno_lista_inicializadores lista_inicializadores_1 = lista_inicializadores(CLLA_CIE | folset);
 				match(CLLA_CIE, 25);
+				cantidad_inicializadores = lista_inicializadores_1.cantidad_inicializadores;
 
-				if (valor_constante_entera >= 0 && valor_constante_entera < lista_inicializadores_1.cantidad_inicializadores) {
+				if (valor_constante_entera >= 0 && valor_constante_entera < cantidad_inicializadores) {
 					error_handler(76);
 				}
-				  if (!param1_es_coercionable_a_param2(lista_inicializadores_1.tipo_inicializadores, params.tipo_declaracion)) {
+				if (cantidad_inicializadores > 0 && !param1_es_coercionable_a_param2(lista_inicializadores_1.tipo_inicializadores, params.tipo_declaracion)) {
 					error_handler(77);
 				}
+			}
 
+			if (valor_constante_entera < 0 && cantidad_inicializadores == 0) {
+				error_handler(75);
 			}
 			break;
 		}
@@ -404,8 +412,9 @@ retorno_lista_inicializadores lista_inicializadores(set folset)
 {
 	retorno_lista_inicializadores retorno_lista_inicializadores;
 
+	enum boolean hay_constante = lookahead_in(F_CONSTANTE) ? TRUE : FALSE;
 	retorno_constante constante_1 = constante(folset | CCOMA | F_CONSTANTE);
-	retorno_lista_inicializadores.cantidad_inicializadores = 1;
+	retorno_lista_inicializadores.cantidad_inicializadores = hay_constante || lookahead_in(CCOMA | F_CONSTANTE) ? 1 : 0;
 	retorno_lista_inicializadores.tipo_inicializadores = constante_1.tipo;
 
 	while(lookahead_in(CCOMA | F_CONSTANTE))
@@ -428,8 +437,7 @@ void proposicion_compuesta(set folset, parametros_proposicion_compuesta params)
 {
 	test(F_PROPOSICION_COMPUESTA, folset | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES | CLLA_CIE, 49);
 
-	if(lookahead_in(CLLA_ABR))
-		scanner();
+	match(CLLA_ABR, 24);
 
 	if(lookahead_in(F_LISTA_DECLARACIONES))
 		lista_declaraciones(folset | F_LISTA_PROPOSICIONES | CLLA_CIE);
@@ -740,6 +748,10 @@ retorno_expresion expresion(set folset)
 				retorno_expresion_simple expresion_simple_2 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
 				clase_izquierda_asignacion_es_variable = expresion_simple_2.es_clase_variable;
 
+				if (expresion_simple_2.tipo == STRING) {
+					error_handler(94);
+				}
+
 				if (!param1_es_coercionable_a_param2(expresion_simple_2.tipo, tipo_izquierda_asignacion)) {
 					error_handler(83);
 				}
@@ -1027,17 +1039,19 @@ retorno_llamada_funcion llamada_funcion(set folset, parametros_llamada_funcion p
 	entrada_TS *entrada_ts = ts[params.indice_en_TS].ets;
 	retorno_llamada_funcion.tipo = resolver_tipo(ts[ts[params.indice_en_TS].ets->ptr_tipo].ets->nbre);
 
-	scanner();
+	enum boolean hay_par_abr = lookahead_in(CPAR_ABR) ? TRUE : FALSE;
+	match(CPAR_ABR, 20);
+	enum tipo tipo_declarado = resolver_tipo(ts[entrada_ts->ptr_tipo].ets->nbre);
+	enum boolean tiene_parametros_declarados = tipo_declarado != ERROR && entrada_ts->desc.part_var.sub.cant_par > 0;
 
 	if (lookahead_in(F_LISTA_EXPRESIONES)) {
 		parametros_lista_expresiones parametros_lista_expresiones;
 		parametros_lista_expresiones.indice_en_TS = params.indice_en_TS;
+		parametros_lista_expresiones.chequear_parametros = hay_par_abr;
 
 		lista_expresiones(folset | CPAR_CIE, parametros_lista_expresiones);
-	} else {
-		enum tipo tipo_declarado = resolver_tipo(ts[entrada_ts->ptr_tipo].ets->nbre);
-		if (tipo_declarado != ERROR && entrada_ts->desc.part_var.sub.cant_par > 0)
-			error_handler(90);
+	} else if (hay_par_abr && tiene_parametros_declarados) {
+		error_handler(90);
 	}
 
 	match(CPAR_CIE, 21);
@@ -1054,13 +1068,14 @@ void lista_expresiones(set folset, parametros_lista_expresiones params) {
 	retorno_expresion expresion_1 = expresion(folset | CCOMA | F_EXPRESION);
 
 	enum tipo tipo_declarado = resolver_tipo(ts[entrada_funcion->ptr_tipo].ets->nbre);
+	enum boolean chequear = params.chequear_parametros && tipo_declarado != ERROR;
 	tipo_inf_res *siguiente_parametro_lista_funcion = entrada_funcion->desc.part_var.sub.ptr_inf_res;
 	int cantidad_parametros_declarados = entrada_funcion->desc.part_var.sub.cant_par;
 	enum boolean corresponde_chequear_parametro = cantidad_parametros_declarados > contador_parametros_actuales;
 	if (expresion_1.tipo == STRING)
 		error_handler(94);
 
-	if (tipo_declarado != ERROR && corresponde_chequear_parametro) {
+	if (chequear && corresponde_chequear_parametro) {
 		Parametro_actual parametro_actual;
 		parametro_actual.tipo_dato = expresion_1.tipo;
 		parametro_actual.tipo_base = expresion_1.tipo_base;
@@ -1081,7 +1096,7 @@ void lista_expresiones(set folset, parametros_lista_expresiones params) {
 
 		corresponde_chequear_parametro = cantidad_parametros_declarados > contador_parametros_actuales;
 
-		if (tipo_declarado != ERROR && corresponde_chequear_parametro) {
+		if (chequear && corresponde_chequear_parametro) {
 			Parametro_actual parametro_actual;
 			parametro_actual.tipo_dato = expresion_n.tipo;
 			parametro_actual.tipo_base = expresion_n.tipo_base;
@@ -1093,7 +1108,7 @@ void lista_expresiones(set folset, parametros_lista_expresiones params) {
 		contador_parametros_actuales++;
 	}
 
-	if (tipo_declarado != ERROR && cantidad_parametros_declarados != contador_parametros_actuales)
+	if (chequear && cantidad_parametros_declarados != contador_parametros_actuales)
 		error_handler(90);
 }
 
@@ -1101,6 +1116,7 @@ void lista_expresiones(set folset, parametros_lista_expresiones params) {
 retorno_constante constante(set folset)
 {
 	retorno_constante retorno_constante;
+	retorno_constante.tipo = ERROR;
 	test(F_CONSTANTE, folset, 62);
 
 	switch(lookahead())

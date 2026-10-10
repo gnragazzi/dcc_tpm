@@ -202,7 +202,7 @@ void chequear_igualdad_parametro_actual_vs_parametro_TS(Parametro_actual paramet
 
 	if (tipo_formal == ARREGLO) {
 		if (parametro_actual.tipo_dato != ARREGLO) {
-			error_handler(98);
+			error_handler(parametro_actual.es_clase_variable ? 91 : 98);
 		} else if (parametro_actual.tipo_base != resolver_tipo(ts[parametro_formal->ptero_tipo_base].ets->nbre)) {
 			error_handler(91);
 		}

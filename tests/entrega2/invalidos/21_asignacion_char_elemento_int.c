@@ -3,7 +3,7 @@
 
 void main(){
     char caracter;
-    int entero[];
+    int entero[3];
     float flotante;
 
     caracter = entero[1];
