@@ -435,7 +435,7 @@ retorno_lista_inicializadores lista_inicializadores(set folset)
 
 void proposicion_compuesta(set folset, parametros_proposicion_compuesta params)
 {
-	test(F_PROPOSICION_COMPUESTA | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES | CLLA_CIE, folset, 49);
+	test(F_PROPOSICION_COMPUESTA, folset | F_LISTA_DECLARACIONES | F_LISTA_PROPOSICIONES | CLLA_CIE, 49);
 
 	match(CLLA_ABR, 24);
 
@@ -1041,16 +1041,17 @@ retorno_llamada_funcion llamada_funcion(set folset, parametros_llamada_funcion p
 
 	enum boolean hay_par_abr = lookahead_in(CPAR_ABR) ? TRUE : FALSE;
 	match(CPAR_ABR, 20);
+	enum tipo tipo_declarado = resolver_tipo(ts[entrada_ts->ptr_tipo].ets->nbre);
+	enum boolean tiene_parametros_declarados = tipo_declarado != ERROR && entrada_ts->desc.part_var.sub.cant_par > 0;
 
-	if (hay_par_abr && lookahead_in(F_LISTA_EXPRESIONES)) {
+	if (lookahead_in(F_LISTA_EXPRESIONES)) {
 		parametros_lista_expresiones parametros_lista_expresiones;
 		parametros_lista_expresiones.indice_en_TS = params.indice_en_TS;
+		parametros_lista_expresiones.chequear_parametros = hay_par_abr;
 
 		lista_expresiones(folset | CPAR_CIE, parametros_lista_expresiones);
-	} else {
-		enum tipo tipo_declarado = resolver_tipo(ts[entrada_ts->ptr_tipo].ets->nbre);
-		if (tipo_declarado != ERROR && entrada_ts->desc.part_var.sub.cant_par > 0)
-			error_handler(90);
+	} else if (hay_par_abr && tiene_parametros_declarados) {
+		error_handler(90);
 	}
 
 	match(CPAR_CIE, 21);
@@ -1067,13 +1068,14 @@ void lista_expresiones(set folset, parametros_lista_expresiones params) {
 	retorno_expresion expresion_1 = expresion(folset | CCOMA | F_EXPRESION);
 
 	enum tipo tipo_declarado = resolver_tipo(ts[entrada_funcion->ptr_tipo].ets->nbre);
+	enum boolean chequear = params.chequear_parametros && tipo_declarado != ERROR;
 	tipo_inf_res *siguiente_parametro_lista_funcion = entrada_funcion->desc.part_var.sub.ptr_inf_res;
 	int cantidad_parametros_declarados = entrada_funcion->desc.part_var.sub.cant_par;
 	enum boolean corresponde_chequear_parametro = cantidad_parametros_declarados > contador_parametros_actuales;
 	if (expresion_1.tipo == STRING)
 		error_handler(94);
 
-	if (tipo_declarado != ERROR && corresponde_chequear_parametro) {
+	if (chequear && corresponde_chequear_parametro) {
 		Parametro_actual parametro_actual;
 		parametro_actual.tipo_dato = expresion_1.tipo;
 		parametro_actual.tipo_base = expresion_1.tipo_base;
@@ -1094,7 +1096,7 @@ void lista_expresiones(set folset, parametros_lista_expresiones params) {
 
 		corresponde_chequear_parametro = cantidad_parametros_declarados > contador_parametros_actuales;
 
-		if (tipo_declarado != ERROR && corresponde_chequear_parametro) {
+		if (chequear && corresponde_chequear_parametro) {
 			Parametro_actual parametro_actual;
 			parametro_actual.tipo_dato = expresion_n.tipo;
 			parametro_actual.tipo_base = expresion_n.tipo_base;
@@ -1106,7 +1108,7 @@ void lista_expresiones(set folset, parametros_lista_expresiones params) {
 		contador_parametros_actuales++;
 	}
 
-	if (tipo_declarado != ERROR && cantidad_parametros_declarados != contador_parametros_actuales)
+	if (chequear && cantidad_parametros_declarados != contador_parametros_actuales)
 		error_handler(90);
 }
 
