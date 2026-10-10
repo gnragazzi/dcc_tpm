@@ -52,6 +52,7 @@ typedef struct {
 
 typedef struct {
     int indice_en_TS;
+    enum boolean chequear_parametros;
 } parametros_lista_expresiones;
 
 typedef struct {
