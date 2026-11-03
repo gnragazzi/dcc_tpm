@@ -39,6 +39,8 @@ for entrega_dir in "${entregas[@]}"; do
 
   for f in "${entrega_dir}validos/"*.c; do
     casos=$((casos + 1))
+    objeto="${f%.c}.o"
+    rm -f "$objeto"
     status=0
     out="$(timeout 5 ./src/ucc -c "$f" 2>&1)" || status=$?
     if [ $status -ne 0 ]; then
@@ -48,7 +50,24 @@ for entrega_dir in "${entregas[@]}"; do
       echo "ERROR: [$entrega/validos] $f: se esperaba sin errores, pero reportó:"
       echo "$out" | grep -E "Error [0-9]+:"
       fail=$((fail + 1))
+    elif [ ! -f "$objeto" ]; then
+      echo "ERROR: [$entrega/validos] $f: compiló sin errores pero no generó $objeto"
+      fail=$((fail + 1))
+    elif [ -f "${f%.c}.salida" ]; then
+      entrada="${f%.c}.entrada"
+      [ -f "$entrada" ] || entrada=/dev/null
+      status=0
+      got="$(timeout 5 ./src/ucc -o "$objeto" < "$entrada" 2>&1)" || status=$?
+      if [ $status -ne 0 ]; then
+        echo "ERROR: [$entrega/validos] $f: 'ucc -o' terminó con status $status (crash o timeout: ¿falta PARAR?)"
+        fail=$((fail + 1))
+      elif [ "$got" != "$(cat "${f%.c}.salida")" ]; then
+        echo "ERROR: [$entrega/validos] $f: la salida de la ejecución no coincide con ${f%.c}.salida"
+        diff <(cat "${f%.c}.salida") <(echo "$got") || true
+        fail=$((fail + 1))
+      fi
     fi
+    rm -f "$objeto"
   done
 
   for f in "${entrega_dir}invalidos/"*.c; do
@@ -60,12 +79,20 @@ for entrega_dir in "${entregas[@]}"; do
       continue
     fi
 
+    objeto="${f%.c}.o"
+    rm -f "$objeto"
     status=0
     out="$(timeout 5 ./src/ucc -c "$f" 2>&1)" || status=$?
     if [ $status -ne 0 ]; then
       echo "ERROR: [$entrega/invalidos] $f: ucc terminó con status $status (crash o timeout, no se pudo evaluar la recuperación antipánico)"
       fail=$((fail + 1))
+      rm -f "$objeto"
       continue
+    fi
+    if [ -f "$objeto" ]; then
+      echo "ERROR: [$entrega/invalidos] $f: tiene errores pero se generó $objeto"
+      fail=$((fail + 1))
+      rm -f "$objeto"
     fi
 
     got="$(echo "$out" | grep -E "Error [0-9]+:" | trim_lineas || true)"
