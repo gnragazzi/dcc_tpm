@@ -5,6 +5,7 @@
 
 extern int last_call;
 int hubo_error=0;
+int cant_errores=0;
 
 
 void error_print(int ne)
@@ -18,11 +19,12 @@ void error_print(int ne)
 		case 4:  printf("\t Warning %d: Identificador de mas de 8 caracteres, sera truncado\n", ne); break;
 		case 5:  printf("\t Error %d: Caracter invalido\n", ne); break;
 		/* errores generales */
-		case 6:  printf("\t Error %d: El numero de argumentos no coincide. ucc -c programa.c \n", ne); break;
-		case 7:  printf("\t Error %d: El segundo argumento debe ser '-c'. ucc -c programa.c\n", ne); break;
+		case 6:  printf("\t Error %d: El numero de argumentos no coincide. ucc -c programa.c | ucc -o programa.o\n", ne); break;
+		case 7:  printf("\t Error %d: El segundo argumento debe ser '-c' o '-o'. ucc -c programa.c | ucc -o programa.o\n", ne); break;
 		case 8:  printf("\t Error %d: El archivo no existe\n ", ne); break;
 		case 9:  printf("\t Error %d: No se encontro el fin de archivo\n",ne); break;
 		case 10: printf("\t Error %d: Ocurrio un error \n", ne); break;
+		case 11: printf("\t Error %d: No se pudo generar el archivo objeto\n", ne); break;
 		/* errores de la tabla de simbolos */
 		case 12: printf("\t Error %d: Falta Memoria\n", ne); break;
 		case 13: printf("\t Error %d: Tabla de Simbolos vacia\n", ne); break;
@@ -50,6 +52,7 @@ void error_print(int ne)
 		case 34: printf("\t Error %d: Falta identificador de funcion\n", ne); break;
 		case 35: printf("\t Error %d: Falta [\n", ne); break;
 		/* posibles errores personalizados (que no sean parafrasis de errores ya existentes) 36-39*/
+		case 36: printf("\t Warning %d: El programa usa arreglos o funciones: no se genera codigo intermedio\n", ne); break;
 		/* errores de recuperacion de errores */
 		case 40: printf("\t Error %d: Al inicio del programa\n", ne); break;
 		case 41: printf("\t Error %d: Simbolo inesperado o falta especificador de tipo\n", ne); break;
@@ -116,14 +119,21 @@ void error_print(int ne)
 }
 
 
+int cantidad_errores()
+{
+	return cant_errores;
+}
+
+
 void error_handler(int ne)
 {
 int i;
 hubo_error++;
+if(ne != COD_IMP_ERRORES && ne != 3 && ne != 4)
+	cant_errores++;
 if(last_call){
 	if(hubo_error==1) printf("Linea %d - %s\n", nro_linea, linea);
 	else {
-	if(strlen(linea)==2) error_print(errores_x_linea[i]);
 	for(i = 0; i < cant_errores_x_linea; i++)
 		error_print(errores_x_linea[i]); 
 	cant_errores_x_linea = 0;}

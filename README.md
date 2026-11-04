@@ -8,13 +8,16 @@ Compilador para un subconjunto de C++ (`ucc`), desarrollado en equipo a lo largo
   cátedra: sin subcarpetas por módulo). La separación por módulo es por *naming*:
   `parser.*`, `error.*`, `util.*`, y lo que se sume en etapas siguientes (`ts.*`,
   `sistejec.*`).
-- `tests/entregaN/{validos,invalidos}/` — lotes de prueba por etapa, activos en CI.
-  `validos/` = programas sin errores sintácticos. `invalidos/` = programas con
-  errores, para probar el esquema de recuperación antipánico.
-- `tests/entregaN/pendientes/{validos,invalidos}/` — casos ya escritos para la
+- `tests/entregaN/{invalidos,validos,compilables}/` — lotes de prueba por etapa,
+  activos en CI. Las tres categorías son disjuntas: `invalidos/` = programas con
+  errores (reportan errores y no generan `.o`). `validos/` = sin errores de
+  análisis pero con arreglos o funciones (no generan `.o`). `compilables/` = sin
+  errores y sin arreglos ni funciones (generan `.o`; opcionalmente se verifica
+  su ejecución con `.salida`/`.entrada`).
+- `tests/entregaN/pendientes/{invalidos,validos,compilables}/` — casos ya escritos para la
   etapa pero cuya feature todavía no está resuelta. CI no los escanea. Un PR de
-  `feat/fix/*` que resuelve un caso lo promueve (`git mv`) a `validos/` o
-  `invalidos/` como parte del mismo PR, para no depender de un mega-PR que
+  `feat/fix/*` que resuelve un caso lo promueve (`git mv`) a su categoría
+  como parte del mismo PR, para no depender de un mega-PR que
   resuelva toda la entrega junta.
 - `tests/unit/` — tests unitarios de lógica pura (conjuntos FIRST/FOLLOW,
   `test(c1,c2,ne)`). No testear funciones del PDR acá: dependen de estado global
@@ -163,7 +166,10 @@ antes de confiar en ella. Ver el ticket `T6`.
   inexistente, argumentos mal puestos — no por errores de sintaxis del
   programa de entrada). La señal está en stdout, vía `error_print`: `Error N:
   ...` es una falla, `Warning N: ...` no lo es.
-  - `validos/*.c`: el CI falla si aparece alguna línea `Error N` en stdout.
+  - `validos/*.c`: el CI falla si aparece alguna línea `Error N` en stdout o
+    si se generó `.o`.
+  - `compilables/*.c`: el CI falla si aparece alguna línea `Error N`, si no se
+    generó `.o`, o si existe `.salida` y la ejecución no coincide.
   - `invalidos/*.c`: assertion fuerte contra un `.esperado` por caso, con la
     secuencia exacta de errores que debe reportar. Corren con timeout: un bug
     en la sincronización antipánico puede colgar el parser en vez de fallar

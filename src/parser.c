@@ -13,6 +13,13 @@ int main(int argc, char *argv[])
 
 	error_handler(COD_IMP_ERRORES);
 
+	if (cantidad_errores() == 0) {
+		if (construccion_no_soportada)
+			error_print(36);
+		else if (!generar_objeto(argv[2]))
+			error_print(11);
+	}
+
 	return 0;
 }
 
@@ -110,6 +117,9 @@ void especificador_declaracion(set folset, parametros_especificador_declaracion 
 
 	switch (lookahead()) {
 		case CPAR_ABR: {
+			if (params.identificador == NULL || strcmp(params.identificador, "main") != 0)
+				construccion_no_soportada = 1;
+
 			parametros_definicion_funcion parametros_definicion_funcion;
 			parametros_definicion_funcion.tipo_retorno = params.tipo_declaracion;
 			parametros_definicion_funcion.posicion_tabla_simbolos = NIL;
@@ -357,6 +367,7 @@ void declarador_init(set folset, parametros_declarador_init params) {
 		case CCOR_CIE:
 		case CLLA_ABR:
 		case CLLA_CIE: {
+			construccion_no_soportada = 1;
 			entrada_nueva_variable->ptr_tipo = resolver_tipo_en_TS(ARREGLO);
 			entrada_nueva_variable->desc.part_var.arr.ptero_tipo_base = resolver_tipo_en_TS(params.tipo_declaracion);
 			int valor_constante_entera = -1;
@@ -1035,6 +1046,7 @@ retorno_variable variable(set folset, parametros_variable params) {
 
 retorno_llamada_funcion llamada_funcion(set folset, parametros_llamada_funcion params) {
 	retorno_llamada_funcion retorno_llamada_funcion;
+	construccion_no_soportada = 1;
 
 	entrada_TS *entrada_ts = ts[params.indice_en_TS].ets;
 	retorno_llamada_funcion.tipo = resolver_tipo(ts[ts[params.indice_en_TS].ets->ptr_tipo].ets->nbre);

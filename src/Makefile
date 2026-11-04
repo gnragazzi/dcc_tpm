@@ -1,4 +1,4 @@
-obj = lex.yy.o parser.o error.o util.o ts.o sistejec.o
+obj = lex.yy.o parser.o error.o util.o ts.o sistejec.o codgen.o
 CC = gcc
 CFLAGS = -g -fcommon
 
@@ -16,6 +16,8 @@ util.o: util.c util.h var_globales.h
 ts.o: ts.c ts.h
 
 sistejec.o: sistejec.c sistejec.h
+
+codgen.o: codgen.c codgen.h sistejec.h
 
 clean:
 	$(RM) $(obj) ucc ucc.exe

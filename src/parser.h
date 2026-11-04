@@ -8,6 +8,7 @@
 #include "util.h"
 #include "error.h"
 #include "ts.h"
+#include "codgen.h"
 
 typedef struct {
     char *identificador;
