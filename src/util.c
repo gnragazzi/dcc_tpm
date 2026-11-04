@@ -60,6 +60,18 @@ void init_parser(int argc, char *argv[])
 			interprete();
 			exit(0);
 		}
+		else if(strcmp(argv[1], "-d") == 0)
+		{
+			if(!cargar_codgen(argv[2]))
+			{
+				error_handler(8);
+				error_handler(COD_IMP_ERRORES);
+				exit(1);
+			}
+			impr_codgen();
+			printf("\n");
+			exit(0);
+		}
 		else
 		{
 			error_handler(7);

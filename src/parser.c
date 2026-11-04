@@ -28,6 +28,7 @@ int main(int argc, char *argv[])
 
 void unidad_traduccion(set folset)
 {
+	emitir_inpp();
 	pushTB();
 	test((F_UNIDAD_TRADUCCION | folset), NADA, 40);
 
@@ -55,6 +56,7 @@ void unidad_traduccion(set folset)
 	}
 
 	pop_nivel();
+	emitir_parar();
 }
 
 

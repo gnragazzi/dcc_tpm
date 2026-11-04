@@ -19,8 +19,8 @@ void error_print(int ne)
 		case 4:  printf("\t Warning %d: Identificador de mas de 8 caracteres, sera truncado\n", ne); break;
 		case 5:  printf("\t Error %d: Caracter invalido\n", ne); break;
 		/* errores generales */
-		case 6:  printf("\t Error %d: El numero de argumentos no coincide. ucc -c programa.c | ucc -o programa.o\n", ne); break;
-		case 7:  printf("\t Error %d: El segundo argumento debe ser '-c' o '-o'. ucc -c programa.c | ucc -o programa.o\n", ne); break;
+		case 6:  printf("\t Error %d: El numero de argumentos no coincide. ucc -c programa.c | ucc -o programa.o | ucc -d programa.o\n", ne); break;
+		case 7:  printf("\t Error %d: El segundo argumento debe ser '-c', '-o' o '-d'. ucc -c programa.c | ucc -o programa.o | ucc -d programa.o\n", ne); break;
 		case 8:  printf("\t Error %d: El archivo no existe\n ", ne); break;
 		case 9:  printf("\t Error %d: No se encontro el fin de archivo\n",ne); break;
 		case 10: printf("\t Error %d: Ocurrio un error \n", ne); break;

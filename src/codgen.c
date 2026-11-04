@@ -10,6 +10,126 @@ int libre_ctes = 0;
 
 int construccion_no_soportada = 0;
 
+int emitir(float valor)
+{
+	CODE[libre] = valor;
+	return libre++;
+}
+
+int codigo_tipo_mac(enum tipo tipo)
+{
+	switch (tipo) {
+		case CHAR:
+			return 0;
+		case INT:
+			return 1;
+		case FLOAT:
+			return 2;
+		default:
+			return -1;
+	}
+}
+
+static void emitir_con_tipo(int instruccion, enum tipo tipo)
+{
+	emitir(instruccion);
+	emitir(codigo_tipo_mac(tipo));
+}
+
+void emitir_inpp() { emitir(INPP); }
+void emitir_parar() { emitir(PARAR); }
+
+void emitir_crct(enum tipo tipo, float valor)
+{
+	emitir_con_tipo(CRCT, tipo);
+	emitir(valor);
+}
+
+void emitir_crcts(int posicion_en_ctes)
+{
+	emitir(CRCTS);
+	emitir(posicion_en_ctes);
+}
+
+void emitir_crvl(int nivel, int desplazamiento, enum tipo tipo)
+{
+	emitir(CRVL);
+	emitir(nivel);
+	emitir(desplazamiento);
+	emitir(codigo_tipo_mac(tipo));
+}
+
+void emitir_alm(int nivel, int desplazamiento, enum tipo tipo)
+{
+	emitir(ALM);
+	emitir(nivel);
+	emitir(desplazamiento);
+	emitir(codigo_tipo_mac(tipo));
+}
+
+void emitir_cast(enum tipo origen, enum tipo destino)
+{
+	emitir_con_tipo(CAST, origen);
+	emitir(codigo_tipo_mac(destino));
+}
+
+void emitir_sum(enum tipo tipo) { emitir_con_tipo(SUM, tipo); }
+void emitir_sub(enum tipo tipo) { emitir_con_tipo(SUB, tipo); }
+void emitir_mul(enum tipo tipo) { emitir_con_tipo(MUL, tipo); }
+void emitir_div(enum tipo tipo) { emitir_con_tipo(DIV, tipo); }
+void emitir_inv(enum tipo tipo) { emitir_con_tipo(INV, tipo); }
+
+void emitir_and(enum tipo tipo) { emitir_con_tipo(AND, tipo); }
+void emitir_or(enum tipo tipo) { emitir_con_tipo(OR, tipo); }
+void emitir_neg(enum tipo tipo) { emitir_con_tipo(NEG, tipo); }
+
+void emitir_cmma(enum tipo tipo) { emitir_con_tipo(CMMA, tipo); }
+void emitir_cmme(enum tipo tipo) { emitir_con_tipo(CMME, tipo); }
+void emitir_cmig(enum tipo tipo) { emitir_con_tipo(CMIG, tipo); }
+void emitir_cmai(enum tipo tipo) { emitir_con_tipo(CMAI, tipo); }
+void emitir_cmei(enum tipo tipo) { emitir_con_tipo(CMEI, tipo); }
+void emitir_cmni(enum tipo tipo) { emitir_con_tipo(CMNI, tipo); }
+
+void emitir_leer(enum tipo tipo) { emitir_con_tipo(LEER, tipo); }
+void emitir_impr(enum tipo tipo) { emitir_con_tipo(IMPR, tipo); }
+void emitir_imprcs() { emitir(IMPRCS); }
+
+int emitir_bifs(int desplazamiento)
+{
+	emitir(BIFS);
+	return emitir(desplazamiento);
+}
+
+int emitir_biff(enum tipo tipo, int desplazamiento)
+{
+	emitir_con_tipo(BIFF, tipo);
+	return emitir(desplazamiento);
+}
+
+void emitir_aloc(int bytes)
+{
+	emitir(ALOC);
+	emitir(bytes);
+}
+
+void emitir_dmem(int bytes)
+{
+	emitir(DMEM);
+	emitir(bytes);
+}
+
+void emitir_enbl(int nivel)
+{
+	emitir(ENBL);
+	emitir(nivel);
+}
+
+void emitir_finb(int nivel)
+{
+	emitir(FINB);
+	emitir(nivel);
+}
+
 int generar_objeto(char *fuente)
 {
 	size_t largo = strlen(fuente);
