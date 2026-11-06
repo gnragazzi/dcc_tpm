@@ -4,6 +4,7 @@
 
 float CODE[TAM_PROG];
 int libre = 0;
+int desplazamiento[TAM_DISP] = {0};
 
 char CTES[TAM_CTES];
 int libre_ctes = 0;
@@ -41,8 +42,11 @@ void emitir_parar() { emitir(PARAR); }
 
 void emitir_crct(enum tipo tipo, float valor)
 {
-	emitir_con_tipo(CRCT, tipo);
-	emitir(valor);
+	if (tipo != ERROR) {
+		// TODO falta forma de sumar a la variable desplazamiento
+		emitir_con_tipo(CRCT, tipo);
+		emitir(valor);
+	}
 }
 
 void emitir_crcts(int posicion_en_ctes)
@@ -51,19 +55,20 @@ void emitir_crcts(int posicion_en_ctes)
 	emitir(posicion_en_ctes);
 }
 
-void emitir_crvl(int nivel, int desplazamiento, enum tipo tipo)
+void emitir_crvl(int nivel, int despl, enum tipo tipo)
 {
 	emitir(CRVL);
 	emitir(nivel);
-	emitir(desplazamiento);
+	emitir(despl);
 	emitir(codigo_tipo_mac(tipo));
 }
 
-void emitir_alm(int nivel, int desplazamiento, enum tipo tipo)
+void emitir_alm(int nivel, int despl, enum tipo tipo)
 {
+	// TODO falta forma de restar el almacenamiento tomado
 	emitir(ALM);
 	emitir(nivel);
-	emitir(desplazamiento);
+	emitir(despl);
 	emitir(codigo_tipo_mac(tipo));
 }
 
@@ -94,16 +99,16 @@ void emitir_leer(enum tipo tipo) { emitir_con_tipo(LEER, tipo); }
 void emitir_impr(enum tipo tipo) { emitir_con_tipo(IMPR, tipo); }
 void emitir_imprcs() { emitir(IMPRCS); }
 
-int emitir_bifs(int desplazamiento)
+int emitir_bifs(int salto)
 {
 	emitir(BIFS);
-	return emitir(desplazamiento);
+	return emitir(salto);
 }
 
-int emitir_biff(enum tipo tipo, int desplazamiento)
+int emitir_biff(enum tipo tipo, int salto)
 {
 	emitir_con_tipo(BIFF, tipo);
-	return emitir(desplazamiento);
+	return emitir(salto);
 }
 
 void emitir_aloc(int bytes)
@@ -120,6 +125,7 @@ void emitir_dmem(int bytes)
 
 void emitir_enbl(int nivel)
 {
+	desplazamiento[nivel] = 0;
 	emitir(ENBL);
 	emitir(nivel);
 }

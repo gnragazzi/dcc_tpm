@@ -6,6 +6,7 @@
 
 extern float CODE[TAM_PROG];
 extern int libre;
+extern int desplazamiento[TAM_DISP];
 
 extern char CTES[TAM_CTES];
 extern int libre_ctes;
@@ -21,8 +22,8 @@ void emitir_parar();
 
 void emitir_crct(enum tipo tipo, float valor);
 void emitir_crcts(int posicion_en_ctes);
-void emitir_crvl(int nivel, int desplazamiento, enum tipo tipo);
-void emitir_alm(int nivel, int desplazamiento, enum tipo tipo);
+void emitir_crvl(int nivel, int despl, enum tipo tipo);
+void emitir_alm(int nivel, int despl, enum tipo tipo);
 void emitir_cast(enum tipo origen, enum tipo destino);
 
 void emitir_sum(enum tipo tipo);
@@ -46,9 +47,8 @@ void emitir_leer(enum tipo tipo);
 void emitir_impr(enum tipo tipo);
 void emitir_imprcs();
 
-/* Devuelven la posición en CODE del operando desplazamiento, para completarlo después. */
-int emitir_bifs(int desplazamiento);
-int emitir_biff(enum tipo tipo, int desplazamiento);
+int emitir_bifs(int salto);
+int emitir_biff(enum tipo tipo, int salto);
 
 void emitir_aloc(int bytes);
 void emitir_dmem(int bytes);

@@ -56,6 +56,7 @@ void unidad_traduccion(set folset)
 	}
 
 	pop_nivel();
+	emitir_dmem(desplazamiento[0]);
 	emitir_parar();
 }
 
@@ -163,6 +164,7 @@ void definicion_funcion(set folset, parametros_definicion_funcion params)
 	enum boolean tiene_retorno = FALSE;
 
 	pushTB();
+	emitir_enbl(get_nivel());
 
 	int posicion_tabla_simbolos = params.posicion_tabla_simbolos;
 	parametros_proposicion_compuesta parametros_proposicion_compuesta;
@@ -352,15 +354,31 @@ void declarador_init(set folset, parametros_declarador_init params) {
 	entrada_TS *entrada_nueva_variable = nueva_entrada();
 	entrada_nueva_variable->clase = CLASVAR;
 
+	int nivel = get_nivel();
+	int despl = desplazamiento[nivel];
+	int cant_bytes = ts[resolver_tipo_en_TS(params.tipo_declaracion)].ets->cant_byte;
+
+	entrada_nueva_variable->desc.nivel = nivel;
+	entrada_nueva_variable->desc.despl = despl;
+
+	desplazamiento[nivel] += cant_bytes;
+	emitir_aloc(cant_bytes);
+
 	switch (lookahead()) {
 		case CASIGNAC:
 			scanner();
+			parametros_constante parametros_constante;
+			parametros_constante.tipo_declarado = params.tipo_declaracion;
 			entrada_nueva_variable->ptr_tipo = resolver_tipo_en_TS(params.tipo_declaracion);
-			retorno_constante constante_1 = constante(folset);
+			retorno_constante constante_1 = constante(folset, parametros_constante);
+			enum tipo tipo_declarado = params.tipo_declaracion;
 
 			if (params.tipo_declaracion != ERROR && !param1_es_coercionable_a_param2(constante_1.tipo, params.tipo_declaracion)) {
 				error_handler(83);
+			} else {
+				emitir_alm(nivel, despl, tipo_declarado);
 			}
+
 			break;
 
 		/*  { } son puntos de reconfiguracion de esta alternativa: se entra por
@@ -398,7 +416,8 @@ void declarador_init(set folset, parametros_declarador_init params) {
 				if (valor_constante_entera >= 0 && valor_constante_entera < cantidad_inicializadores) {
 					error_handler(76);
 				}
-				if (cantidad_inicializadores > 0 && !param1_es_coercionable_a_param2(lista_inicializadores_1.tipo_inicializadores, params.tipo_declaracion)) {
+				if (cantidad_inicializadores > 0 && !param1_es_coercionable_a_param2(
+					    lista_inicializadores_1.tipo_inicializadores, params.tipo_declaracion)) {
 					error_handler(77);
 				}
 			}
@@ -424,9 +443,11 @@ void declarador_init(set folset, parametros_declarador_init params) {
 retorno_lista_inicializadores lista_inicializadores(set folset)
 {
 	retorno_lista_inicializadores retorno_lista_inicializadores;
+	parametros_constante parametros_constante;
+	parametros_constante.tipo_declarado = ERROR;
 
 	enum boolean hay_constante = lookahead_in(F_CONSTANTE) ? TRUE : FALSE;
-	retorno_constante constante_1 = constante(folset | CCOMA | F_CONSTANTE);
+	retorno_constante constante_1 = constante(folset | CCOMA | F_CONSTANTE, parametros_constante);
 	retorno_lista_inicializadores.cantidad_inicializadores = hay_constante || lookahead_in(CCOMA | F_CONSTANTE) ? 1 : 0;
 	retorno_lista_inicializadores.tipo_inicializadores = constante_1.tipo;
 
@@ -437,7 +458,7 @@ retorno_lista_inicializadores lista_inicializadores(set folset)
 		else
 			error_handler(64);
 
-		retorno_constante constante_n = constante(folset | CCOMA | F_CONSTANTE);
+		retorno_constante constante_n = constante(folset | CCOMA | F_CONSTANTE, parametros_constante);
 
 		retorno_lista_inicializadores.cantidad_inicializadores++;
 		retorno_lista_inicializadores.tipo_inicializadores = resolver_tipo_operador(retorno_lista_inicializadores.tipo_inicializadores, constante_n.tipo);
@@ -465,6 +486,10 @@ void proposicion_compuesta(set folset, parametros_proposicion_compuesta params)
 
 	match(CLLA_CIE, 25);
 	test(folset, NADA, 50);
+
+	int nivel = get_nivel();
+	emitir_dmem(desplazamiento[nivel]);
+	emitir_finb(nivel);
 	pop_nivel();
 }
 
@@ -523,6 +548,7 @@ void proposicion(set folset, parametros_proposicion params) {
 	switch(lookahead()) {
 		case CLLA_ABR:
 			pushTB();
+			emitir_enbl(get_nivel());
 
 			parametros_proposicion_compuesta parametros_proposicion_compuesta;
 			parametros_proposicion_compuesta.tipo_retorno = params.tipo_retorno;
@@ -935,7 +961,9 @@ retorno_factor factor(set folset)
 		case CCONS_ENT:
 		case CCONS_FLO:
 		case CCONS_CAR: {
-			retorno_constante constante_1 = constante(folset);
+			parametros_constante parametros_constante; //TODO falta implementar en v2
+			parametros_constante.tipo_declarado = ERROR;
+			retorno_constante constante_1 = constante(folset, parametros_constante);
 			retorno_factor.tipo = constante_1.tipo;
 			retorno_factor.es_clase_variable = FALSE;
 
@@ -1127,25 +1155,27 @@ void lista_expresiones(set folset, parametros_lista_expresiones params) {
 }
 
 
-retorno_constante constante(set folset)
+retorno_constante constante(set folset, parametros_constante params)
 {
 	retorno_constante retorno_constante;
-	retorno_constante.tipo = ERROR;
 	test(F_CONSTANTE, folset, 62);
 
 	switch(lookahead())
 	{
 		case CCONS_ENT:
+			emitir_crct(params.tipo_declarado, atoi(token1.lexema));
 			scanner();
 			retorno_constante.tipo = INT;
 			break;
 
 		case CCONS_FLO:
+			emitir_crct(params.tipo_declarado, atof(token1.lexema));
 			scanner();
 			retorno_constante.tipo = FLOAT;
 			break;
 
 		case CCONS_CAR:
+			emitir_crct(params.tipo_declarado, token1.lexema[1]);
 			scanner();
 			retorno_constante.tipo = CHAR;
 			break;

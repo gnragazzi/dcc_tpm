@@ -5,7 +5,7 @@ CFLAGS = -g -fcommon
 ucc: $(obj)
 	$(CC) -o $@ $(obj) -lm
 
-parser.o: parser.c parser.h conjuntos.h codigos.h var_globales.h util.h codgen.h sistejec.h
+parser.o: parser.c parser.h conjuntos.h codigos.h var_globales.h util.h error.h ts.h codgen.h sistejec.h
 
 lex.yy.o: lex.yy.c codigos.h var_globales.h
 

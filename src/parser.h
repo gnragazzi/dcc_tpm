@@ -90,6 +90,10 @@ typedef struct {
 } parametros_proposicion_retorno;
 
 typedef struct {
+    enum tipo tipo_declarado;
+} parametros_constante;
+
+typedef struct {
     int cantidad_inicializadores;
     enum tipo tipo_inicializadores;
 } retorno_lista_inicializadores;
@@ -163,7 +167,7 @@ retorno_factor factor(set folset);
 retorno_variable variable(set folset, parametros_variable);
 retorno_llamada_funcion llamada_funcion(set folset, parametros_llamada_funcion);
 void lista_expresiones(set folset, parametros_lista_expresiones);
-retorno_constante constante(set folset);
+retorno_constante constante(set folset, parametros_constante);
 
 
 #endif
