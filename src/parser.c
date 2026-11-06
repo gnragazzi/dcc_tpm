@@ -371,6 +371,7 @@ void declarador_init(set folset, parametros_declarador_init params) {
 			parametros_constante.tipo_declarado = params.tipo_declaracion;
 			entrada_nueva_variable->ptr_tipo = resolver_tipo_en_TS(params.tipo_declaracion);
 			retorno_constante constante_1 = constante(folset, parametros_constante);
+
 			enum tipo tipo_declarado = params.tipo_declaracion;
 
 			if (params.tipo_declaracion != ERROR && !param1_es_coercionable_a_param2(constante_1.tipo, params.tipo_declaracion)) {
@@ -1158,6 +1159,7 @@ void lista_expresiones(set folset, parametros_lista_expresiones params) {
 retorno_constante constante(set folset, parametros_constante params)
 {
 	retorno_constante retorno_constante;
+	retorno_constante.tipo = ERROR;
 	test(F_CONSTANTE, folset, 62);
 
 	switch(lookahead())
