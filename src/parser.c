@@ -1014,8 +1014,14 @@ retorno_factor factor(set folset)
 			scanner();
 			retorno_expresion expresion_2 = expresion(folset);
 			lanzar_error_si_corresponde(expresion_2.tipo);
-			retorno_factor.tipo = es_tipo_base(expresion_2.tipo) ? INT : ERROR;
+			enum boolean expresion_es_tipo_base = es_tipo_base(expresion_2.tipo);
+
+			retorno_factor.tipo = expresion_es_tipo_base ? INT : ERROR;
 			retorno_factor.es_clase_variable = FALSE;
+
+			if (expresion_es_tipo_base) {
+				emitir_neg(expresion_2.tipo);
+			}
 
 			break;
 		}

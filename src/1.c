@@ -1,3 +1,3 @@
 void main(){
-    cout << "Hola" << ", Mundo!\n";
+    cout << "Hola" << ", Mundo!";
 }
