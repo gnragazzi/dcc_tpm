@@ -775,8 +775,10 @@ void proposicion_expresion(set folset)
 
 retorno_expresion expresion(set folset)
 {
+	parametros_expresion_simple parametros_expresion_simple;
+	parametros_expresion_simple.tipo_expresion_actual = INDEFINIDO;
 	retorno_expresion retorno_expresion;
-	retorno_expresion_simple expresion_simple_1 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
+	retorno_expresion_simple expresion_simple_1 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE, parametros_expresion_simple);
 	retorno_expresion.tipo_base = expresion_simple_1.tipo == ARREGLO ? expresion_simple_1.tipo_base : ERROR;
 	enum boolean se_lanzo_error_arreglo_como_todo = TRUE;
 
@@ -796,7 +798,8 @@ retorno_expresion expresion(set folset)
 					se_lanzo_error_arreglo_como_todo = TRUE;
 				}
 				scanner();
-				retorno_expresion_simple expresion_simple_2 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
+				parametros_expresion_simple.tipo_expresion_actual = INDEFINIDO; // TODO ver en v3
+				retorno_expresion_simple expresion_simple_2 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE, parametros_expresion_simple);
 				clase_izquierda_asignacion_es_variable = expresion_simple_2.es_clase_variable;
 
 				if (expresion_simple_2.tipo == STRING) {
@@ -820,9 +823,10 @@ retorno_expresion expresion(set folset)
 			case CMEIG:
 			case CMAYOR:
 			case CMAIG: {
+				parametros_expresion_simple.tipo_expresion_actual = es_tipo_base(retorno_expresion.tipo) ? retorno_expresion.tipo : ERROR;
 				scanner();
 
-				retorno_expresion_simple expresion_simple_3 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
+				retorno_expresion_simple expresion_simple_3 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE, parametros_expresion_simple);
 				clase_izquierda_asignacion_es_variable = FALSE;
 				tipo_izquierda_asignacion = expresion_simple_3.tipo;
 
@@ -843,9 +847,11 @@ retorno_expresion expresion(set folset)
 }
 
 
-retorno_expresion_simple expresion_simple(set folset) {
+retorno_expresion_simple expresion_simple(set folset, parametros_expresion_simple params) {
 	enum boolean hubo_operador_previo = FALSE;
 	retorno_expresion_simple retorno_expresion_simple;
+	parametros_termino parametros_termino;
+	parametros_termino.tipo_expresion_actual = params.tipo_expresion_actual;
 
 	test(F_EXPRESION_SIMPLE, (folset | F_RESTO_EXPRESION_SIMPLE), 56);
 
@@ -854,7 +860,7 @@ retorno_expresion_simple expresion_simple(set folset) {
 		scanner();
 	}
 
-	retorno_termino termino_1 = termino(folset | F_RESTO_EXPRESION_SIMPLE);
+	retorno_termino termino_1 = termino(folset | F_RESTO_EXPRESION_SIMPLE, parametros_termino);
 
 	if (hubo_operador_previo && termino_1.tipo == STRING) {
 		error_handler(94);
@@ -867,11 +873,12 @@ retorno_expresion_simple expresion_simple(set folset) {
 
 
 	while (lookahead_in(F_RESTO_EXPRESION_SIMPLE)) {
+		parametros_termino.tipo_expresion_actual = es_tipo_base(retorno_expresion_simple.tipo)? retorno_expresion_simple.tipo : ERROR;
 		retorno_expresion_simple.es_clase_variable = FALSE;
 		enum boolean es_operador_logico_or = token1.codigo == COR;
 
 		scanner();
-		retorno_termino termino_n = termino(folset | F_RESTO_EXPRESION_SIMPLE);
+		retorno_termino termino_n = termino(folset | F_RESTO_EXPRESION_SIMPLE, parametros_termino);
 
 		enum tipo tipo_coercion_operando = resolver_tipo_operador(retorno_expresion_simple.tipo, termino_n.tipo);
 
@@ -883,11 +890,13 @@ retorno_expresion_simple expresion_simple(set folset) {
 }
 
 
-retorno_termino termino(set folset)
+retorno_termino termino(set folset, parametros_termino params)
 {
+	parametros_factor parametros_factor;
+	parametros_factor.tipo_expresion_actual = params.tipo_expresion_actual;
 	retorno_termino retorno_termino;
 
-	retorno_factor factor_1 = factor(folset | F_RESTO_TERMINO | F_FACTOR);
+	retorno_factor factor_1 = factor(folset | F_RESTO_TERMINO | F_FACTOR, parametros_factor);
 
 	retorno_termino.tipo = factor_1.tipo;
 	retorno_termino.es_clase_variable = factor_1.es_clase_variable;
@@ -895,11 +904,12 @@ retorno_termino termino(set folset)
 
 	while(lookahead_in(F_RESTO_TERMINO))
 	{
+		parametros_factor.tipo_expresion_actual = es_tipo_base(retorno_termino.tipo) ? retorno_termino.tipo : ERROR;
 		retorno_termino.es_clase_variable = FALSE;
 		enum boolean es_operador_logico_and = token1.codigo == CAND;
 
 		scanner();
-		retorno_factor factor_n = factor(folset | F_RESTO_TERMINO | F_FACTOR);
+		retorno_factor factor_n = factor(folset | F_RESTO_TERMINO | F_FACTOR, parametros_factor);
 
 		enum tipo tipo_coercion_operando = resolver_tipo_operador(retorno_termino.tipo, factor_n.tipo);
 
@@ -911,7 +921,7 @@ retorno_termino termino(set folset)
 }
 
 
-retorno_factor factor(set folset)
+retorno_factor factor(set folset, parametros_factor params)
 {
 	test(F_FACTOR, folset, 57);
 	retorno_factor retorno_factor;
@@ -957,6 +967,7 @@ retorno_factor factor(set folset)
 				parametros_variable parametros_variable;
 				parametros_variable.indice_en_TS = indice_en_TS;
 				parametros_variable.origen_proposicion_entrada = FALSE;
+				parametros_variable.tipo_expresion_actual = params.tipo_expresion_actual;
 
 				if (!identificador_esta_en_TS) {
 					entrada_TS *entrada = ts[indice_en_TS].ets;
@@ -975,7 +986,7 @@ retorno_factor factor(set folset)
 		case CCONS_CAR: {
 			parametros_constante parametros_constante;
 			parametros_constante.tipo_declarado = INDEFINIDO;
-			parametros_constante.tipo_expresion_actual = INDEFINIDO; // TODO esto se debe heredar
+			parametros_constante.tipo_expresion_actual = params.tipo_expresion_actual;
 
 			retorno_constante constante_1 = constante(folset, parametros_constante);
 			retorno_factor.tipo = constante_1.tipo;

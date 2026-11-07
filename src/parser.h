@@ -43,6 +43,18 @@ typedef struct {
 } parametros_lista_declaraciones_init;
 
 typedef struct {
+    enum tipo tipo_expresion_actual;
+} parametros_expresion_simple;
+
+typedef struct {
+    enum tipo tipo_expresion_actual;
+} parametros_termino;
+
+typedef struct {
+    enum tipo tipo_expresion_actual;
+} parametros_factor;
+
+typedef struct {
     int indice_en_TS;
     enum boolean origen_proposicion_entrada;
     enum tipo tipo_expresion_actual;
@@ -57,14 +69,6 @@ typedef struct {
     enum boolean chequear_parametros;
 } parametros_lista_expresiones;
 
-typedef struct {
-    enum tipo tipo;
-} retorno_especificador_tipo;
-
-typedef struct {
-    enum tipo tipo_retorno;
-    enum boolean *tiene_retorno;
-} parametros_lista_proposiciones;
 
 typedef struct {
     enum tipo tipo_retorno;
@@ -94,6 +98,15 @@ typedef struct {
     enum tipo tipo_declarado;
     enum tipo tipo_expresion_actual;
 } parametros_constante;
+
+typedef struct {
+    enum tipo tipo;
+} retorno_especificador_tipo;
+
+typedef struct {
+    enum tipo tipo_retorno;
+    enum boolean *tiene_retorno;
+} parametros_lista_proposiciones;
 
 typedef struct {
     int cantidad_inicializadores;
@@ -185,11 +198,11 @@ void proposicion_retorno(set folset, parametros_proposicion_retorno params);
 
 retorno_expresion expresion(set folset);
 
-retorno_expresion_simple expresion_simple(set folset);
+retorno_expresion_simple expresion_simple(set folset, parametros_expresion_simple);
 
-retorno_termino termino(set folset);
+retorno_termino termino(set folset, parametros_termino);
 
-retorno_factor factor(set folset);
+retorno_factor factor(set folset, parametros_factor);
 
 retorno_variable variable(set folset, parametros_variable);
 
