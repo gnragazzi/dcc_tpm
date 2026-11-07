@@ -1069,8 +1069,8 @@ retorno_variable variable(set folset, parametros_variable params) {
 		}
 	}
 
-	entrada_TS *entrada_ts = params.indice_en_TS != NIL ?ts[params.indice_en_TS].ets : NULL;
-	enum boolean es_parametro = entrada_ts != NULL ? entrada_ts->clase == CLASPAR : FALSE ;
+	entrada_TS *entrada_ts = params.indice_en_TS != NIL ? ts[params.indice_en_TS].ets : NULL;
+	enum boolean es_parametro = entrada_ts != NULL ? entrada_ts->clase == CLASPAR : FALSE;
 
 	if (params.indice_en_TS != NIL)
 		retorno_variable.tipo = resolver_tipo(ts[ts[params.indice_en_TS].ets->ptr_tipo].ets->nbre);
@@ -1079,7 +1079,6 @@ retorno_variable variable(set folset, parametros_variable params) {
 		if (params.indice_en_TS != NIL && retorno_variable.tipo != ARREGLO)
 			error_handler(78);
 		else if (params.indice_en_TS != NIL) {
-
 			if (es_parametro) {
 				retorno_variable.tipo = resolver_tipo(ts[entrada_ts->desc.part_var.param.ptero_tipo_base].ets->nbre);
 			} else {
@@ -1094,13 +1093,30 @@ retorno_variable variable(set folset, parametros_variable params) {
 			error_handler(94);
 
 		match(CCOR_CIE, 22);
-	}else {
+	} else {
 		if (params.indice_en_TS != NIL && retorno_variable.tipo == ARREGLO) {
 			retorno_variable.tipo_base = es_parametro
 				                             ? resolver_tipo(
 					                             ts[entrada_ts->desc.part_var.param.ptero_tipo_base].ets->nbre)
 				                             : resolver_tipo(
 					                             ts[entrada_ts->desc.part_var.arr.ptero_tipo_base].ets->nbre);
+		} else if (params.indice_en_TS != NIL && es_tipo_base(retorno_variable.tipo)) {
+			int nivel = entrada_ts->desc.nivel;
+			int despl = entrada_ts->desc.despl;
+
+			if (params.tipo_expresion_actual == INDEFINIDO) {
+				emitir_crvl(nivel, despl, retorno_variable.tipo);
+			} else if (es_tipo_base(params.tipo_expresion_actual)) {
+				if (params.tipo_expresion_actual < retorno_variable.tipo) {
+					emitir_cast(params.tipo_expresion_actual, retorno_variable.tipo);
+					emitir_crvl(nivel, despl, retorno_variable.tipo);
+				} else if (params.tipo_expresion_actual > retorno_variable.tipo) {
+					emitir_crvl(nivel, despl, retorno_variable.tipo);
+					emitir_cast(retorno_variable.tipo, params.tipo_expresion_actual);
+				} else {
+					emitir_crvl(nivel, despl, retorno_variable.tipo);
+				}
+			}
 		}
 	}
 
