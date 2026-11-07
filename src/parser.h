@@ -91,6 +91,7 @@ typedef struct {
 
 typedef struct {
     enum tipo tipo_declarado;
+    enum tipo tipo_expresion_actual;
 } parametros_constante;
 
 typedef struct {

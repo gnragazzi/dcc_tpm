@@ -369,7 +369,9 @@ void declarador_init(set folset, parametros_declarador_init params) {
 			scanner();
 			parametros_constante parametros_constante;
 			parametros_constante.tipo_declarado = params.tipo_declaracion;
+			parametros_constante.tipo_expresion_actual = ERROR;
 			entrada_nueva_variable->ptr_tipo = resolver_tipo_en_TS(params.tipo_declaracion);
+
 			retorno_constante constante_1 = constante(folset, parametros_constante);
 
 			enum tipo tipo_declarado = params.tipo_declaracion;
@@ -711,7 +713,7 @@ void proposicion_e_s(set folset) {
 
 				if (!es_tipo_base(expresion_m.tipo) && expresion_m.tipo != STRING) {
 					error_handler(95);
-				} else if (expresion_1.tipo == STRING) {
+				} else if (expresion_m.tipo == STRING) {
 					emitir_imprcs();
 				}
 			}
@@ -971,8 +973,10 @@ retorno_factor factor(set folset)
 		case CCONS_ENT:
 		case CCONS_FLO:
 		case CCONS_CAR: {
-			parametros_constante parametros_constante; //TODO falta implementar en v2
-			parametros_constante.tipo_declarado = ERROR;
+			parametros_constante parametros_constante;
+			parametros_constante.tipo_declarado = INDEFINIDO;
+			parametros_constante.tipo_expresion_actual = INDEFINIDO; // TODO esto se debe heredar
+
 			retorno_constante constante_1 = constante(folset, parametros_constante);
 			retorno_factor.tipo = constante_1.tipo;
 			retorno_factor.es_clase_variable = FALSE;
@@ -1195,19 +1199,57 @@ retorno_constante constante(set folset, parametros_constante params)
 	switch(lookahead())
 	{
 		case CCONS_ENT:
-			emitir_crct(params.tipo_declarado, atoi(token1.lexema));
+			if (es_tipo_base(params.tipo_declarado)) {
+				emitir_crct(params.tipo_declarado, atoi(token1.lexema));
+			} else if (params.tipo_expresion_actual == INDEFINIDO) {
+				emitir_crct(INT, atoi(token1.lexema));
+			} else if (es_tipo_base(params.tipo_expresion_actual)) {
+				if (params.tipo_expresion_actual < INT) {
+					emitir_cast(params.tipo_expresion_actual, INT);
+					emitir_crct(INT, atoi(token1.lexema));
+				} else if (params.tipo_expresion_actual > INT) {
+					emitir_crct(INT, atoi(token1.lexema));
+					emitir_cast(INT, params.tipo_expresion_actual);
+				} else {
+					emitir_crct(INT, atoi(token1.lexema));
+				}
+			}
+
 			scanner();
 			retorno_constante.tipo = INT;
 			break;
 
 		case CCONS_FLO:
-			emitir_crct(params.tipo_declarado, atof(token1.lexema));
+			if (es_tipo_base(params.tipo_declarado)) {
+				emitir_crct(params.tipo_declarado, atof(token1.lexema));
+			} else if (params.tipo_expresion_actual == INDEFINIDO) {
+				emitir_crct(FLOAT, atof(token1.lexema));
+			} else if (es_tipo_base(params.tipo_expresion_actual)) {
+				if (params.tipo_expresion_actual < FLOAT) {
+					emitir_cast(params.tipo_expresion_actual, FLOAT);
+					emitir_crct(FLOAT, atof(token1.lexema));
+				} else {
+					emitir_crct(FLOAT, atof(token1.lexema));
+				}
+			}
+
 			scanner();
 			retorno_constante.tipo = FLOAT;
 			break;
 
 		case CCONS_CAR:
-			emitir_crct(params.tipo_declarado, token1.lexema[1]);
+			if (es_tipo_base(params.tipo_declarado)) {
+				emitir_crct(params.tipo_declarado, token1.lexema[1]);
+			} else if (params.tipo_expresion_actual == INDEFINIDO) {
+				emitir_crct(CHAR, token1.lexema[1]);
+			} else if (es_tipo_base(params.tipo_expresion_actual)) {
+				if (params.tipo_expresion_actual > CHAR) {
+					emitir_crct(CHAR, token1.lexema[1]);
+					emitir_cast(CHAR, params.tipo_expresion_actual);
+				} else {
+					emitir_crct(CHAR, token1.lexema[1]);
+				}
+			}
 			scanner();
 			retorno_constante.tipo = CHAR;
 			break;
