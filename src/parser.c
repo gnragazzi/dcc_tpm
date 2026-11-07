@@ -876,6 +876,7 @@ retorno_expresion_simple expresion_simple(set folset, parametros_expresion_simpl
 		parametros_termino.tipo_expresion_actual = es_tipo_base(retorno_expresion_simple.tipo)? retorno_expresion_simple.tipo : ERROR;
 		retorno_expresion_simple.es_clase_variable = FALSE;
 		enum boolean es_operador_logico_or = token1.codigo == COR;
+		set operador = lookahead();
 
 		scanner();
 		retorno_termino termino_n = termino(folset | F_RESTO_EXPRESION_SIMPLE, parametros_termino);
@@ -884,6 +885,16 @@ retorno_expresion_simple expresion_simple(set folset, parametros_expresion_simpl
 
 		retorno_expresion_simple.tipo = es_operador_logico_or && tipo_coercion_operando != ERROR? INT : tipo_coercion_operando;
 		retorno_expresion_simple.tipo_base = ERROR;
+
+		if (es_tipo_base(retorno_expresion_simple.tipo)) {
+			if (operador == CMAS) {
+				emitir_sum(retorno_expresion_simple.tipo);
+			} else if (operador == CMENOS) {
+				emitir_sub(retorno_expresion_simple.tipo);
+			} else {
+				emitir_or(retorno_expresion_simple.tipo);
+			}
+		}
 	}
 
 	return  retorno_expresion_simple;
@@ -916,12 +927,14 @@ retorno_termino termino(set folset, parametros_termino params) {
 		retorno_termino.tipo = es_operador_logico_and && tipo_coercion_operando != ERROR ? INT : tipo_coercion_operando;
 		retorno_termino.tipo_base = ERROR;
 
-		if (operador == CAND) {
-			emitir_and(retorno_termino.tipo);
-		} else if (operador == CMULT) {
-			emitir_mul(retorno_termino.tipo);
-		} else {
-			emitir_div(retorno_termino.tipo);
+		if (es_tipo_base(retorno_termino.tipo)) {
+			if (operador == CAND) {
+				emitir_and(retorno_termino.tipo);
+			} else if (operador == CMULT) {
+				emitir_mul(retorno_termino.tipo);
+			} else {
+				emitir_div(retorno_termino.tipo);
+			}
 		}
 	}
 
