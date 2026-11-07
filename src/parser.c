@@ -705,6 +705,8 @@ void proposicion_e_s(set folset) {
 				error_handler(95);
 			} else if (expresion_1.tipo == STRING) {
 				emitir_imprcs();
+			} else {
+				emitir_impr(expresion_1.tipo);
 			}
 
 			while (lookahead_in(F_RESTO_PROP_OUT | F_EXPRESION)) {
@@ -715,6 +717,8 @@ void proposicion_e_s(set folset) {
 					error_handler(95);
 				} else if (expresion_m.tipo == STRING) {
 					emitir_imprcs();
+				} else {
+					emitir_impr(expresion_m.tipo);
 				}
 			}
 
@@ -824,6 +828,7 @@ retorno_expresion expresion(set folset)
 			case CMAYOR:
 			case CMAIG: {
 				parametros_expresion_simple.tipo_expresion_actual = es_tipo_base(retorno_expresion.tipo) ? retorno_expresion.tipo : ERROR;
+				set operador = lookahead();
 				scanner();
 
 				retorno_expresion_simple expresion_simple_3 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE, parametros_expresion_simple);
@@ -832,6 +837,35 @@ retorno_expresion expresion(set folset)
 
 				enum tipo tipo_coercion_operando =resolver_tipo_operador(retorno_expresion.tipo, expresion_simple_3.tipo);
 				retorno_expresion.tipo = tipo_coercion_operando != ERROR ? INT : ERROR;
+
+				if (retorno_expresion.tipo != ERROR) {
+					switch (operador) {
+						case CDISTINTO: {
+							emitir_cmni(retorno_expresion.tipo);
+							break;
+						}
+						case CIGUAL: {
+							emitir_cmig(retorno_expresion.tipo);
+							break;
+						}
+						case CMENOR: {
+							emitir_cmme(retorno_expresion.tipo);
+							break;
+						}
+						case CMEIG: {
+							emitir_cmei(retorno_expresion.tipo);
+							break;
+						}
+						case CMAYOR: {
+							emitir_cmma(retorno_expresion.tipo);
+							break;
+						}
+						case CMAIG: {
+							emitir_cmai(retorno_expresion.tipo);
+							break;
+						}
+					}
+				}
 
 				break;
 			}
@@ -849,6 +883,7 @@ retorno_expresion expresion(set folset)
 
 retorno_expresion_simple expresion_simple(set folset, parametros_expresion_simple params) {
 	enum boolean hubo_operador_previo = FALSE;
+	set operador_previo;
 	retorno_expresion_simple retorno_expresion_simple;
 	parametros_termino parametros_termino;
 	parametros_termino.tipo_expresion_actual = params.tipo_expresion_actual;
@@ -857,6 +892,7 @@ retorno_expresion_simple expresion_simple(set folset, parametros_expresion_simpl
 
 	if (lookahead_in(F_OPERADOR_OPCIONAL)) {
 		hubo_operador_previo = TRUE;
+		operador_previo = lookahead();
 		scanner();
 	}
 
@@ -871,6 +907,9 @@ retorno_expresion_simple expresion_simple(set folset, parametros_expresion_simpl
 	retorno_expresion_simple.tipo_base =(termino_1.tipo == ARREGLO && hubo_operador_previo) ? ERROR : termino_1.tipo_base;
 	retorno_expresion_simple.es_clase_variable = !hubo_operador_previo && termino_1.es_clase_variable;
 
+	if (es_tipo_base(retorno_expresion_simple.tipo) && hubo_operador_previo && operador_previo == CMENOS) {
+		emitir_inv(retorno_expresion_simple.tipo);
+	}
 
 	while (lookahead_in(F_RESTO_EXPRESION_SIMPLE)) {
 		parametros_termino.tipo_expresion_actual = es_tipo_base(retorno_expresion_simple.tipo)? retorno_expresion_simple.tipo : ERROR;
