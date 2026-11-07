@@ -672,8 +672,7 @@ void proposicion_e_s(set folset) {
 			scanner();
 
 			match(CSHR, 30);
-			retorno_variable variable_1 =
-					variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA, parametros_variable);
+			retorno_variable variable_1 = variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA, parametros_variable);
 
 			if (!es_tipo_base(variable_1.tipo)) {
 				error_handler(95);
@@ -694,7 +693,6 @@ void proposicion_e_s(set folset) {
 			break;
 		}
 		case COUT: {
-
 			scanner();
 
 			match(CSHL, 31);
@@ -703,15 +701,26 @@ void proposicion_e_s(set folset) {
 
 			if (!es_tipo_base(expresion_1.tipo) && expresion_1.tipo != STRING) {
 				error_handler(95);
+			} else if (expresion_1.tipo == STRING) {
+				emitir_imprcs();
 			}
 
 			while (lookahead_in(F_RESTO_PROP_OUT | F_EXPRESION)) {
 				match(CSHL, 31);
 				retorno_expresion expresion_m = expresion(folset | F_RESTO_PROP_OUT | F_EXPRESION | CPYCOMA);
 
-			if (!es_tipo_base(expresion_m.tipo) && expresion_m.tipo != STRING) {
+				if (!es_tipo_base(expresion_m.tipo) && expresion_m.tipo != STRING) {
 					error_handler(95);
+				} else if (expresion_1.tipo == STRING) {
+					emitir_imprcs();
 				}
+			}
+
+			if (expresion_1.tipo != ERROR) {
+				emitir_crcts(libre_ctes);
+				CTES[libre_ctes++] = '\n';
+
+				emitir_imprcs();
 			}
 
 			match(CPYCOMA, 23);
@@ -971,11 +980,26 @@ retorno_factor factor(set folset)
 			break;
 		}
 
-		case CCONS_STR:
+		case CCONS_STR: {
+			const unsigned long longitud_string = strlen(token1.lexema);
+
+			emitir_crcts(libre_ctes);
+
+			for (int i = 0; i < longitud_string && libre_ctes < TAM_CTES; i++) {
+				CTES[libre_ctes++] = token1.lexema[i];
+			}
+
+			if (libre_ctes < TAM_CTES) {
+				CTES[libre_ctes++] = '\0';
+			} else {
+				error_handler(37);
+			}
+
 			scanner();
 			retorno_factor.tipo = STRING;
 			retorno_factor.es_clase_variable = FALSE;
 			break;
+		}
 
 		case CPAR_ABR:
 			scanner();

@@ -7,6 +7,7 @@ int libre = 0;
 int desplazamiento[TAM_DISP] = {0};
 
 char CTES[TAM_CTES];
+
 int libre_ctes = 0;
 
 int construccion_no_soportada = 0;

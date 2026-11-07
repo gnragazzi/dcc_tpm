@@ -20,7 +20,7 @@ void error_print(int ne)
 		case 5:  printf("\t Error %d: Caracter invalido\n", ne); break;
 		/* errores generales */
 		case 6:  printf("\t Error %d: El numero de argumentos no coincide. ucc -c programa.c | ucc -o programa.o | ucc -d programa.o\n", ne); break;
-		case 7:  printf("\t Error %d: El segundo argumento debe ser '-c', '-o' o '-d'. ucc -c programa.c | ucc -o programa.o | ucc -d programa.o\n", ne); break;
+		case 7:  printf("\t Error %d: El segundo argumento debe ser '-c', '-o', '-d' o '-ds'. ucc -c programa.c | ucc -o programa.o | ucc -d[s] programa.o\n", ne); break;
 		case 8:  printf("\t Error %d: El archivo no existe\n ", ne); break;
 		case 9:  printf("\t Error %d: No se encontro el fin de archivo\n",ne); break;
 		case 10: printf("\t Error %d: Ocurrio un error \n", ne); break;
@@ -53,6 +53,7 @@ void error_print(int ne)
 		case 35: printf("\t Error %d: Falta [\n", ne); break;
 		/* posibles errores personalizados (que no sean parafrasis de errores ya existentes) 36-39*/
 		case 36: printf("\t Warning %d: El programa usa arreglos o funciones: no se genera codigo intermedio\n", ne); break;
+		case 37: printf("\t Warning %d: Overflow en el vector de Strings", ne); break;
 		/* errores de recuperacion de errores */
 		case 40: printf("\t Error %d: Al inicio del programa\n", ne); break;
 		case 41: printf("\t Error %d: Simbolo inesperado o falta especificador de tipo\n", ne); break;

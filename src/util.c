@@ -60,7 +60,7 @@ void init_parser(int argc, char *argv[])
 			interprete();
 			exit(0);
 		}
-		else if(strcmp(argv[1], "-d") == 0)
+		else if(strcmp(argv[1], "-d") == 0 || strcmp(argv[1], "-ds") == 0)
 		{
 			if(!cargar_codgen(argv[2]))
 			{
@@ -70,6 +70,8 @@ void init_parser(int argc, char *argv[])
 			}
 			impr_codgen();
 			printf("\n");
+			if(strcmp(argv[1], "-ds") == 0)
+				impr_ctes();
 			exit(0);
 		}
 		else

@@ -833,3 +833,25 @@ void impr_codgen()
 	}        
 	printf("PARAR");
 }
+
+void impr_ctes()
+{
+	int fin = TAM_CTES;
+	while(fin > 0 && C[fin-1] == '\0')
+		fin--;
+
+	printf("\n--- Constantes string (C) ---\n");
+	int i = 0;
+	while(i < fin)
+	{
+		printf("[%d] \"", i);
+		for(; C[i] != '\0'; i++)
+		{
+			if(C[i] == '\n') printf("\\n");
+			else if(C[i] == '\t') printf("\\t");
+			else putchar(C[i]);
+		}
+		printf("\"\n");
+		i++;
+	}
+}

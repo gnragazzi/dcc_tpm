@@ -78,3 +78,4 @@ int cargar_codgen(char *);
 int guardar_codgen(float [], char [], char *);
 void interprete();
 void impr_codgen();
+void impr_ctes();

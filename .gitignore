@@ -5,4 +5,4 @@ src/ucc.exe
 *.zip
 cmake-build-debug/
 tests/**/*.o
-.swp
+*.swp
