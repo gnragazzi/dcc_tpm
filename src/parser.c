@@ -890,8 +890,7 @@ retorno_expresion_simple expresion_simple(set folset, parametros_expresion_simpl
 }
 
 
-retorno_termino termino(set folset, parametros_termino params)
-{
+retorno_termino termino(set folset, parametros_termino params) {
 	parametros_factor parametros_factor;
 	parametros_factor.tipo_expresion_actual = params.tipo_expresion_actual;
 	retorno_termino retorno_termino;
@@ -902,19 +901,28 @@ retorno_termino termino(set folset, parametros_termino params)
 	retorno_termino.es_clase_variable = factor_1.es_clase_variable;
 	retorno_termino.tipo_base = factor_1.tipo_base;
 
-	while(lookahead_in(F_RESTO_TERMINO))
-	{
+	while (lookahead_in(F_RESTO_TERMINO)) {
 		parametros_factor.tipo_expresion_actual = es_tipo_base(retorno_termino.tipo) ? retorno_termino.tipo : ERROR;
 		retorno_termino.es_clase_variable = FALSE;
 		enum boolean es_operador_logico_and = token1.codigo == CAND;
+		set operador = lookahead();
 
 		scanner();
+
 		retorno_factor factor_n = factor(folset | F_RESTO_TERMINO | F_FACTOR, parametros_factor);
 
 		enum tipo tipo_coercion_operando = resolver_tipo_operador(retorno_termino.tipo, factor_n.tipo);
 
-		retorno_termino.tipo = es_operador_logico_and && tipo_coercion_operando != ERROR? INT : tipo_coercion_operando;
+		retorno_termino.tipo = es_operador_logico_and && tipo_coercion_operando != ERROR ? INT : tipo_coercion_operando;
 		retorno_termino.tipo_base = ERROR;
+
+		if (operador == CAND) {
+			emitir_and(retorno_termino.tipo);
+		} else if (operador == CMULT) {
+			emitir_mul(retorno_termino.tipo);
+		} else {
+			emitir_div(retorno_termino.tipo);
+		}
 	}
 
 	return retorno_termino;
