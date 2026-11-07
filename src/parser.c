@@ -1025,17 +1025,16 @@ retorno_factor factor(set folset, parametros_factor params)
 			}
 			retorno_expresion expresion_1 = expresion(folset | CPAR_CIE);
 
-			if (es_tipo_base(params.tipo_expresion_actual) && es_tipo_base(expresion_1.tipo) && params.tipo_expresion_actual != FLOAT) {
+			if (es_tipo_base(params.tipo_expresion_actual) && es_tipo_base(expresion_1.tipo)) {
 				if (params.tipo_expresion_actual < expresion_1.tipo) {
 					CODE[posicion_buffer_casteo++] = CAST;
 					CODE[posicion_buffer_casteo++] = codigo_tipo_mac(params.tipo_expresion_actual);
 					CODE[posicion_buffer_casteo] = codigo_tipo_mac(expresion_1.tipo);
 				} else {
-					borrar_buffer_casteo(posicion_buffer_casteo);
-
 					if (params.tipo_expresion_actual > expresion_1.tipo) {
 						emitir_cast(expresion_1.tipo, params.tipo_expresion_actual);
 					}
+					borrar_buffer_casteo(posicion_buffer_casteo);
 				}
 
 			}

@@ -1,12 +1,16 @@
 INPP 
 ENBL 1
-CRCTS 0
-CRCTS 5
-DMEM 0
+ALOC 4
+ALOC 4
+ALOC 1
+CRVL 1, 8, 0
+CAST 0, 2
+CRVL 1, 4, 1
+CAST 1, 2
+CRVL 1, 0, 2
+DMEM 9
 FINB 1
 DMEM 0
 PARAR
 
 --- Constantes string (C) ---
-[0] "Hola"
-[5] ", Mundo!"
