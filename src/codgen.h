@@ -57,4 +57,6 @@ void emitir_finb(int nivel);
 
 int generar_objeto(char *fuente);
 
+void borrar_buffer_casteo(int posicion_inicio);
+
 #endif

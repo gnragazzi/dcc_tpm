@@ -153,3 +153,14 @@ int generar_objeto(char *fuente)
 	free(objeto);
 	return ok;
 }
+
+void borrar_buffer_casteo(int posicion_inicio) {
+
+	for (int i = posicion_inicio + 3; i > posicion_inicio; i--) {
+		for (int j = i; j <= libre; j++) {
+			CODE[j - 1] = CODE[j];
+		}
+	}
+
+	libre -= 3;
+}
