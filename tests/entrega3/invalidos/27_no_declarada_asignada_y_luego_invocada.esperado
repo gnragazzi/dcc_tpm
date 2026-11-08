@@ -1,0 +1,5 @@
+	 Error 71: Identificador no declarado
+	 Error 83: Los tipos de ambos lados de la asignacion deben ser estructuralmente equivalentes
+	 Error 23: Falta ;
+	 Error 56: Simbolo inesperado o falta simb. al comienzo de expresion simple
+	 Error 57: Simbolo inesperado o falta simb. al comienzo de factor

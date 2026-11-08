@@ -123,6 +123,7 @@ typedef struct {
     enum tipo tipo;
     enum tipo tipo_base;
     enum boolean es_clase_variable;
+    enum boolean es_elemento_arreglo;
     int nivel;
     int despl;
 } retorno_expresion_simple;
@@ -131,6 +132,7 @@ typedef struct {
     enum tipo tipo;
     enum tipo tipo_base;
     enum boolean es_clase_variable;
+    enum boolean es_elemento_arreglo;
     int nivel;
     int despl;
 } retorno_termino;
@@ -139,6 +141,7 @@ typedef struct {
     enum tipo tipo;
     enum tipo tipo_base;
     enum boolean es_clase_variable;
+    enum boolean es_elemento_arreglo;
     int nivel;
     int despl;
 } retorno_factor;
@@ -148,6 +151,7 @@ typedef struct {
     enum tipo tipo_base;
     int nivel;
     int despl;
+    enum boolean es_elemento_arreglo;
 } retorno_variable;
 
 typedef struct {

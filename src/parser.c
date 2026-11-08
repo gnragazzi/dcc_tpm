@@ -679,7 +679,7 @@ void proposicion_e_s(set folset) {
 
 			if (!es_tipo_base(variable_1.tipo)) {
 				error_handler(95);
-			} else {
+			} else if (!variable_1.es_elemento_arreglo){
 				libre-=4;
 				desplazamiento[variable_1.nivel] -= ts[resolver_tipo_en_TS(variable_1.tipo)].ets->cant_byte;
 				emitir_leer(variable_1.tipo);
@@ -692,7 +692,7 @@ void proposicion_e_s(set folset) {
 
 				if (!es_tipo_base(variable_n.tipo)) {
 					error_handler(95);
-				} else {
+				} else if (!variable_n.es_elemento_arreglo){
 					libre-=4;
 					desplazamiento[variable_n.nivel] -= ts[resolver_tipo_en_TS(variable_n.tipo)].ets->cant_byte;
 					emitir_leer(variable_n.tipo);
@@ -732,12 +732,12 @@ void proposicion_e_s(set folset) {
 				}
 			}
 
-			if (expresion_1.tipo != ERROR) {
-				emitir_crcts(libre_ctes);
-				CTES[libre_ctes++] = '\n';
-
-				emitir_imprcs();
-			}
+			// if (expresion_1.tipo != ERROR) {
+			// 	emitir_crcts(libre_ctes);
+			// 	CTES[libre_ctes++] = '\n';
+			//
+			// 	emitir_imprcs();
+			// }
 
 			match(CPYCOMA, 23);
 
@@ -812,22 +812,27 @@ retorno_expresion expresion(set folset)
 					hubo_error = TRUE;
 					error_handler(81);
 					se_lanzo_error_arreglo_como_todo = TRUE;
-				} else if (cabecera_lista_datos_asignacion == NULL) {
-					libre-=4;
-					desplazamiento[expresion_simple_1.nivel] -= ts[resolver_tipo_en_TS(expresion_simple_1.tipo)].ets->cant_byte;
+				} else if (!expresion_simple_1.es_elemento_arreglo && es_tipo_base(tipo_izquierda_asignacion) && !hubo_error) {
+					if (cabecera_lista_datos_asignacion == NULL) {
+						libre -= 4;
+						desplazamiento[expresion_simple_1.nivel] -= ts[resolver_tipo_en_TS(expresion_simple_1.tipo)].ets
+								->cant_byte;
 
-					cabecera_lista_datos_asignacion = (Datos_asignacion *) malloc(sizeof(Datos_asignacion));
-					cabecera_lista_datos_asignacion->nivel = expresion_simple_1.nivel;
-					cabecera_lista_datos_asignacion->tipo = expresion_simple_1.tipo;
-					cabecera_lista_datos_asignacion->desplazamiento = expresion_simple_1.despl;
-					cabecera_lista_datos_asignacion->proximo = NULL;
-				} else if (clase_izquierda_asignacion_es_variable && es_tipo_base(tipo_izquierda_asignacion)) {
-					libre-=4;
-					desplazamiento[expresion_simple_1.nivel] -= ts[resolver_tipo_en_TS(expresion_simple_1.tipo)].ets->cant_byte;
+						cabecera_lista_datos_asignacion = (Datos_asignacion *) malloc(sizeof(Datos_asignacion));
+						cabecera_lista_datos_asignacion->nivel = expresion_simple_1.nivel;
+						cabecera_lista_datos_asignacion->tipo = expresion_simple_1.tipo;
+						cabecera_lista_datos_asignacion->desplazamiento = expresion_simple_1.despl;
+						cabecera_lista_datos_asignacion->proximo = NULL;
+					} else if (clase_izquierda_asignacion_es_variable) {
+						libre -= 4;
+						desplazamiento[expresion_simple_1.nivel] -= ts[resolver_tipo_en_TS(expresion_simple_1.tipo)].ets
+								->cant_byte;
 
-					nueva_asignacion->proximo = cabecera_lista_datos_asignacion;
-					cabecera_lista_datos_asignacion = nueva_asignacion;
+						nueva_asignacion->proximo = cabecera_lista_datos_asignacion;
+						cabecera_lista_datos_asignacion = nueva_asignacion;
+					}
 				}
+
 				scanner();
 				parametros_expresion_simple.tipo_expresion_actual = INDEFINIDO; // TODO ver en v3
 				retorno_expresion_simple expresion_simple_2 = expresion_simple(
@@ -952,6 +957,7 @@ retorno_expresion_simple expresion_simple(set folset, parametros_expresion_simpl
 	retorno_expresion_simple.tipo = (termino_1.tipo == ARREGLO && hubo_operador_previo) ? ERROR : termino_1.tipo;
 	retorno_expresion_simple.tipo_base =(termino_1.tipo == ARREGLO && hubo_operador_previo) ? ERROR : termino_1.tipo_base;
 	retorno_expresion_simple.es_clase_variable = !hubo_operador_previo && termino_1.es_clase_variable;
+	retorno_expresion_simple.es_elemento_arreglo = termino_1.es_elemento_arreglo;
 	if (retorno_expresion_simple.es_clase_variable) {
 		retorno_expresion_simple.nivel = termino_1.nivel;
 		retorno_expresion_simple.despl = termino_1.despl;
@@ -999,6 +1005,7 @@ retorno_termino termino(set folset, parametros_termino params) {
 
 	retorno_termino.tipo = factor_1.tipo;
 	retorno_termino.es_clase_variable = factor_1.es_clase_variable;
+	retorno_termino.es_elemento_arreglo = factor_1.es_elemento_arreglo;
 	retorno_termino.tipo_base = factor_1.tipo_base;
 	retorno_termino.nivel = factor_1.nivel;
 	retorno_termino.despl = factor_1.despl;
@@ -1090,6 +1097,7 @@ retorno_factor factor(set folset, parametros_factor params)
 				retorno_factor.tipo = variable_1.tipo;
 				retorno_factor.tipo_base = variable_1.tipo_base;
 				retorno_factor.es_clase_variable = TRUE;
+				retorno_factor.es_elemento_arreglo = variable_1.es_elemento_arreglo;
 				retorno_factor.nivel = variable_1.nivel;
 				retorno_factor.despl = variable_1.despl;
 			}
@@ -1220,6 +1228,7 @@ retorno_variable variable(set folset, parametros_variable params) {
 		retorno_variable.tipo = resolver_tipo(ts[ts[params.indice_en_TS].ets->ptr_tipo].ets->nbre);
 
 	if (lookahead_in(CCOR_ABR)) {
+		retorno_variable.es_elemento_arreglo = TRUE;
 		if (params.indice_en_TS != NIL && retorno_variable.tipo != ARREGLO)
 			error_handler(78);
 		else if (params.indice_en_TS != NIL) {
@@ -1238,6 +1247,7 @@ retorno_variable variable(set folset, parametros_variable params) {
 
 		match(CCOR_CIE, 22);
 	} else {
+		retorno_variable.es_elemento_arreglo = FALSE;
 		if (params.indice_en_TS != NIL && retorno_variable.tipo == ARREGLO) {
 			retorno_variable.tipo_base = es_parametro
 				                             ? resolver_tipo(

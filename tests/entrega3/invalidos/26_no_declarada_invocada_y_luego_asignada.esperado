@@ -1,0 +1,5 @@
+	 Error 71: Identificador no declarado
+	 Error 20: Falta (
+	 Error 21: Falta )
+	 Error 82: En el lado izquierdo de una asignacion debe haber una variable
+	 Error 83: Los tipos de ambos lados de la asignacion deben ser estructuralmente equivalentes
