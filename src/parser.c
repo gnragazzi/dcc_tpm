@@ -361,7 +361,6 @@ void declarador_init(set folset, parametros_declarador_init params) {
 	entrada_nueva_variable->desc.nivel = nivel;
 	entrada_nueva_variable->desc.despl = despl;
 
-	desplazamiento[nivel] += cant_bytes;
 	emitir_aloc(cant_bytes);
 
 	switch (lookahead()) {
@@ -671,22 +670,33 @@ void proposicion_e_s(set folset) {
 
 			parametros_variable parametros_variable;
 			parametros_variable.origen_proposicion_entrada = TRUE;
+			parametros_variable.tipo_expresion_actual = INDEFINIDO;
 			scanner();
 
 			match(CSHR, 30);
 			retorno_variable variable_1 = variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA, parametros_variable);
 
+
 			if (!es_tipo_base(variable_1.tipo)) {
 				error_handler(95);
+			} else {
+				libre-=4;
+				desplazamiento[variable_1.nivel] -= ts[resolver_tipo_en_TS(variable_1.tipo)].ets->cant_byte;
+				emitir_leer(variable_1.tipo);
+				emitir_alm(variable_1.nivel, variable_1.despl, variable_1.tipo);
 			}
 
 			while (lookahead_in(F_RESTO_PROP_IN | F_VARIABLE)) {
 				match(CSHR, 30);
-				retorno_variable variable_n = variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA,
-				                                       parametros_variable);
+				retorno_variable variable_n = variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA, parametros_variable);
 
 				if (!es_tipo_base(variable_n.tipo)) {
 					error_handler(95);
+				} else {
+					libre-=4;
+					desplazamiento[variable_n.nivel] -= ts[resolver_tipo_en_TS(variable_n.tipo)].ets->cant_byte;
+					emitir_leer(variable_n.tipo);
+					emitir_alm(variable_n.nivel, variable_n.despl, variable_n.tipo);
 				}
 			}
 
@@ -784,33 +794,53 @@ retorno_expresion expresion(set folset)
 	retorno_expresion retorno_expresion;
 	retorno_expresion_simple expresion_simple_1 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE, parametros_expresion_simple);
 	retorno_expresion.tipo_base = expresion_simple_1.tipo == ARREGLO ? expresion_simple_1.tipo_base : ERROR;
+	Datos_asignacion *cabecera_lista_datos_asignacion = NULL;
+	Datos_asignacion *nueva_asignacion;
 	enum boolean se_lanzo_error_arreglo_como_todo = TRUE;
+	enum boolean hubo_error = FALSE;
 
 	enum tipo tipo_izquierda_asignacion = retorno_expresion.tipo = expresion_simple_1.tipo;
-	enum boolean clase_izquierda_asignacion_es_variable =
-			retorno_expresion.es_clase_variable = expresion_simple_1.es_clase_variable;
+	enum boolean clase_izquierda_asignacion_es_variable = retorno_expresion.es_clase_variable = expresion_simple_1.es_clase_variable;
 
-	while(lookahead_in(F_RESTO_EXPRESION))
-	{
-		switch(lookahead())
-		{
+	while (lookahead_in(F_RESTO_EXPRESION)) {
+		switch (lookahead()) {
 			case CASIGNAC: {
 				if (!clase_izquierda_asignacion_es_variable) {
+					hubo_error = TRUE;
 					error_handler(82);
-				}else if (tipo_izquierda_asignacion == ARREGLO){
+				} else if (tipo_izquierda_asignacion == ARREGLO) {
+					hubo_error = TRUE;
 					error_handler(81);
 					se_lanzo_error_arreglo_como_todo = TRUE;
+				} else if (cabecera_lista_datos_asignacion == NULL) {
+					libre-=4;
+					desplazamiento[expresion_simple_1.nivel] -= ts[resolver_tipo_en_TS(expresion_simple_1.tipo)].ets->cant_byte;
+
+					cabecera_lista_datos_asignacion = (Datos_asignacion *) malloc(sizeof(Datos_asignacion));
+					cabecera_lista_datos_asignacion->nivel = expresion_simple_1.nivel;
+					cabecera_lista_datos_asignacion->tipo = expresion_simple_1.tipo;
+					cabecera_lista_datos_asignacion->desplazamiento = expresion_simple_1.despl;
+					cabecera_lista_datos_asignacion->proximo = NULL;
+				} else if (clase_izquierda_asignacion_es_variable && es_tipo_base(tipo_izquierda_asignacion)) {
+					libre-=4;
+					desplazamiento[expresion_simple_1.nivel] -= ts[resolver_tipo_en_TS(expresion_simple_1.tipo)].ets->cant_byte;
+
+					nueva_asignacion->proximo = cabecera_lista_datos_asignacion;
+					cabecera_lista_datos_asignacion = nueva_asignacion;
 				}
 				scanner();
 				parametros_expresion_simple.tipo_expresion_actual = INDEFINIDO; // TODO ver en v3
-				retorno_expresion_simple expresion_simple_2 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE, parametros_expresion_simple);
+				retorno_expresion_simple expresion_simple_2 = expresion_simple(
+					folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE, parametros_expresion_simple);
 				clase_izquierda_asignacion_es_variable = expresion_simple_2.es_clase_variable;
 
 				if (expresion_simple_2.tipo == STRING) {
+					hubo_error = TRUE;
 					error_handler(94);
 				}
 
 				if (!param1_es_coercionable_a_param2(expresion_simple_2.tipo, tipo_izquierda_asignacion)) {
+					hubo_error = TRUE;
 					error_handler(83);
 				}
 
@@ -819,6 +849,15 @@ retorno_expresion expresion(set folset)
 				if (expresion_simple_2.tipo == ARREGLO) {
 					se_lanzo_error_arreglo_como_todo = FALSE;
 				}
+
+				if (!hubo_error) {
+					nueva_asignacion = (Datos_asignacion *) malloc(sizeof(Datos_asignacion));
+					nueva_asignacion->nivel = expresion_simple_2.nivel;
+					nueva_asignacion->tipo = expresion_simple_2.tipo;
+					nueva_asignacion->desplazamiento = expresion_simple_2.despl;
+					nueva_asignacion->proximo = NULL;
+				}
+
 				break;
 			}
 			case CDISTINTO:
@@ -827,15 +866,19 @@ retorno_expresion expresion(set folset)
 			case CMEIG:
 			case CMAYOR:
 			case CMAIG: {
-				parametros_expresion_simple.tipo_expresion_actual = es_tipo_base(retorno_expresion.tipo) ? retorno_expresion.tipo : ERROR;
+				parametros_expresion_simple.tipo_expresion_actual = es_tipo_base(retorno_expresion.tipo)
+					                                                    ? retorno_expresion.tipo
+					                                                    : ERROR;
 				set operador = lookahead();
 				scanner();
 
-				retorno_expresion_simple expresion_simple_3 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE, parametros_expresion_simple);
+				retorno_expresion_simple expresion_simple_3 = expresion_simple(
+					folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE, parametros_expresion_simple);
 				clase_izquierda_asignacion_es_variable = FALSE;
 				tipo_izquierda_asignacion = expresion_simple_3.tipo;
 
-				enum tipo tipo_coercion_operando =resolver_tipo_operador(retorno_expresion.tipo, expresion_simple_3.tipo);
+				enum tipo tipo_coercion_operando = resolver_tipo_operador(
+					retorno_expresion.tipo, expresion_simple_3.tipo);
 				retorno_expresion.tipo = tipo_coercion_operando != ERROR ? INT : ERROR;
 
 				if (retorno_expresion.tipo != ERROR) {
@@ -875,7 +918,10 @@ retorno_expresion expresion(set folset)
 
 	if (!se_lanzo_error_arreglo_como_todo) {
 		error_handler(81);
+		hubo_error = TRUE;
 	}
+
+	resolver_asignaciones(cabecera_lista_datos_asignacion);
 
 	return retorno_expresion;
 }
@@ -906,6 +952,10 @@ retorno_expresion_simple expresion_simple(set folset, parametros_expresion_simpl
 	retorno_expresion_simple.tipo = (termino_1.tipo == ARREGLO && hubo_operador_previo) ? ERROR : termino_1.tipo;
 	retorno_expresion_simple.tipo_base =(termino_1.tipo == ARREGLO && hubo_operador_previo) ? ERROR : termino_1.tipo_base;
 	retorno_expresion_simple.es_clase_variable = !hubo_operador_previo && termino_1.es_clase_variable;
+	if (retorno_expresion_simple.es_clase_variable) {
+		retorno_expresion_simple.nivel = termino_1.nivel;
+		retorno_expresion_simple.despl = termino_1.despl;
+	}
 
 	if (es_tipo_base(retorno_expresion_simple.tipo) && hubo_operador_previo && operador_previo == CMENOS) {
 		emitir_inv(retorno_expresion_simple.tipo);
@@ -950,6 +1000,8 @@ retorno_termino termino(set folset, parametros_termino params) {
 	retorno_termino.tipo = factor_1.tipo;
 	retorno_termino.es_clase_variable = factor_1.es_clase_variable;
 	retorno_termino.tipo_base = factor_1.tipo_base;
+	retorno_termino.nivel = factor_1.nivel;
+	retorno_termino.despl = factor_1.despl;
 
 	while (lookahead_in(F_RESTO_TERMINO)) {
 		parametros_factor.tipo_expresion_actual = es_tipo_base(retorno_termino.tipo) ? retorno_termino.tipo : ERROR;
@@ -1038,6 +1090,8 @@ retorno_factor factor(set folset, parametros_factor params)
 				retorno_factor.tipo = variable_1.tipo;
 				retorno_factor.tipo_base = variable_1.tipo_base;
 				retorno_factor.es_clase_variable = TRUE;
+				retorno_factor.nivel = variable_1.nivel;
+				retorno_factor.despl = variable_1.despl;
 			}
 			break;
 		}
@@ -1207,6 +1261,8 @@ retorno_variable variable(set folset, parametros_variable params) {
 					emitir_crvl(nivel, despl, retorno_variable.tipo);
 				}
 			}
+			retorno_variable.nivel = nivel;
+			retorno_variable.despl = despl;
 		}
 	}
 

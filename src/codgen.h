@@ -13,6 +13,13 @@ extern int libre_ctes;
 
 extern int construccion_no_soportada;
 
+typedef struct datos_asignacion {
+    int nivel;
+    int desplazamiento;
+    enum tipo tipo;
+    struct datos_asignacion* proximo;
+}Datos_asignacion;
+
 int emitir(float valor);
 
 int codigo_tipo_mac(enum tipo tipo);
@@ -58,5 +65,7 @@ void emitir_finb(int nivel);
 int generar_objeto(char *fuente);
 
 void borrar_buffer_casteo(int posicion_inicio);
+
+void resolver_asignaciones(Datos_asignacion *cabecera);
 
 #endif

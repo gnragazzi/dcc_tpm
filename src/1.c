@@ -1,7 +1,5 @@
 void main(){
-    float c;
-    int b;
-    char a;
-    
-    a + (b + c);
+    int a ,b;
+    cin >> a >> b;
 }
+
