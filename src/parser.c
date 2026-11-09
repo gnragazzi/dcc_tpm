@@ -60,8 +60,8 @@ void unidad_traduccion(set folset)
 
 	emitir_imprcs();
 
-	pop_nivel();
 	emitir_dmem(desplazamiento[0]);
+	pop_nivel();
 	emitir_parar();
 }
 
@@ -1172,7 +1172,15 @@ retorno_factor factor(set folset, parametros_factor params)
 			emitir_crcts(libre_ctes);
 
 			for (int i = 0; i < longitud_string && libre_ctes < TAM_CTES; i++) {
-				CTES[libre_ctes++] = token1.lexema[i];
+				char actual = token1.lexema[i];
+				char siguiente = token1.lexema[i + 1];
+
+				if (actual == '\\' && (siguiente == 'n' || siguiente == 't')) {
+					CTES[libre_ctes++] = siguiente == 'n' ? '\n' : '\t';
+					i++;
+				} else {
+					CTES[libre_ctes++] = actual;
+				}
 			}
 
 			if (libre_ctes < TAM_CTES) {
