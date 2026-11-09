@@ -1,8 +1,8 @@
 void main()
 {
-    float f;
-    int i;
-    char c;
-    f = i = c = 'A';
-    cout << c << " " << i << " " << f;
+    char c = 'a';
+    char d = 'b';
+    cout << c + d;
 }
+
+

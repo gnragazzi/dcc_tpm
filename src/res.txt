@@ -1,29 +1,21 @@
 INPP 
 ENBL 1
-ALOC 4
-ALOC 4
 ALOC 1
-CRCT 0, A
-ALM 1, 8, 0
-CRVL 1, 8, 0
-ALM 1, 4, 1
-CRVL 1, 4, 1
-ALM 1, 0, 2
-CRVL 1, 8, 0
-IMPR 0
+CRCT 0, a
+ALM 1, 0, 0
+ALOC 1
+CRCT 0, b
+ALM 1, 1, 0
+CRVL 1, 0, 0
+CRVL 1, 1, 0
+SUM 0
+IMPR 1
+DMEM -1
+FINB 1
 CRCTS 0
 IMPRCS 
-CRVL 1, 4, 1
-IMPR 1
-CRCTS 2
-IMPRCS 
-CRVL 1, 0, 2
-IMPR 2
-DMEM 3
-FINB 1
 DMEM 0
 PARAR
 
 --- Constantes string (C) ---
-[0] " "
-[2] " "
+[0] "\n"

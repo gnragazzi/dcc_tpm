@@ -64,7 +64,10 @@ void emitir_finb(int nivel);
 
 int generar_objeto(char *fuente);
 
+int reservar_buffer_casteo();
 void borrar_buffer_casteo(int posicion_inicio);
+void coercionar_operandos(int posicion_buffer, enum tipo tipo_izquierdo, enum tipo tipo_derecho);
+void registrar_promocion_char(enum tipo tipo_operandos);
 
 void resolver_asignaciones(Datos_asignacion *cabecera);
 

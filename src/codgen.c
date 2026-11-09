@@ -54,7 +54,7 @@ void emitir_crcts(int posicion_en_ctes) {
 }
 
 void emitir_crvl(int nivel, int despl, enum tipo tipo) {
-    desplazamiento[nivel] += ts[resolver_tipo_en_TS(tipo)].ets->cant_byte;
+    desplazamiento[get_nivel()] += ts[resolver_tipo_en_TS(tipo)].ets->cant_byte;
     emitir(CRVL);
     emitir(nivel);
     emitir(despl);
@@ -62,7 +62,7 @@ void emitir_crvl(int nivel, int despl, enum tipo tipo) {
 }
 
 void emitir_alm(int nivel, int despl, enum tipo tipo) {
-    desplazamiento[nivel] -= ts[resolver_tipo_en_TS(tipo)].ets->cant_byte;
+    desplazamiento[get_nivel()] -= ts[resolver_tipo_en_TS(tipo)].ets->cant_byte;
 
     emitir(ALM);
     emitir(nivel);
@@ -211,6 +211,34 @@ int generar_objeto(char *fuente) {
     return ok;
 }
 
+int reservar_buffer_casteo() {
+    int posicion = libre;
+    libre += 3;
+    return posicion;
+}
+
+void coercionar_operandos(int posicion_buffer, enum tipo tipo_izquierdo, enum tipo tipo_derecho) {
+    if (tipo_izquierdo < tipo_derecho) {
+        desplazamiento[get_nivel()] += ts[resolver_tipo_en_TS(tipo_derecho)].ets->cant_byte
+                - ts[resolver_tipo_en_TS(tipo_izquierdo)].ets->cant_byte;
+
+        CODE[posicion_buffer] = CAST;
+        CODE[posicion_buffer + 1] = codigo_tipo_mac(tipo_izquierdo);
+        CODE[posicion_buffer + 2] = codigo_tipo_mac(tipo_derecho);
+    } else {
+        if (tipo_izquierdo > tipo_derecho)
+            emitir_cast(tipo_derecho, tipo_izquierdo);
+
+        borrar_buffer_casteo(posicion_buffer);
+    }
+}
+
+void registrar_promocion_char(enum tipo tipo_operandos) {
+    if (tipo_operandos == CHAR)
+        desplazamiento[get_nivel()] += ts[resolver_tipo_en_TS(INT)].ets->cant_byte
+                - ts[resolver_tipo_en_TS(CHAR)].ets->cant_byte;
+}
+
 void borrar_buffer_casteo(int posicion_inicio) {
     for (int i = posicion_inicio + 3; i > posicion_inicio; i--) {
         for (int j = i; j <= libre; j++) {
@@ -227,8 +255,14 @@ void resolver_asignaciones(Datos_asignacion *cabecera) {
     while (asignacion != NULL) {
         emitir_alm(asignacion->nivel, asignacion->desplazamiento, asignacion->tipo);
 
+        emitir_crvl(asignacion->nivel, asignacion->desplazamiento, asignacion->tipo);
+
         if (asignacion->proximo != NULL) {
-            emitir_crvl(asignacion->nivel, asignacion->desplazamiento, asignacion->tipo);
+            enum tipo tipo_lado_derecho = asignacion->tipo;
+            enum tipo tipo_lado_izquierdo = asignacion->proximo->tipo;
+
+            if (tipo_lado_izquierdo > tipo_lado_derecho)
+                emitir_cast(tipo_lado_derecho, tipo_lado_izquierdo);
         }
 
         Datos_asignacion *asignacion_previa = asignacion;
