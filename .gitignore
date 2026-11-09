@@ -4,3 +4,5 @@ src/ucc.exe
 .idea/
 *.zip
 cmake-build-debug/
+tests/**/*.o
+*.swp

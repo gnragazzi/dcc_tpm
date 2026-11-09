@@ -15,7 +15,7 @@
 
 enum boolean { FALSE, TRUE };
 
-enum tipo { STRING = -3, ERROR = -2, VOID = -1, ARREGLO = 0, CHAR, INT, FLOAT };
+enum tipo { INDEFINIDO = -4, STRING = -3, ERROR = -2, VOID = -1, ARREGLO = 0, CHAR, INT, FLOAT };
 
 enum tipo_pasaje { VALOR, REFERENCIA };
 

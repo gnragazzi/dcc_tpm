@@ -8,6 +8,7 @@
 #include "util.h"
 #include "error.h"
 #include "ts.h"
+#include "codgen.h"
 
 typedef struct {
     char *identificador;
@@ -34,7 +35,7 @@ typedef struct {
 
 typedef struct {
     enum tipo tipo_declaracion;
-    char * identificador;
+    char *identificador;
 } parametros_declarador_init;
 
 typedef struct {
@@ -42,9 +43,22 @@ typedef struct {
 } parametros_lista_declaraciones_init;
 
 typedef struct {
+    enum tipo tipo_expresion_actual;
+} parametros_expresion_simple;
+
+typedef struct {
+    enum tipo tipo_expresion_actual;
+} parametros_termino;
+
+typedef struct {
+    enum tipo tipo_expresion_actual;
+} parametros_factor;
+
+typedef struct {
     int indice_en_TS;
     enum boolean origen_proposicion_entrada;
-}parametros_variable;
+    enum tipo tipo_expresion_actual;
+} parametros_variable;
 
 typedef struct {
     int indice_en_TS;
@@ -55,14 +69,6 @@ typedef struct {
     enum boolean chequear_parametros;
 } parametros_lista_expresiones;
 
-typedef struct {
-    enum tipo tipo;
-} retorno_especificador_tipo;
-
-typedef struct {
-    enum tipo tipo_retorno;
-    enum boolean *tiene_retorno;
-} parametros_lista_proposiciones;
 
 typedef struct {
     enum tipo tipo_retorno;
@@ -89,6 +95,20 @@ typedef struct {
 } parametros_proposicion_retorno;
 
 typedef struct {
+    enum tipo tipo_declarado;
+    enum tipo tipo_expresion_actual;
+} parametros_constante;
+
+typedef struct {
+    enum tipo tipo;
+} retorno_especificador_tipo;
+
+typedef struct {
+    enum tipo tipo_retorno;
+    enum boolean *tiene_retorno;
+} parametros_lista_proposiciones;
+
+typedef struct {
     int cantidad_inicializadores;
     enum tipo tipo_inicializadores;
 } retorno_lista_inicializadores;
@@ -103,23 +123,35 @@ typedef struct {
     enum tipo tipo;
     enum tipo tipo_base;
     enum boolean es_clase_variable;
+    enum boolean es_elemento_arreglo;
+    int nivel;
+    int despl;
 } retorno_expresion_simple;
 
 typedef struct {
     enum tipo tipo;
     enum tipo tipo_base;
     enum boolean es_clase_variable;
+    enum boolean es_elemento_arreglo;
+    int nivel;
+    int despl;
 } retorno_termino;
 
 typedef struct {
     enum tipo tipo;
     enum tipo tipo_base;
     enum boolean es_clase_variable;
+    enum boolean es_elemento_arreglo;
+    int nivel;
+    int despl;
 } retorno_factor;
 
 typedef struct {
     enum tipo tipo;
     enum tipo tipo_base;
+    int nivel;
+    int despl;
+    enum boolean es_elemento_arreglo;
 } retorno_variable;
 
 typedef struct {
@@ -130,39 +162,67 @@ typedef struct {
     enum tipo tipo;
 } retorno_constante;
 
-int last_call=0;
+int last_call = 0;
 
 /*********** prototipos *************/
 
 void unidad_traduccion(set folset);
+
 void declaraciones(set folset);
+
 retorno_especificador_tipo especificador_tipo(set folset);
+
 void especificador_declaracion(set folset, parametros_especificador_declaracion params);
+
 void definicion_funcion(set folset, parametros_definicion_funcion params);
+
 void declaracion_variable(set folset, parametros_declaracion_variable params);
+
 void lista_declaraciones_param(set folset, parametros_lista_declaraciones_param params);
+
 void declaracion_parametro(set folset, parametros_declaracion_parametro params);
+
 void declarador_init(set folset, parametros_declarador_init params);
+
 void lista_declaraciones_init(set folset, parametros_lista_declaraciones_init params);
+
 retorno_lista_inicializadores lista_inicializadores(set folset);
+
 void lista_proposiciones(set folset, parametros_lista_proposiciones params);
+
 void lista_declaraciones(set folset);
+
 void declaracion(set folset);
+
 void proposicion(set folset, parametros_proposicion params);
+
 void proposicion_expresion(set folset);
+
 void proposicion_compuesta(set folset, parametros_proposicion_compuesta params);
+
 void proposicion_seleccion(set folset, parametros_proposicion_seleccion params);
+
 void proposicion_iteracion(set folset, parametros_proposicion_iteracion params);
+
 void proposicion_e_s(set folset);
+
 void proposicion_retorno(set folset, parametros_proposicion_retorno params);
+
 retorno_expresion expresion(set folset);
-retorno_expresion_simple expresion_simple(set folset);
-retorno_termino termino(set folset);
-retorno_factor factor(set folset);
+
+retorno_expresion_simple expresion_simple(set folset, parametros_expresion_simple);
+
+retorno_termino termino(set folset, parametros_termino);
+
+retorno_factor factor(set folset, parametros_factor);
+
 retorno_variable variable(set folset, parametros_variable);
+
 retorno_llamada_funcion llamada_funcion(set folset, parametros_llamada_funcion);
+
 void lista_expresiones(set folset, parametros_lista_expresiones);
-retorno_constante constante(set folset);
+
+retorno_constante constante(set folset, parametros_constante);
 
 
 #endif
