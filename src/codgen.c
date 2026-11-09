@@ -55,6 +55,7 @@ void emitir_crcts(int posicion_en_ctes) {
 
 void emitir_crvl(int nivel, int despl, enum tipo tipo) {
     desplazamiento[get_nivel()] += ts[resolver_tipo_en_TS(tipo)].ets->cant_byte;
+
     emitir(CRVL);
     emitir(nivel);
     emitir(despl);
@@ -162,13 +163,13 @@ void emitir_imprcs() {
 }
 
 int emitir_bifs(int salto) {
-    // TODO
+
     emitir(BIFS);
     return emitir(salto);
 }
 
 int emitir_biff(enum tipo tipo, int salto) {
-    // TODO
+    desplazamiento[get_nivel()] -= ts[resolver_tipo_en_TS(tipo)].ets->cant_byte;
     emitir_con_tipo(BIFF, tipo);
     return emitir(salto);
 }
@@ -181,6 +182,7 @@ void emitir_aloc(int bytes) {
 
 void emitir_dmem(int bytes) {
     emitir(DMEM);
+    desplazamiento[get_nivel()] -= bytes;
     emitir(bytes);
 }
 

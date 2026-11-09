@@ -615,6 +615,8 @@ void proposicion(set folset, parametros_proposicion params) {
 
 void proposicion_iteracion(set folset, parametros_proposicion_iteracion params)
 {
+	int rotulo_comienzo_iteracion = libre;
+	int rotulo_proxima_instruccion = -1;
 	parametros_proposicion parametros_proposicion;
 	parametros_proposicion.tipo_retorno = params.tipo_retorno;
 	parametros_proposicion.tiene_retorno = params.tiene_retorno;
@@ -625,8 +627,11 @@ void proposicion_iteracion(set folset, parametros_proposicion_iteracion params)
 
 	retorno_expresion expresion_1 = expresion(folset | CPAR_CIE | F_PROPOSICION);
 
+
 	if (!es_tipo_base(expresion_1.tipo)) {
 		error_handler(97);
+	} else {
+		rotulo_proxima_instruccion = emitir_biff(expresion_1.tipo, 0);
 	}
 	if (expresion_1.tipo == STRING) {
 		error_handler(94);
@@ -635,14 +640,20 @@ void proposicion_iteracion(set folset, parametros_proposicion_iteracion params)
 	match(CPAR_CIE, 21);
 
 	proposicion(folset, parametros_proposicion);
+
+	if (es_tipo_base(expresion_1.tipo)) {
+		emitir_bifs(rotulo_comienzo_iteracion - libre - 2);
+		CODE[rotulo_proxima_instruccion] = libre - rotulo_proxima_instruccion - 1;
+	}
+
 }
 
 
-void proposicion_seleccion(set folset, parametros_proposicion_seleccion params)
-{
+void proposicion_seleccion(set folset, parametros_proposicion_seleccion params) {
 	parametros_proposicion parametros_proposicion;
 	parametros_proposicion.tipo_retorno = params.tipo_retorno;
 	parametros_proposicion.tiene_retorno = params.tiene_retorno;
+	int rotulo = -1;
 
 	match(CIF, 28);
 
@@ -652,6 +663,8 @@ void proposicion_seleccion(set folset, parametros_proposicion_seleccion params)
 
 	if (!es_tipo_base(expresion_1.tipo)) {
 		error_handler(97);
+	} else {
+		rotulo = emitir_biff(expresion_1.tipo, 0);
 	}
 	if (expresion_1.tipo == STRING) {
 		error_handler(94);
@@ -661,10 +674,22 @@ void proposicion_seleccion(set folset, parametros_proposicion_seleccion params)
 
 	proposicion(folset | F_ELSE_OPCIONAL | F_PROPOSICION, parametros_proposicion);
 
-	if(lookahead_in(F_ELSE_OPCIONAL))
-	{
+	if (lookahead_in(F_ELSE_OPCIONAL)) {
+		int rotulo_proxima_instruccion = -1;
+		if (rotulo >= 0) {
+			rotulo_proxima_instruccion = emitir_bifs(0);
+			CODE[rotulo] = libre - rotulo - 1;
+		}
+
 		scanner();
 		proposicion(folset, parametros_proposicion);
+
+		if (rotulo >= 0) {
+			CODE[rotulo_proxima_instruccion] = libre - rotulo_proxima_instruccion - 1;
+		}
+
+	} else if (rotulo >= 0) {
+		CODE[rotulo] = libre - rotulo - 1;
 	}
 }
 
@@ -737,13 +762,6 @@ void proposicion_e_s(set folset) {
 				}
 			}
 
-			// if (expresion_1.tipo != ERROR) {
-			// 	emitir_crcts(libre_ctes);
-			// 	CTES[libre_ctes++] = '\n';
-			//
-			// 	emitir_imprcs();
-			// }
-
 			match(CPYCOMA, 23);
 
 			break;
@@ -784,6 +802,9 @@ void proposicion_expresion(set folset)
 		retorno_expresion expresion_1 = expresion(folset | CPYCOMA);
 		if (expresion_1.tipo == STRING)
 			error_handler(94);
+		if (es_tipo_base(expresion_1.tipo)) {
+			emitir_dmem(ts[resolver_tipo_en_TS(expresion_1.tipo)].ets->cant_byte);
+		}
 	}
 
 	match(CPYCOMA, 23);
