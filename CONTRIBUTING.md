@@ -77,20 +77,27 @@ Se dispara solo, en cada PR. Pasos:
 
 1. `make -C src` — si no compila, el check falla ahí mismo.
 2. Recorre cada `tests/entregaN/`:
-   - **`validos/*.c`**: corre `./ucc -c archivo`. Falla si aparece cualquier
-     línea `Error N: ...` en la salida (un `Warning N: ...` no cuenta como
-     falla).
+   - **`validos/*.c`**: programas sin errores de análisis que usan arreglos o
+     funciones (fuera de alcance de la generación de código). Corre
+     `./ucc -c archivo`. Falla si aparece cualquier línea `Error N: ...` (un
+     `Warning N: ...` no cuenta como falla) o si se generó `archivo.o`.
+   - **`compilables/*.c`**: programas sin errores de análisis que no usan
+     arreglos ni funciones. Falla si aparece `Error N: ...` o si no se generó
+     `archivo.o`. Si existe `archivo.salida`, además ejecuta
+     `./ucc -o archivo.o` (con `archivo.entrada` como stdin, si existe) y
+     compara la salida exacta contra `archivo.salida`.
    - **`invalidos/*.c`**: corre `./ucc -c archivo` y compara la salida contra
      un archivo `archivo.esperado` (mismo nombre, extensión `.esperado`) con la
-     secuencia exacta de errores que tiene que reportar. Corre con timeout, por
+     secuencia exacta de errores que tiene que reportar. También falla si se
+     generó `archivo.o`. Corre con timeout, por
      si un bug de recuperación antipánico cuelga el parser en vez de terminar.
-   - **`pendientes/{validos,invalidos}/`**: el CI **no las toca nunca**. Ahí van
+   - **`pendientes/{validos,compilables,invalidos}/`**: el CI **no las toca nunca**. Ahí van
      los casos que ya escribiste pero cuya feature todavía no está resuelta.
 
 ### Cómo agregar un test tuyo
 
-1. Escribí el `.c` de entrada en `tests/entregaN/pendientes/validos/` o
-   `pendientes/invalidos/`, según corresponda.
+1. Escribí el `.c` de entrada en `tests/entregaN/pendientes/validos/`,
+   `pendientes/compilables/` o `pendientes/invalidos/`, según corresponda.
 2. Cuando termines la feature que lo resuelve, corré a mano y revisá que la
    salida sea la que esperás:
    ```bash
@@ -98,6 +105,8 @@ Se dispara solo, en cada PR. Pasos:
    ```
 3. Promovelo como parte del **mismo PR** que resuelve la feature:
    - Si es válido: `git mv` el `.c` a `validos/`. No necesita `.esperado`.
+   - Si es compilable: `git mv` el `.c` a `compilables/`, junto con su
+     `.salida` (y `.entrada`, si usa `cin`) si querés verificar la ejecución.
    - Si es inválido: copiá del output real las líneas `Error N: ...` (tal cual
      salen, con espacios y todo — no las tipees de memoria) a
      `mi_caso.esperado`, y movés ambos archivos a `invalidos/`.

@@ -1,3 +1,13 @@
-int a[0];
+void main()
+{
+    int i = 0;
+    int p = 0;
+    int q = 0;
+    while (i < 10)
+    {
+        if (i - i / 2 * 2 == 0) {p = p + 1;} else {q = q + 1;}
+        i = i + 1;
+    }
 
-void main(){}
+    cout << p << " " << q;
+}

@@ -6,6 +6,7 @@
 #include "codigos.h"
 #include "error.h"
 #include "ts.h"
+#include "sistejec.h"
 
 
 void scanner()
@@ -47,6 +48,31 @@ void init_parser(int argc, char *argv[])
 				error_handler(COD_IMP_ERRORES);
 				exit(1);
 			}
+		}
+		else if(strcmp(argv[1], "-o") == 0)
+		{
+			if(!cargar_codgen(argv[2]))
+			{
+				error_handler(8);
+				error_handler(COD_IMP_ERRORES);
+				exit(1);
+			}
+			interprete();
+			exit(0);
+		}
+		else if(strcmp(argv[1], "-d") == 0 || strcmp(argv[1], "-ds") == 0)
+		{
+			if(!cargar_codgen(argv[2]))
+			{
+				error_handler(8);
+				error_handler(COD_IMP_ERRORES);
+				exit(1);
+			}
+			impr_codgen();
+			printf("\n");
+			if(strcmp(argv[1], "-ds") == 0)
+				impr_ctes();
+			exit(0);
 		}
 		else
 		{

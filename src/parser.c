@@ -13,6 +13,13 @@ int main(int argc, char *argv[])
 
 	error_handler(COD_IMP_ERRORES);
 
+	if (cantidad_errores() == 0) {
+		if (construccion_no_soportada)
+			error_print(36);
+		else if (!generar_objeto(argv[2]))
+			error_print(11);
+	}
+
 	return 0;
 }
 
@@ -21,6 +28,7 @@ int main(int argc, char *argv[])
 
 void unidad_traduccion(set folset)
 {
+	emitir_inpp();
 	pushTB();
 	test((F_UNIDAD_TRADUCCION | folset), NADA, 40);
 
@@ -47,7 +55,14 @@ void unidad_traduccion(set folset)
 		error_handler(86);
 	}
 
+	emitir_crcts(libre_ctes);
+	CTES[libre_ctes++] = '\n';
+
+	emitir_imprcs();
+
+	emitir_dmem(desplazamiento[0]);
 	pop_nivel();
+	emitir_parar();
 }
 
 
@@ -110,6 +125,9 @@ void especificador_declaracion(set folset, parametros_especificador_declaracion 
 
 	switch (lookahead()) {
 		case CPAR_ABR: {
+			if (params.identificador == NULL || strcmp(params.identificador, "main") != 0)
+				construccion_no_soportada = 1;
+
 			parametros_definicion_funcion parametros_definicion_funcion;
 			parametros_definicion_funcion.tipo_retorno = params.tipo_declaracion;
 			parametros_definicion_funcion.posicion_tabla_simbolos = NIL;
@@ -151,6 +169,7 @@ void definicion_funcion(set folset, parametros_definicion_funcion params)
 	enum boolean tiene_retorno = FALSE;
 
 	pushTB();
+	emitir_enbl(get_nivel());
 
 	int posicion_tabla_simbolos = params.posicion_tabla_simbolos;
 	parametros_proposicion_compuesta parametros_proposicion_compuesta;
@@ -340,15 +359,33 @@ void declarador_init(set folset, parametros_declarador_init params) {
 	entrada_TS *entrada_nueva_variable = nueva_entrada();
 	entrada_nueva_variable->clase = CLASVAR;
 
+	int nivel = get_nivel();
+	int despl = desplazamiento[nivel];
+	int cant_bytes = ts[resolver_tipo_en_TS(params.tipo_declaracion)].ets->cant_byte;
+
+	entrada_nueva_variable->desc.nivel = nivel;
+	entrada_nueva_variable->desc.despl = despl;
+
+	emitir_aloc(cant_bytes);
+
 	switch (lookahead()) {
 		case CASIGNAC:
 			scanner();
+			parametros_constante parametros_constante;
+			parametros_constante.tipo_declarado = params.tipo_declaracion;
+			parametros_constante.tipo_expresion_actual = ERROR;
 			entrada_nueva_variable->ptr_tipo = resolver_tipo_en_TS(params.tipo_declaracion);
-			retorno_constante constante_1 = constante(folset);
+
+			retorno_constante constante_1 = constante(folset, parametros_constante);
+
+			enum tipo tipo_declarado = params.tipo_declaracion;
 
 			if (params.tipo_declaracion != ERROR && !param1_es_coercionable_a_param2(constante_1.tipo, params.tipo_declaracion)) {
 				error_handler(83);
+			} else {
+				emitir_alm(nivel, despl, tipo_declarado);
 			}
+
 			break;
 
 		/*  { } son puntos de reconfiguracion de esta alternativa: se entra por
@@ -357,6 +394,7 @@ void declarador_init(set folset, parametros_declarador_init params) {
 		case CCOR_CIE:
 		case CLLA_ABR:
 		case CLLA_CIE: {
+			construccion_no_soportada = 1;
 			entrada_nueva_variable->ptr_tipo = resolver_tipo_en_TS(ARREGLO);
 			entrada_nueva_variable->desc.part_var.arr.ptero_tipo_base = resolver_tipo_en_TS(params.tipo_declaracion);
 			int valor_constante_entera = -1;
@@ -385,7 +423,8 @@ void declarador_init(set folset, parametros_declarador_init params) {
 				if (valor_constante_entera >= 0 && valor_constante_entera < cantidad_inicializadores) {
 					error_handler(76);
 				}
-				if (cantidad_inicializadores > 0 && !param1_es_coercionable_a_param2(lista_inicializadores_1.tipo_inicializadores, params.tipo_declaracion)) {
+				if (cantidad_inicializadores > 0 && !param1_es_coercionable_a_param2(
+					    lista_inicializadores_1.tipo_inicializadores, params.tipo_declaracion)) {
 					error_handler(77);
 				}
 			}
@@ -411,9 +450,11 @@ void declarador_init(set folset, parametros_declarador_init params) {
 retorno_lista_inicializadores lista_inicializadores(set folset)
 {
 	retorno_lista_inicializadores retorno_lista_inicializadores;
+	parametros_constante parametros_constante;
+	parametros_constante.tipo_declarado = ERROR;
 
 	enum boolean hay_constante = lookahead_in(F_CONSTANTE) ? TRUE : FALSE;
-	retorno_constante constante_1 = constante(folset | CCOMA | F_CONSTANTE);
+	retorno_constante constante_1 = constante(folset | CCOMA | F_CONSTANTE, parametros_constante);
 	retorno_lista_inicializadores.cantidad_inicializadores = hay_constante || lookahead_in(CCOMA | F_CONSTANTE) ? 1 : 0;
 	retorno_lista_inicializadores.tipo_inicializadores = constante_1.tipo;
 
@@ -424,7 +465,7 @@ retorno_lista_inicializadores lista_inicializadores(set folset)
 		else
 			error_handler(64);
 
-		retorno_constante constante_n = constante(folset | CCOMA | F_CONSTANTE);
+		retorno_constante constante_n = constante(folset | CCOMA | F_CONSTANTE, parametros_constante);
 
 		retorno_lista_inicializadores.cantidad_inicializadores++;
 		retorno_lista_inicializadores.tipo_inicializadores = resolver_tipo_operador(retorno_lista_inicializadores.tipo_inicializadores, constante_n.tipo);
@@ -452,6 +493,10 @@ void proposicion_compuesta(set folset, parametros_proposicion_compuesta params)
 
 	match(CLLA_CIE, 25);
 	test(folset, NADA, 50);
+
+	int nivel = get_nivel();
+	emitir_dmem(desplazamiento[nivel]);
+	emitir_finb(nivel);
 	pop_nivel();
 }
 
@@ -510,6 +555,7 @@ void proposicion(set folset, parametros_proposicion params) {
 	switch(lookahead()) {
 		case CLLA_ABR:
 			pushTB();
+			emitir_enbl(get_nivel());
 
 			parametros_proposicion_compuesta parametros_proposicion_compuesta;
 			parametros_proposicion_compuesta.tipo_retorno = params.tipo_retorno;
@@ -569,6 +615,8 @@ void proposicion(set folset, parametros_proposicion params) {
 
 void proposicion_iteracion(set folset, parametros_proposicion_iteracion params)
 {
+	int rotulo_comienzo_iteracion = libre;
+	int rotulo_proxima_instruccion = -1;
 	parametros_proposicion parametros_proposicion;
 	parametros_proposicion.tipo_retorno = params.tipo_retorno;
 	parametros_proposicion.tiene_retorno = params.tiene_retorno;
@@ -579,8 +627,11 @@ void proposicion_iteracion(set folset, parametros_proposicion_iteracion params)
 
 	retorno_expresion expresion_1 = expresion(folset | CPAR_CIE | F_PROPOSICION);
 
+
 	if (!es_tipo_base(expresion_1.tipo)) {
 		error_handler(97);
+	} else {
+		rotulo_proxima_instruccion = emitir_biff(expresion_1.tipo, 0);
 	}
 	if (expresion_1.tipo == STRING) {
 		error_handler(94);
@@ -589,14 +640,20 @@ void proposicion_iteracion(set folset, parametros_proposicion_iteracion params)
 	match(CPAR_CIE, 21);
 
 	proposicion(folset, parametros_proposicion);
+
+	if (es_tipo_base(expresion_1.tipo)) {
+		emitir_bifs(rotulo_comienzo_iteracion - libre - 2);
+		CODE[rotulo_proxima_instruccion] = libre - rotulo_proxima_instruccion - 1;
+	}
+
 }
 
 
-void proposicion_seleccion(set folset, parametros_proposicion_seleccion params)
-{
+void proposicion_seleccion(set folset, parametros_proposicion_seleccion params) {
 	parametros_proposicion parametros_proposicion;
 	parametros_proposicion.tipo_retorno = params.tipo_retorno;
 	parametros_proposicion.tiene_retorno = params.tiene_retorno;
+	int rotulo = -1;
 
 	match(CIF, 28);
 
@@ -606,6 +663,8 @@ void proposicion_seleccion(set folset, parametros_proposicion_seleccion params)
 
 	if (!es_tipo_base(expresion_1.tipo)) {
 		error_handler(97);
+	} else {
+		rotulo = emitir_biff(expresion_1.tipo, 0);
 	}
 	if (expresion_1.tipo == STRING) {
 		error_handler(94);
@@ -615,10 +674,22 @@ void proposicion_seleccion(set folset, parametros_proposicion_seleccion params)
 
 	proposicion(folset | F_ELSE_OPCIONAL | F_PROPOSICION, parametros_proposicion);
 
-	if(lookahead_in(F_ELSE_OPCIONAL))
-	{
+	if (lookahead_in(F_ELSE_OPCIONAL)) {
+		int rotulo_proxima_instruccion = -1;
+		if (rotulo >= 0) {
+			rotulo_proxima_instruccion = emitir_bifs(0);
+			CODE[rotulo] = libre - rotulo - 1;
+		}
+
 		scanner();
 		proposicion(folset, parametros_proposicion);
+
+		if (rotulo >= 0) {
+			CODE[rotulo_proxima_instruccion] = libre - rotulo_proxima_instruccion - 1;
+		}
+
+	} else if (rotulo >= 0) {
+		CODE[rotulo] = libre - rotulo - 1;
 	}
 }
 
@@ -629,23 +700,33 @@ void proposicion_e_s(set folset) {
 
 			parametros_variable parametros_variable;
 			parametros_variable.origen_proposicion_entrada = TRUE;
+			parametros_variable.tipo_expresion_actual = INDEFINIDO;
 			scanner();
 
 			match(CSHR, 30);
-			retorno_variable variable_1 =
-					variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA, parametros_variable);
+			retorno_variable variable_1 = variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA, parametros_variable);
+
 
 			if (!es_tipo_base(variable_1.tipo)) {
 				error_handler(95);
+			} else if (!variable_1.es_elemento_arreglo){
+				libre-=4;
+				desplazamiento[get_nivel()] -= ts[resolver_tipo_en_TS(variable_1.tipo)].ets->cant_byte;
+				emitir_leer(variable_1.tipo);
+				emitir_alm(variable_1.nivel, variable_1.despl, variable_1.tipo);
 			}
 
 			while (lookahead_in(F_RESTO_PROP_IN | F_VARIABLE)) {
 				match(CSHR, 30);
-				retorno_variable variable_n = variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA,
-				                                       parametros_variable);
+				retorno_variable variable_n = variable(folset | F_RESTO_PROP_IN | F_VARIABLE | CPYCOMA, parametros_variable);
 
 				if (!es_tipo_base(variable_n.tipo)) {
 					error_handler(95);
+				} else if (!variable_n.es_elemento_arreglo){
+					libre-=4;
+					desplazamiento[get_nivel()] -= ts[resolver_tipo_en_TS(variable_n.tipo)].ets->cant_byte;
+					emitir_leer(variable_n.tipo);
+					emitir_alm(variable_n.nivel, variable_n.despl, variable_n.tipo);
 				}
 			}
 
@@ -654,7 +735,6 @@ void proposicion_e_s(set folset) {
 			break;
 		}
 		case COUT: {
-
 			scanner();
 
 			match(CSHL, 31);
@@ -663,14 +743,22 @@ void proposicion_e_s(set folset) {
 
 			if (!es_tipo_base(expresion_1.tipo) && expresion_1.tipo != STRING) {
 				error_handler(95);
+			} else if (expresion_1.tipo == STRING) {
+				emitir_imprcs();
+			} else {
+				emitir_impr(expresion_1.tipo);
 			}
 
 			while (lookahead_in(F_RESTO_PROP_OUT | F_EXPRESION)) {
 				match(CSHL, 31);
 				retorno_expresion expresion_m = expresion(folset | F_RESTO_PROP_OUT | F_EXPRESION | CPYCOMA);
 
-			if (!es_tipo_base(expresion_m.tipo) && expresion_m.tipo != STRING) {
+				if (!es_tipo_base(expresion_m.tipo) && expresion_m.tipo != STRING) {
 					error_handler(95);
+				} else if (expresion_m.tipo == STRING) {
+					emitir_imprcs();
+				} else {
+					emitir_impr(expresion_m.tipo);
 				}
 			}
 
@@ -714,6 +802,9 @@ void proposicion_expresion(set folset)
 		retorno_expresion expresion_1 = expresion(folset | CPYCOMA);
 		if (expresion_1.tipo == STRING)
 			error_handler(94);
+		if (es_tipo_base(expresion_1.tipo)) {
+			emitir_dmem(ts[resolver_tipo_en_TS(expresion_1.tipo)].ets->cant_byte);
+		}
 	}
 
 	match(CPYCOMA, 23);
@@ -724,35 +815,65 @@ void proposicion_expresion(set folset)
 
 retorno_expresion expresion(set folset)
 {
+	parametros_expresion_simple parametros_expresion_simple;
+	parametros_expresion_simple.tipo_expresion_actual = INDEFINIDO;
 	retorno_expresion retorno_expresion;
-	retorno_expresion_simple expresion_simple_1 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
+	retorno_expresion_simple expresion_simple_1 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE, parametros_expresion_simple);
 	retorno_expresion.tipo_base = expresion_simple_1.tipo == ARREGLO ? expresion_simple_1.tipo_base : ERROR;
+	Datos_asignacion *cabecera_lista_datos_asignacion = NULL;
+	Datos_asignacion *nueva_asignacion;
 	enum boolean se_lanzo_error_arreglo_como_todo = TRUE;
+	enum boolean hubo_error = FALSE;
 
 	enum tipo tipo_izquierda_asignacion = retorno_expresion.tipo = expresion_simple_1.tipo;
-	enum boolean clase_izquierda_asignacion_es_variable =
-			retorno_expresion.es_clase_variable = expresion_simple_1.es_clase_variable;
+	enum boolean clase_izquierda_asignacion_es_variable = retorno_expresion.es_clase_variable = expresion_simple_1.es_clase_variable;
 
-	while(lookahead_in(F_RESTO_EXPRESION))
-	{
-		switch(lookahead())
-		{
+	while (lookahead_in(F_RESTO_EXPRESION)) {
+		switch (lookahead()) {
 			case CASIGNAC: {
 				if (!clase_izquierda_asignacion_es_variable) {
+					hubo_error = TRUE;
 					error_handler(82);
-				}else if (tipo_izquierda_asignacion == ARREGLO){
+				} else if (tipo_izquierda_asignacion == ARREGLO) {
+					hubo_error = TRUE;
 					error_handler(81);
 					se_lanzo_error_arreglo_como_todo = TRUE;
+				} else if (!expresion_simple_1.es_elemento_arreglo && es_tipo_base(tipo_izquierda_asignacion) && !hubo_error) {
+					if (cabecera_lista_datos_asignacion == NULL) {
+						libre -= 4;
+						desplazamiento[get_nivel()] -= ts[resolver_tipo_en_TS(tipo_izquierda_asignacion)].ets->cant_byte;
+
+						cabecera_lista_datos_asignacion = (Datos_asignacion *) malloc(sizeof(Datos_asignacion));
+						cabecera_lista_datos_asignacion->nivel = expresion_simple_1.nivel;
+						cabecera_lista_datos_asignacion->tipo = expresion_simple_1.tipo;
+						cabecera_lista_datos_asignacion->desplazamiento = expresion_simple_1.despl;
+						cabecera_lista_datos_asignacion->proximo = NULL;
+					} else if (clase_izquierda_asignacion_es_variable) {
+						libre -= 4;
+						desplazamiento[get_nivel()] -= ts[resolver_tipo_en_TS(tipo_izquierda_asignacion)].ets->cant_byte;
+
+						nueva_asignacion->proximo = cabecera_lista_datos_asignacion;
+						cabecera_lista_datos_asignacion = nueva_asignacion;
+					}
 				}
+
 				scanner();
-				retorno_expresion_simple expresion_simple_2 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
+				parametros_expresion_simple.tipo_expresion_actual = INDEFINIDO; // TODO ver en v3
+				retorno_expresion_simple expresion_simple_2 = expresion_simple(
+					folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE, parametros_expresion_simple);
 				clase_izquierda_asignacion_es_variable = expresion_simple_2.es_clase_variable;
 
 				if (expresion_simple_2.tipo == STRING) {
+					hubo_error = TRUE;
 					error_handler(94);
 				}
 
-				if (!param1_es_coercionable_a_param2(expresion_simple_2.tipo, tipo_izquierda_asignacion)) {
+				enum tipo tipo_lado_derecho = lookahead_in(F_RELACION) && es_tipo_base(expresion_simple_2.tipo)
+					                              ? INT
+					                              : expresion_simple_2.tipo;
+
+				if (!param1_es_coercionable_a_param2(tipo_lado_derecho, tipo_izquierda_asignacion)) {
+					hubo_error = TRUE;
 					error_handler(83);
 				}
 
@@ -761,6 +882,15 @@ retorno_expresion expresion(set folset)
 				if (expresion_simple_2.tipo == ARREGLO) {
 					se_lanzo_error_arreglo_como_todo = FALSE;
 				}
+
+				if (!hubo_error) {
+					nueva_asignacion = (Datos_asignacion *) malloc(sizeof(Datos_asignacion));
+					nueva_asignacion->nivel = expresion_simple_2.nivel;
+					nueva_asignacion->tipo = tipo_izquierda_asignacion;
+					nueva_asignacion->desplazamiento = expresion_simple_2.despl;
+					nueva_asignacion->proximo = NULL;
+				}
+
 				break;
 			}
 			case CDISTINTO:
@@ -769,14 +899,51 @@ retorno_expresion expresion(set folset)
 			case CMEIG:
 			case CMAYOR:
 			case CMAIG: {
+				parametros_expresion_simple.tipo_expresion_actual = INDEFINIDO;
+				set operador = lookahead();
 				scanner();
 
-				retorno_expresion_simple expresion_simple_3 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE);
+				int posicion_buffer_casteo = reservar_buffer_casteo();
+				retorno_expresion_simple expresion_simple_3 = expresion_simple(folset | F_RESTO_EXPRESION | F_EXPRESION_SIMPLE, parametros_expresion_simple);
 				clase_izquierda_asignacion_es_variable = FALSE;
-				tipo_izquierda_asignacion = expresion_simple_3.tipo;
 
-				enum tipo tipo_coercion_operando =resolver_tipo_operador(retorno_expresion.tipo, expresion_simple_3.tipo);
+				enum tipo tipo_coercion_operando = resolver_tipo_operador(tipo_izquierda_asignacion, expresion_simple_3.tipo);
 				retorno_expresion.tipo = tipo_coercion_operando != ERROR ? INT : ERROR;
+
+				if (retorno_expresion.tipo != ERROR) {
+					coercionar_operandos(posicion_buffer_casteo, tipo_izquierda_asignacion, expresion_simple_3.tipo);
+
+					switch (operador) {
+						case CDISTINTO: {
+							emitir_cmni(tipo_coercion_operando);
+							break;
+						}
+						case CIGUAL: {
+							emitir_cmig(tipo_coercion_operando);
+							break;
+						}
+						case CMENOR: {
+							emitir_cmme(tipo_coercion_operando);
+							break;
+						}
+						case CMEIG: {
+							emitir_cmei(tipo_coercion_operando);
+							break;
+						}
+						case CMAYOR: {
+							emitir_cmma(tipo_coercion_operando);
+							break;
+						}
+						case CMAIG: {
+							emitir_cmai(tipo_coercion_operando);
+							break;
+						}
+					}
+
+					registrar_promocion_char(tipo_coercion_operando);
+				}
+
+				tipo_izquierda_asignacion = retorno_expresion.tipo;
 
 				break;
 			}
@@ -786,24 +953,39 @@ retorno_expresion expresion(set folset)
 
 	if (!se_lanzo_error_arreglo_como_todo) {
 		error_handler(81);
+		hubo_error = TRUE;
 	}
+
+	if (cabecera_lista_datos_asignacion != NULL && es_tipo_base(tipo_izquierda_asignacion) && tipo_izquierda_asignacion < cabecera_lista_datos_asignacion->tipo) {
+		emitir_cast(tipo_izquierda_asignacion, cabecera_lista_datos_asignacion->tipo);
+	}
+
+	if (cabecera_lista_datos_asignacion != NULL) {
+		retorno_expresion.tipo = expresion_simple_1.tipo;
+	}
+
+	resolver_asignaciones(cabecera_lista_datos_asignacion);
 
 	return retorno_expresion;
 }
 
 
-retorno_expresion_simple expresion_simple(set folset) {
+retorno_expresion_simple expresion_simple(set folset, parametros_expresion_simple params) {
 	enum boolean hubo_operador_previo = FALSE;
+	set operador_previo;
 	retorno_expresion_simple retorno_expresion_simple;
+	parametros_termino parametros_termino;
+	parametros_termino.tipo_expresion_actual = params.tipo_expresion_actual;
 
 	test(F_EXPRESION_SIMPLE, (folset | F_RESTO_EXPRESION_SIMPLE), 56);
 
 	if (lookahead_in(F_OPERADOR_OPCIONAL)) {
 		hubo_operador_previo = TRUE;
+		operador_previo = lookahead();
 		scanner();
 	}
 
-	retorno_termino termino_1 = termino(folset | F_RESTO_EXPRESION_SIMPLE);
+	retorno_termino termino_1 = termino(folset | F_RESTO_EXPRESION_SIMPLE, parametros_termino);
 
 	if (hubo_operador_previo && termino_1.tipo == STRING) {
 		error_handler(94);
@@ -813,54 +995,101 @@ retorno_expresion_simple expresion_simple(set folset) {
 	retorno_expresion_simple.tipo = (termino_1.tipo == ARREGLO && hubo_operador_previo) ? ERROR : termino_1.tipo;
 	retorno_expresion_simple.tipo_base =(termino_1.tipo == ARREGLO && hubo_operador_previo) ? ERROR : termino_1.tipo_base;
 	retorno_expresion_simple.es_clase_variable = !hubo_operador_previo && termino_1.es_clase_variable;
+	retorno_expresion_simple.es_elemento_arreglo = termino_1.es_elemento_arreglo;
+	if (retorno_expresion_simple.es_clase_variable) {
+		retorno_expresion_simple.nivel = termino_1.nivel;
+		retorno_expresion_simple.despl = termino_1.despl;
+	}
 
+	if (es_tipo_base(retorno_expresion_simple.tipo) && hubo_operador_previo && operador_previo == CMENOS) {
+		emitir_inv(retorno_expresion_simple.tipo);
+		registrar_promocion_char(retorno_expresion_simple.tipo);
+		retorno_expresion_simple.tipo = retorno_expresion_simple.tipo == CHAR ? INT : retorno_expresion_simple.tipo;
+	}
 
 	while (lookahead_in(F_RESTO_EXPRESION_SIMPLE)) {
+		parametros_termino.tipo_expresion_actual = INDEFINIDO;
 		retorno_expresion_simple.es_clase_variable = FALSE;
 		enum boolean es_operador_logico_or = token1.codigo == COR;
+		set operador = lookahead();
+		enum tipo tipo_izquierdo = retorno_expresion_simple.tipo;
 
 		scanner();
-		retorno_termino termino_n = termino(folset | F_RESTO_EXPRESION_SIMPLE);
+		int posicion_buffer_casteo = reservar_buffer_casteo();
+		retorno_termino termino_n = termino(folset | F_RESTO_EXPRESION_SIMPLE, parametros_termino);
 
-		enum tipo tipo_coercion_operando = resolver_tipo_operador(retorno_expresion_simple.tipo, termino_n.tipo);
+		enum tipo tipo_coercion_operando = resolver_tipo_operador(tipo_izquierdo, termino_n.tipo);
 
-		retorno_expresion_simple.tipo = es_operador_logico_or && tipo_coercion_operando != ERROR? INT : tipo_coercion_operando;
+		retorno_expresion_simple.tipo = tipo_coercion_operando;
 		retorno_expresion_simple.tipo_base = ERROR;
+
+		if (es_tipo_base(retorno_expresion_simple.tipo)) {
+			coercionar_operandos(posicion_buffer_casteo, tipo_izquierdo, termino_n.tipo);
+
+			if (operador == CMAS) {
+				emitir_sum(retorno_expresion_simple.tipo);
+			} else if (operador == CMENOS) {
+				emitir_sub(retorno_expresion_simple.tipo);
+			} else {
+				emitir_or(retorno_expresion_simple.tipo);
+			}
+			registrar_promocion_char(retorno_expresion_simple.tipo);
+			retorno_expresion_simple.tipo = (es_operador_logico_or || retorno_expresion_simple.tipo == CHAR) ? INT : retorno_expresion_simple.tipo;
+		}
 	}
+
 
 	return  retorno_expresion_simple;
 }
 
 
-retorno_termino termino(set folset)
-{
+retorno_termino termino(set folset, parametros_termino params) {
+	parametros_factor parametros_factor;
+	parametros_factor.tipo_expresion_actual = params.tipo_expresion_actual;
 	retorno_termino retorno_termino;
 
-	retorno_factor factor_1 = factor(folset | F_RESTO_TERMINO | F_FACTOR);
+	retorno_factor factor_1 = factor(folset | F_RESTO_TERMINO | F_FACTOR, parametros_factor);
 
 	retorno_termino.tipo = factor_1.tipo;
 	retorno_termino.es_clase_variable = factor_1.es_clase_variable;
+	retorno_termino.es_elemento_arreglo = factor_1.es_elemento_arreglo;
 	retorno_termino.tipo_base = factor_1.tipo_base;
+	retorno_termino.nivel = factor_1.nivel;
+	retorno_termino.despl = factor_1.despl;
 
-	while(lookahead_in(F_RESTO_TERMINO))
-	{
+	while (lookahead_in(F_RESTO_TERMINO)) {
+		parametros_factor.tipo_expresion_actual = es_tipo_base(retorno_termino.tipo) ? retorno_termino.tipo : ERROR;
 		retorno_termino.es_clase_variable = FALSE;
 		enum boolean es_operador_logico_and = token1.codigo == CAND;
+		set operador = lookahead();
 
 		scanner();
-		retorno_factor factor_n = factor(folset | F_RESTO_TERMINO | F_FACTOR);
+
+		retorno_factor factor_n = factor(folset | F_RESTO_TERMINO | F_FACTOR, parametros_factor);
 
 		enum tipo tipo_coercion_operando = resolver_tipo_operador(retorno_termino.tipo, factor_n.tipo);
 
-		retorno_termino.tipo = es_operador_logico_and && tipo_coercion_operando != ERROR? INT : tipo_coercion_operando;
+		retorno_termino.tipo = tipo_coercion_operando;
 		retorno_termino.tipo_base = ERROR;
+
+		if (es_tipo_base(retorno_termino.tipo)) {
+			if (operador == CAND) {
+				emitir_and(retorno_termino.tipo);
+			} else if (operador == CMULT) {
+				emitir_mul(retorno_termino.tipo);
+			} else {
+				emitir_div(retorno_termino.tipo);
+			}
+			registrar_promocion_char(retorno_termino.tipo);
+			retorno_termino.tipo = (es_operador_logico_and || retorno_termino.tipo == CHAR) ? INT : retorno_termino.tipo;
+		}
 	}
 
 	return retorno_termino;
 }
 
 
-retorno_factor factor(set folset)
+retorno_factor factor(set folset, parametros_factor params)
 {
 	test(F_FACTOR, folset, 57);
 	retorno_factor retorno_factor;
@@ -906,6 +1135,7 @@ retorno_factor factor(set folset)
 				parametros_variable parametros_variable;
 				parametros_variable.indice_en_TS = indice_en_TS;
 				parametros_variable.origen_proposicion_entrada = FALSE;
+				parametros_variable.tipo_expresion_actual = params.tipo_expresion_actual;
 
 				if (!identificador_esta_en_TS) {
 					entrada_TS *entrada = ts[indice_en_TS].ets;
@@ -916,28 +1146,66 @@ retorno_factor factor(set folset)
 				retorno_factor.tipo = variable_1.tipo;
 				retorno_factor.tipo_base = variable_1.tipo_base;
 				retorno_factor.es_clase_variable = TRUE;
+				retorno_factor.es_elemento_arreglo = variable_1.es_elemento_arreglo;
+				retorno_factor.nivel = variable_1.nivel;
+				retorno_factor.despl = variable_1.despl;
 			}
 			break;
 		}
 		case CCONS_ENT:
 		case CCONS_FLO:
 		case CCONS_CAR: {
-			retorno_constante constante_1 = constante(folset);
+			parametros_constante parametros_constante;
+			parametros_constante.tipo_declarado = INDEFINIDO;
+			parametros_constante.tipo_expresion_actual = params.tipo_expresion_actual;
+
+			retorno_constante constante_1 = constante(folset, parametros_constante);
 			retorno_factor.tipo = constante_1.tipo;
 			retorno_factor.es_clase_variable = FALSE;
 
 			break;
 		}
 
-		case CCONS_STR:
+		case CCONS_STR: {
+			const unsigned long longitud_string = strlen(token1.lexema);
+
+			emitir_crcts(libre_ctes);
+
+			for (int i = 0; i < longitud_string && libre_ctes < TAM_CTES; i++) {
+				char actual = token1.lexema[i];
+				char siguiente = token1.lexema[i + 1];
+
+				if (actual == '\\' && (siguiente == 'n' || siguiente == 't')) {
+					CTES[libre_ctes++] = siguiente == 'n' ? '\n' : '\t';
+					i++;
+				} else {
+					CTES[libre_ctes++] = actual;
+				}
+			}
+
+			if (libre_ctes < TAM_CTES) {
+				CTES[libre_ctes++] = '\0';
+			} else {
+				error_handler(37);
+			}
+
 			scanner();
 			retorno_factor.tipo = STRING;
 			retorno_factor.es_clase_variable = FALSE;
 			break;
+		}
 
 		case CPAR_ABR:
 			scanner();
+			int posicion_buffer_casteo;
+			if (es_tipo_base(params.tipo_expresion_actual)) {
+				posicion_buffer_casteo = reservar_buffer_casteo();
+			}
 			retorno_expresion expresion_1 = expresion(folset | CPAR_CIE);
+
+			if (es_tipo_base(params.tipo_expresion_actual) && es_tipo_base(expresion_1.tipo)) {
+				coercionar_operandos(posicion_buffer_casteo, params.tipo_expresion_actual, expresion_1.tipo);
+			}
 
 			retorno_factor.tipo = es_tipo_base(expresion_1.tipo) ? expresion_1.tipo : ERROR;
 			retorno_factor.es_clase_variable = FALSE;
@@ -946,10 +1214,25 @@ retorno_factor factor(set folset)
 
 		case CNEG: {
 			scanner();
+			int posicion_buffer_neg;
+			if (es_tipo_base(params.tipo_expresion_actual)) {
+				posicion_buffer_neg = reservar_buffer_casteo();
+			}
 			retorno_expresion expresion_2 = expresion(folset);
 			lanzar_error_si_corresponde(expresion_2.tipo);
-			retorno_factor.tipo = es_tipo_base(expresion_2.tipo) ? INT : ERROR;
+			enum boolean expresion_es_tipo_base = es_tipo_base(expresion_2.tipo);
+
+			retorno_factor.tipo = expresion_es_tipo_base ? INT : ERROR;
 			retorno_factor.es_clase_variable = FALSE;
+
+			if (expresion_es_tipo_base) {
+				emitir_neg(expresion_2.tipo);
+				registrar_promocion_char(expresion_2.tipo);
+
+				if (es_tipo_base(params.tipo_expresion_actual)) {
+					coercionar_operandos(posicion_buffer_neg, params.tipo_expresion_actual, INT);
+				}
+			}
 
 			break;
 		}
@@ -993,17 +1276,17 @@ retorno_variable variable(set folset, parametros_variable params) {
 		}
 	}
 
-	entrada_TS *entrada_ts = params.indice_en_TS != NIL ?ts[params.indice_en_TS].ets : NULL;
-	enum boolean es_parametro = entrada_ts != NULL ? entrada_ts->clase == CLASPAR : FALSE ;
+	entrada_TS *entrada_ts = params.indice_en_TS != NIL ? ts[params.indice_en_TS].ets : NULL;
+	enum boolean es_parametro = entrada_ts != NULL ? entrada_ts->clase == CLASPAR : FALSE;
 
 	if (params.indice_en_TS != NIL)
 		retorno_variable.tipo = resolver_tipo(ts[ts[params.indice_en_TS].ets->ptr_tipo].ets->nbre);
 
 	if (lookahead_in(CCOR_ABR)) {
+		retorno_variable.es_elemento_arreglo = TRUE;
 		if (params.indice_en_TS != NIL && retorno_variable.tipo != ARREGLO)
 			error_handler(78);
 		else if (params.indice_en_TS != NIL) {
-
 			if (es_parametro) {
 				retorno_variable.tipo = resolver_tipo(ts[entrada_ts->desc.part_var.param.ptero_tipo_base].ets->nbre);
 			} else {
@@ -1018,13 +1301,33 @@ retorno_variable variable(set folset, parametros_variable params) {
 			error_handler(94);
 
 		match(CCOR_CIE, 22);
-	}else {
+	} else {
+		retorno_variable.es_elemento_arreglo = FALSE;
 		if (params.indice_en_TS != NIL && retorno_variable.tipo == ARREGLO) {
 			retorno_variable.tipo_base = es_parametro
 				                             ? resolver_tipo(
 					                             ts[entrada_ts->desc.part_var.param.ptero_tipo_base].ets->nbre)
 				                             : resolver_tipo(
 					                             ts[entrada_ts->desc.part_var.arr.ptero_tipo_base].ets->nbre);
+		} else if (params.indice_en_TS != NIL && es_tipo_base(retorno_variable.tipo)) {
+			int nivel = entrada_ts->desc.nivel;
+			int despl = entrada_ts->desc.despl;
+
+			if (params.tipo_expresion_actual == INDEFINIDO) {
+				emitir_crvl(nivel, despl, retorno_variable.tipo);
+			} else if (es_tipo_base(params.tipo_expresion_actual)) {
+				if (params.tipo_expresion_actual < retorno_variable.tipo) {
+					emitir_cast(params.tipo_expresion_actual, retorno_variable.tipo);
+					emitir_crvl(nivel, despl, retorno_variable.tipo);
+				} else if (params.tipo_expresion_actual > retorno_variable.tipo) {
+					emitir_crvl(nivel, despl, retorno_variable.tipo);
+					emitir_cast(retorno_variable.tipo, params.tipo_expresion_actual);
+				} else {
+					emitir_crvl(nivel, despl, retorno_variable.tipo);
+				}
+			}
+			retorno_variable.nivel = nivel;
+			retorno_variable.despl = despl;
 		}
 	}
 
@@ -1035,6 +1338,7 @@ retorno_variable variable(set folset, parametros_variable params) {
 
 retorno_llamada_funcion llamada_funcion(set folset, parametros_llamada_funcion params) {
 	retorno_llamada_funcion retorno_llamada_funcion;
+	construccion_no_soportada = 1;
 
 	entrada_TS *entrada_ts = ts[params.indice_en_TS].ets;
 	retorno_llamada_funcion.tipo = resolver_tipo(ts[ts[params.indice_en_TS].ets->ptr_tipo].ets->nbre);
@@ -1113,7 +1417,7 @@ void lista_expresiones(set folset, parametros_lista_expresiones params) {
 }
 
 
-retorno_constante constante(set folset)
+retorno_constante constante(set folset, parametros_constante params)
 {
 	retorno_constante retorno_constante;
 	retorno_constante.tipo = ERROR;
@@ -1122,16 +1426,57 @@ retorno_constante constante(set folset)
 	switch(lookahead())
 	{
 		case CCONS_ENT:
+			if (es_tipo_base(params.tipo_declarado)) {
+				emitir_crct(params.tipo_declarado, atoi(token1.lexema));
+			} else if (params.tipo_expresion_actual == INDEFINIDO) {
+				emitir_crct(INT, atoi(token1.lexema));
+			} else if (es_tipo_base(params.tipo_expresion_actual)) {
+				if (params.tipo_expresion_actual < INT) {
+					emitir_cast(params.tipo_expresion_actual, INT);
+					emitir_crct(INT, atoi(token1.lexema));
+				} else if (params.tipo_expresion_actual > INT) {
+					emitir_crct(INT, atoi(token1.lexema));
+					emitir_cast(INT, params.tipo_expresion_actual);
+				} else {
+					emitir_crct(INT, atoi(token1.lexema));
+				}
+			}
+
 			scanner();
 			retorno_constante.tipo = INT;
 			break;
 
 		case CCONS_FLO:
+			if (es_tipo_base(params.tipo_declarado)) {
+				emitir_crct(params.tipo_declarado, atof(token1.lexema));
+			} else if (params.tipo_expresion_actual == INDEFINIDO) {
+				emitir_crct(FLOAT, atof(token1.lexema));
+			} else if (es_tipo_base(params.tipo_expresion_actual)) {
+				if (params.tipo_expresion_actual < FLOAT) {
+					emitir_cast(params.tipo_expresion_actual, FLOAT);
+					emitir_crct(FLOAT, atof(token1.lexema));
+				} else {
+					emitir_crct(FLOAT, atof(token1.lexema));
+				}
+			}
+
 			scanner();
 			retorno_constante.tipo = FLOAT;
 			break;
 
 		case CCONS_CAR:
+			if (es_tipo_base(params.tipo_declarado)) {
+				emitir_crct(params.tipo_declarado, token1.lexema[1]);
+			} else if (params.tipo_expresion_actual == INDEFINIDO) {
+				emitir_crct(CHAR, token1.lexema[1]);
+			} else if (es_tipo_base(params.tipo_expresion_actual)) {
+				if (params.tipo_expresion_actual > CHAR) {
+					emitir_crct(CHAR, token1.lexema[1]);
+					emitir_cast(CHAR, params.tipo_expresion_actual);
+				} else {
+					emitir_crct(CHAR, token1.lexema[1]);
+				}
+			}
 			scanner();
 			retorno_constante.tipo = CHAR;
 			break;

@@ -1,0 +1,25 @@
+INPP 
+ENBL 1
+ALOC 4
+CRCT 1, 4
+ALM 1, 0, 1
+CRVL 1, 0, 1
+BIFF 1, 19
+ENBL 2
+CRCT 1, 0
+ALM 1, 0, 1
+CRVL 1, 0, 1
+DMEM 4
+FINB 2
+BIFS -26
+CRVL 1, 0, 1
+IMPR 1
+DMEM 8
+FINB 1
+CRCTS 0
+IMPRCS 
+DMEM 0
+PARAR
+
+--- Constantes string (C) ---
+[0] "\n"

@@ -1,42 +1,42 @@
 
 /* ***************************************************************
-       DEFINICIONES Y CONSTANTES DEL SISTEMA DE EJECUCI覰
+       DEFINICIONES Y CONSTANTES DEL SISTEMA DE EJECUCI脫N
 ****************************************************************** */
 
 
-/* ================= DEFINICI覰 DE CONSTANTES ==================== */
+/* ================= DEFINICI脫N DE CONSTANTES ==================== */
 
-/* ---------------- TAMA袿S PARA LAS ESTRUCTURAS ----------------- */
+/* ---------------- TAMA脩OS PARA LAS ESTRUCTURAS ----------------- */
 
 # define TAM_PROG    5000
 # define TAM_STACK  15000
 # define TAM_CTES     500
 # define TAM_DISP      15
     
-/* ----------------- C覦IGOS PARA LAS INSTRUCCIONES ------------- */
+/* ----------------- C脫DIGOS PARA LAS INSTRUCCIONES ------------- */
 
-/* -------------------- Instrucciones b醩icas ------------------- */
+/* -------------------- Instrucciones b谩sicas ------------------- */
 # define CRCT   1     // cargar una constante
 # define CRVL   2     // cargar el valor de una variable
 
 /* --------------- Instrucciones para las operaciones ----------- */
 # define SUM    3     // suma de enteros
 # define SUB    4     // resta de enteros
-# define MUL    5     // multiplicaci髇 de enteros
-# define DIV    6     // divisi髇 de enteros
+# define MUL    5     // multiplicaci贸n de enteros
+# define DIV    6     // divisi贸n de enteros
 # define INV    7     // cambio de signo de un entero
-# define AND    8     // operador l骻ico and
-# define OR     9     // operador l骻ico or
-# define NEG    10    // operador l骻ico not
-# define CAST   101   // conversi髇 de tipo
-# define CMMA   11    // operador relacional aritm閠ico por mayor
-# define CMME   12    // operador relacional aritm閠ico por menor
-# define CMIG   13    // operador relacional aritm閠ico por igual
-# define CMAI   14    // operador relacional aritm閠ico por mayor o igual
-# define CMEI   15    // operador relacional aritm閠ico por menor o igual
-# define CMNI   16    // operador relacional aritm閠ico por no igual
+# define AND    8     // operador l贸gico and
+# define OR     9     // operador l贸gico or
+# define NEG    10    // operador l贸gico not
+# define CAST   101   // conversi贸n de tipo
+# define CMMA   11    // operador relacional aritm茅tico por mayor
+# define CMME   12    // operador relacional aritm茅tico por menor
+# define CMIG   13    // operador relacional aritm茅tico por igual
+# define CMAI   14    // operador relacional aritm茅tico por mayor o igual
+# define CMEI   15    // operador relacional aritm茅tico por menor o igual
+# define CMNI   16    // operador relacional aritm茅tico por no igual
 
-/* -------------------- Instrucciones b醩icas ------------------- */
+/* -------------------- Instrucciones b谩sicas ------------------- */
 # define ALM    17    // almacenar un valor en una variable
 
 /* ------------------ Instrucciones para E / S ------------------ */
@@ -47,14 +47,14 @@
 # define BIFF   20    // bifurca por falso
 # define BIFS   21    // bifurca siempre
 
-/* -------------------- Instrucciones b醩icas ------------------- */
+/* -------------------- Instrucciones b谩sicas ------------------- */
 # define INPP   22    // inicia el programa
 # define PARAR  23    // termina el programa
 # define ALOC   24    // asigna memoria para variables
 # define DMEM   25    // libera memoria
 
 /* ----------- Instrucciones para manipular subrutinas ---------- */
-# define CRDI   26    // carga la direcci髇 de una variable
+# define CRDI   26    // carga la direcci贸n de una variable
 # define CRVLI  27    // cargar valor indirecto
 # define ALMI   28    // almacenar indirecto
 # define ENPR   29    // guardar el viejo D[k]
@@ -65,16 +65,17 @@
 
 /* ------------ Instrucciones para manipular strings ------------ */
 # define IMPRCS 49    // imprime una constante string
-# define CRCTS  52    // carga la posici髇 de comienzo de una constante string
+# define CRCTS  52    // carga la posici贸n de comienzo de una constante string
 
 /* ------------ Instrucciones para manipular arreglos ----------- */
 # define CRVV   32    // cargar valor de un elemento del vector
 # define ALMV   33    // almacenar valor de un elemento del vector
 
 
-/* ================== DEFINICI覰 DE FUNCIONES ==================== */
+/* ================== DEFINICI脫N DE FUNCIONES ==================== */
 
 int cargar_codgen(char *);
 int guardar_codgen(float [], char [], char *);
 void interprete();
 void impr_codgen();
+void impr_ctes();
