@@ -26,10 +26,27 @@ int main(int argc, char *argv[])
 
 /********* funciones del parser ***********/
 
+// Un salto por racha de funciones consecutivas: una global declarada entre funciones
+// tiene que quedar fuera del salto para que su ALOC se ejecute.
+static int rotulo_salto_sobre_funciones = NIL;
+
+static void abrir_salto_sobre_funciones() {
+	if (rotulo_salto_sobre_funciones == NIL)
+		rotulo_salto_sobre_funciones = emitir_bifs(0);
+}
+
+static void cerrar_salto_sobre_funciones() {
+	if (rotulo_salto_sobre_funciones != NIL) {
+		CODE[rotulo_salto_sobre_funciones] = libre - rotulo_salto_sobre_funciones - 1;
+		rotulo_salto_sobre_funciones = NIL;
+	}
+}
+
 void unidad_traduccion(set folset)
 {
 	emitir_inpp();
 	pushTB();
+	emitir_enbl(0);
 	test((F_UNIDAD_TRADUCCION | folset), NADA, 40);
 
 	while(lookahead_in(F_UNIDAD_TRADUCCION)) {
@@ -55,12 +72,9 @@ void unidad_traduccion(set folset)
 		error_handler(86);
 	}
 
-	emitir_crcts(libre_ctes);
-	CTES[libre_ctes++] = '\n';
-
-	emitir_imprcs();
-
+	cerrar_salto_sobre_funciones();
 	emitir_dmem(desplazamiento[0]);
+	emitir_finb(0);
 	pop_nivel();
 	emitir_parar();
 }
@@ -125,8 +139,12 @@ void especificador_declaracion(set folset, parametros_especificador_declaracion 
 
 	switch (lookahead()) {
 		case CPAR_ABR: {
+			abrir_salto_sobre_funciones();
+
 			if (params.identificador == NULL || strcmp(params.identificador, "main") != 0)
 				construccion_no_soportada = 1;
+			else
+				cerrar_salto_sobre_funciones();
 
 			parametros_definicion_funcion parametros_definicion_funcion;
 			parametros_definicion_funcion.tipo_retorno = params.tipo_declaracion;
@@ -157,6 +175,7 @@ void especificador_declaracion(set folset, parametros_especificador_declaracion 
 			parametros_declaracion_variable.identificador = params.identificador;
 			parametros_declaracion_variable.tipo_declaracion = params.tipo_declaracion;
 
+			cerrar_salto_sobre_funciones();
 			declaracion_variable(folset, parametros_declaracion_variable);
 			break;
 		}
