@@ -26,22 +26,6 @@ int main(int argc, char *argv[])
 
 /********* funciones del parser ***********/
 
-// Un salto por racha de funciones consecutivas: una global declarada entre funciones
-// tiene que quedar fuera del salto para que su ALOC se ejecute.
-static int rotulo_salto_sobre_funciones = NIL;
-
-static void abrir_salto_sobre_funciones() {
-	if (rotulo_salto_sobre_funciones == NIL)
-		rotulo_salto_sobre_funciones = emitir_bifs(0);
-}
-
-static void cerrar_salto_sobre_funciones() {
-	if (rotulo_salto_sobre_funciones != NIL) {
-		CODE[rotulo_salto_sobre_funciones] = libre - rotulo_salto_sobre_funciones - 1;
-		rotulo_salto_sobre_funciones = NIL;
-	}
-}
-
 void unidad_traduccion(set folset)
 {
 	emitir_inpp();
