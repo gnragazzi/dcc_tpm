@@ -13,6 +13,8 @@ extern int libre_ctes;
 
 extern int construccion_no_soportada;
 
+extern int rotulo_salto_sobre_funciones;
+
 typedef struct datos_asignacion {
     int nivel;
     int desplazamiento;
@@ -56,6 +58,9 @@ void emitir_imprcs();
 
 int emitir_bifs(int salto);
 int emitir_biff(enum tipo tipo, int salto);
+
+void abrir_salto_sobre_funciones();
+void cerrar_salto_sobre_funciones();
 
 void emitir_aloc(int bytes);
 void emitir_dmem(int bytes);

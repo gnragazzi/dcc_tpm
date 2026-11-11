@@ -12,6 +12,8 @@ int libre_ctes = 0;
 
 int construccion_no_soportada = 0;
 
+int rotulo_salto_sobre_funciones = NIL;
+
 int emitir(float valor) {
     CODE[libre] = valor;
     return libre++;
@@ -172,6 +174,18 @@ int emitir_biff(enum tipo tipo, int salto) {
     desplazamiento[get_nivel()] -= ts[resolver_tipo_en_TS(tipo)].ets->cant_byte;
     emitir_con_tipo(BIFF, tipo);
     return emitir(salto);
+}
+
+void abrir_salto_sobre_funciones() {
+    if (rotulo_salto_sobre_funciones == NIL)
+        rotulo_salto_sobre_funciones = emitir_bifs(0);
+}
+
+void cerrar_salto_sobre_funciones() {
+    if (rotulo_salto_sobre_funciones != NIL) {
+        CODE[rotulo_salto_sobre_funciones] = libre - rotulo_salto_sobre_funciones - 1;
+        rotulo_salto_sobre_funciones = NIL;
+    }
 }
 
 void emitir_aloc(int bytes) {
